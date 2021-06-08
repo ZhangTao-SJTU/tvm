@@ -1,0 +1,14 @@
+cmake_minimum_required (VERSION 3.1)
+project (tvm)
+
+set (CMAKE_CXX_STANDARD 11)
+set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
+
+aux_source_directory(. DIR_SRCS)
+add_subdirectory(Run)
+add_subdirectory(Vertex)
+add_subdirectory(Edge)
+add_subdirectory(Polygon)
+add_subdirectory(Cell)
+add_executable(tvm tvm.cpp)
+target_link_libraries(tvm run vertex edge polygon cell)
