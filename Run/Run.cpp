@@ -26,6 +26,7 @@ Run::Run() {
     Lx_ = 13.2;
     Ly_ = 200.0/13.2;
     NCell_ = 400;
+    Aic_ = 0.5;
     t_start_ = 0.;
     t_end_ = 5.;
     dump_period_ = 1.;
@@ -42,14 +43,14 @@ int Run::start() {
     simulation_time = t_start_;
     auto start = chrono::steady_clock::now();
 
+    printf("\nSimulation Start ...\n");
     printf("Real time elapsed: Rte\n");
-    printf("Start Simulation\n");
     printf("Time        ");
     printf("Rte         ");
     printf("Volume      ");
     printf("Energy      \n");
 
-    while (simulation_time <= t_end_ + t_roundError) {
+    while (simulation_time < t_end_ + t_roundError) {
         // update energy, force, velocity
         updateGeoinfo();
         // update volumeForces
@@ -91,9 +92,9 @@ int Run::start() {
         simulation_time += dt_;
     }
 
-    for (long int i = 0; i < cells_.size(); i++) {
-        printf("%f\n", cells_[i]->volume_);
-    }
+//    for (long int i = 0; i < cells_.size(); i++) {
+//        printf("%f\n", cells_[i]->volume_);
+//    }
 
     return 0;
 }

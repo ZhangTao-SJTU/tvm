@@ -22,6 +22,7 @@ class Run {
     double  Lx_;
     double  Ly_;
     int     NCell_;
+    double  Aic_;
     double   t_start_;
     double   t_end_;
     long int count_dump_;
