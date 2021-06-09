@@ -14,6 +14,7 @@ public:
     long int id_;
     bool growing_;
     double volume_;
+    double pressure_;
     double center_[3];
     std::vector<Polygon *> polygons_;
     explicit Cell(Run *, long int);

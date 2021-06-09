@@ -10,7 +10,16 @@ class Volume;
 
 class Volume {
 public:
+    double kcv_;
+    double vu0_;
+    double energy_;
+
     explicit Volume(Run *);
+
+    int updateForces();
+    int updatePressure();
+    int updatePolygonForces(Cell *, Polygon *);
+    int updateEnergy();
 private:
     Run * run_;
 };

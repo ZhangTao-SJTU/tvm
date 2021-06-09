@@ -15,6 +15,7 @@ public:
     std::vector<Edge *> edges_;
     std::vector<Vertex *> vertices_;
     double center_[3];
+    double volumeForce_[3];
     explicit Polygon(Run *, long int);
 
     int updateVertices();

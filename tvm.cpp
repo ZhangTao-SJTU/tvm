@@ -203,6 +203,9 @@ int InitializeAll(Run * run) {
     }
     printf("Total volume: %6f\n", sum_volume);
 
+    // initialize volume object
+    run->volume_ = new Volume(run);
+
     return 0;
 }
 

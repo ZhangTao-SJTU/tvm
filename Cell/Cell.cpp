@@ -23,6 +23,7 @@ Cell::Cell(Run * run, long int id) {
     id_ = id;
     growing_ = false;
     volume_ = 0.;
+    pressure_ = 0.;
     for (int i = 0; i < 3; i++) {
         center_[i] = 0.;
     }

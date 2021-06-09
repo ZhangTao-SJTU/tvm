@@ -23,6 +23,7 @@ Polygon::Polygon(Run * run, long int id) {
     id_ = id;
     for (int i = 0; i < 3; i++) {
         center_[i] = 0.;
+        volumeForce_[i]  = 0.;
     }
 }
 

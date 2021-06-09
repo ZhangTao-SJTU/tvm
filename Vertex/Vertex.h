@@ -13,6 +13,7 @@ class Vertex {
 public:
     long int id_;
     double position_[3];
+    double volumeForce_[3];
     double velocity_[3];
     std::vector<Edge *> edges_;
     explicit Vertex(Run *, long int);
