@@ -26,8 +26,8 @@ int main(int argc, char *argv[]) {
     Run * run = new Run();
     InitializeAll(run);
     run->start();
-    DumpConfigurationVtk(0., run);
-    DumpCentersVtk(0., run);
+//    DumpConfigurationVtk(0., run);
+//    DumpCentersVtk(0., run);
     return 0;
 }
 
@@ -196,22 +196,10 @@ int InitializeAll(Run * run) {
     run->updatePolygonVertices();
     run->updateVertexEdges();
 
-    // update cell volumes
-    for (long int i = 0; i < run->edges_.size(); i++) {
-        run->edges_[i]->update();
-//        printf("%6f\n", run->edges_[i]->length_);
-    }
-    for (long int i = 0; i < run->polygons_.size(); i++) {
-        run->polygons_[i]->updateCenter();
-    }
-    for (long int i = 0; i < run->cells_.size(); i++) {
-        run->cells_[i]->updateCenter();
-    }
+    run->updateGeoinfo();
     double sum_volume = 0.;
     for (long int i = 0; i < run->cells_.size(); i++) {
-        run->cells_[i]->updateVolume();
         sum_volume += run->cells_[i]->volume_;
-//        printf("%6f\n", run->cells_[i]->volume_);
     }
     printf("Total volume: %6f\n", sum_volume);
 

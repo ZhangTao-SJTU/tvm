@@ -20,6 +20,13 @@ class Run {
     double  Lx_;
     double  Ly_;
     int     NCell_;
+    double   t_start_;
+    double   t_end_;
+    long int count_dump_;
+    double   dump_period_;
+    long int count_log_;
+    double   log_period_;
+    long int count_reconnect_;
     std::vector<Vertex *> vertices_;
     std::vector<Edge *> edges_;
     std::vector<Polygon *> polygons_;
@@ -31,6 +38,7 @@ class Run {
     double  computeD(double , double, double *);
     int     updatePolygonVertices();
     int     updateVertexEdges();
+    int     updateGeoinfo();
 };
 
 #endif
