@@ -2,22 +2,23 @@
 // Author: Tao Zhang @ Shanghai Jiao Tong University, zhangtao.scholar@sjtu.edu.cn
 // Corresponding author: Jennifer Schwarz @ Syracuse University, jschwarz@physics.syr.edu
 
-#ifndef VERTEX_H_INCLUDED
-#define VERTEX_H_INCLUDED
+#ifndef INTERFACE_H_INCLUDED
+#define INTERFACE_H_INCLUDED
 
-class Vertex;
+class Interface;
 #include "../Run/Run.h"
-#include "../Edge/Edge.h"
 
-class Vertex {
+class Interface {
 public:
-    long int id_;
-    double position_[3];
-    double volumeForce_[3];
-    double interfaceForce_[3];
-    double velocity_[3];
-    std::vector<Edge *> edges_;
-    explicit Vertex(Run *, long int);
+    double epsilon_cc_;
+    double epsilon_co_;
+    double energy_;
+
+    explicit Interface(Run *);
+
+    int updateForces();
+    int updatePolygonForces(Polygon *);
+//    int updateEnergy();
 private:
     Run * run_;
 };

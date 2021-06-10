@@ -8,14 +8,18 @@
 class Polygon;
 #include "../Run/Run.h"
 #include "../Edge/Edge.h"
+#include "../Cell/Cell.h"
 
 class Polygon {
 public:
     long int id_;
-    std::vector<Edge *> edges_;
-    std::vector<Vertex *> vertices_;
     double center_[3];
     double volumeForce_[3];
+    double interfaceForce_[3];
+    bool cell_cell;
+    std::vector<Edge *> edges_;
+    std::vector<Vertex *> vertices_;
+    std::vector<Cell *> cells_;
     explicit Polygon(Run *, long int);
 
     int updateVertices();

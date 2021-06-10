@@ -193,14 +193,14 @@ int InitializeAll(Run * run) {
     }
     printf("%ld cells generated\n", run->cells_.size());
 
-    // add initial curved surface
-    for (long int i = 0; i < run->vertices_.size(); i++) {
-        Vertex * vertex = run->vertices_[i];
-        double x = vertex->position_[0];
-        double y = vertex->position_[1];
-        double z = vertex->position_[2];
-        vertex->position_[2] = z + run->Aic_*cos(2.0*M_PI/run->Lx_*x)*cos(2.0*M_PI/run->Ly_*y);
-    }
+//    // add initial curved surface
+//    for (long int i = 0; i < run->vertices_.size(); i++) {
+//        Vertex * vertex = run->vertices_[i];
+//        double x = vertex->position_[0];
+//        double y = vertex->position_[1];
+//        double z = vertex->position_[2];
+//        vertex->position_[2] = z + run->Aic_*cos(2.0*M_PI/run->Lx_*x)*cos(2.0*M_PI/run->Ly_*y);
+//    }
 
     run->updatePolygonVertices();
     run->updateVertexEdges();
@@ -214,6 +214,8 @@ int InitializeAll(Run * run) {
 
     // initialize volume object
     run->volume_ = new Volume(run);
+    // initialize interface object
+    run->interface_ = new Interface(run);
 
     return 0;
 }

@@ -28,7 +28,7 @@ Run::Run() {
     NCell_ = 400;
     Aic_ = 0.5;
     t_start_ = 0.;
-    t_end_ = 5.;
+    t_end_ = 10.;
     dump_period_ = 1.;
     log_period_ = 0.01;
 }
@@ -51,12 +51,12 @@ int Run::start() {
     printf("Energy      \n");
 
     while (simulation_time < t_end_ + t_roundError) {
-        // update energy, force, velocity
+        // update geometry information
         updateGeoinfo();
         // update volumeForces
         volume_->updateForces();
         // update interfaceForces
-        // TODO interface_->updateForces();
+        interface_->updateForces();
         // update velocities
         updateVerticesVelocity();
 
@@ -102,7 +102,7 @@ int Run::start() {
 int     Run::updateVerticesVelocity() {
     for (long int i = 0; i < vertices_.size(); i++) {
         for (int m = 0; m < 3; m++) {
-            vertices_[i]->velocity_[m] = 1.0/eta_ * (vertices_[i]->volumeForce_[m]);
+            vertices_[i]->velocity_[m] = 1.0/eta_ * (vertices_[i]->volumeForce_[m] + vertices_[i]->interfaceForce_[m]);
         }
     }
 
@@ -166,6 +166,32 @@ int     Run::updateVertexEdges() {
     return 0;
 }
 
+int     Run::updatePolygonCells() {
+    for (long int i = 0; i < polygons_.size(); i++) {
+        polygons_[i]->cells_.clear();
+    }
+    for (long int i = 0; i < cells_.size(); i++) {
+        for (int j = 0; j < cells_[i]->polygons_.size(); j++) {
+            cells_[i]->polygons_[j]->cells_.push_back(cells_[i]);
+        }
+    }
+
+    return 0;
+}
+
+int     Run::updatePolygonType() {
+    updatePolygonCells();
+    for (long int i = 0; i < polygons_.size(); i++) {
+        if (polygons_[i]->cells_.size() > 1) {
+            polygons_[i]->cell_cell = true;
+        } else {
+            polygons_[i]->cell_cell = false;
+        }
+    }
+
+    return 0;
+}
+
 int     Run::updateGeoinfo() {
     // update edge midpoint and length
     for (long int i = 0; i < edges_.size(); i++) {
@@ -185,4 +211,8 @@ int     Run::updateGeoinfo() {
         cells_[i]->updateVolume();
 //        printf("%6f\n", run->cells_[i]->volume_);
     }
+    // update polygon type
+    updatePolygonType();
+
+    return 0;
 }

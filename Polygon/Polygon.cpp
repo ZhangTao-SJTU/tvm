@@ -24,7 +24,9 @@ Polygon::Polygon(Run * run, long int id) {
     for (int i = 0; i < 3; i++) {
         center_[i] = 0.;
         volumeForce_[i]  = 0.;
+        interfaceForce_[i]  = 0.;
     }
+    cell_cell = false;
 }
 
 int Polygon::updateVertices() {

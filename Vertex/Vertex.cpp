@@ -24,6 +24,7 @@ Vertex::Vertex(Run * run, long int id) {
     for (int i = 0; i < 3; i++) {
         position_[i] = 0.;
         volumeForce_[i] = 0.;
+        interfaceForce_[i] = 0.;
         velocity_[i] = 0.;
     }
 }

@@ -12,6 +12,7 @@ class Run;
 #include "../Polygon/Polygon.h"
 #include "../Cell/Cell.h"
 #include "../Energy/Volume.h"
+#include "../Energy/Interface.h"
 
 class Run {
   public:
@@ -31,6 +32,7 @@ class Run {
     double   log_period_;
     long int count_reconnect_;
     Volume * volume_;
+    Interface * interface_;
 
     std::vector<Vertex *> vertices_;
     std::vector<Edge *> edges_;
@@ -42,6 +44,8 @@ class Run {
     double  computeD(double *, double *);
     double  computeD(double , double, double *);
     int     updatePolygonVertices();
+    int     updatePolygonCells();
+    int     updatePolygonType();
     int     updateVertexEdges();
     int     updateGeoinfo();
     int     updateVerticesVelocity();
