@@ -86,6 +86,10 @@ int     Reconnection::start() {
                     good_candidate = false;
                     break;
                 }
+                if (polygon->edges_[j]->triangle_count_ != 1) {
+                    good_candidate = false;
+                    break;
+                }
             }
         }
         if (!good_candidate) {
