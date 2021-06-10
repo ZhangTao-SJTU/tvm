@@ -13,6 +13,7 @@
 #include <cmath>
 #include <chrono>
 #include <unordered_map>
+#include <random>
 #include "Run/Run.h"
 
 using namespace std;
@@ -202,6 +203,17 @@ int InitializeAll(Run * run) {
         vertex->position_[2] = z + run->Aic_*cos(2.0*M_PI/run->Lx_*x)*cos(2.0*M_PI/run->Ly_*y);
     }
 
+    // add random displacement to vertex positions
+    const double stddev = sqrt(0.001);
+    unsigned long int seed = 6399402827626050;
+    std::default_random_engine generator(seed);
+    std::normal_distribution<double> dist(0., stddev);
+    for (long int i = 0; i < run->vertices_.size(); i++) {
+        for (int m = 0; m < 3; m++) {
+            run->vertices_[i]->position_[m] = run->vertices_[i]->position_[m] + dist(generator);
+        }
+    }
+
     run->updatePolygonVertices();
     run->updateVertexEdges();
 
@@ -235,11 +247,13 @@ int DumpConfigurationVtk(double simulation_time, Run * run) {
     out << "DATASET POLYDATA" << endl;
     out << "POINTS " << run->vertices_.size() << " double" << endl;
     for (long int i = 0; i < run->vertices_.size(); i++) {
-            out << right << setw(12) << scientific << setprecision(5) << run->vertices_[i]->position_[0];
-            out << " " << right << setw(12) << scientific << setprecision(5) << run->vertices_[i]->position_[1];
-            out << " " << right << setw(12) << scientific << setprecision(5) << run->vertices_[i]->position_[2];
-            out << endl;
-        }
+        // reset vertex id for dumping polygons
+        run->vertices_[i]->id_ = i;
+        out << right << setw(12) << scientific << setprecision(5) << run->vertices_[i]->position_[0];
+        out << " " << right << setw(12) << scientific << setprecision(5) << run->vertices_[i]->position_[1];
+        out << " " << right << setw(12) << scientific << setprecision(5) << run->vertices_[i]->position_[2];
+        out << endl;
+    }
     out << endl;
 
 //    long int Nedges = 0;
