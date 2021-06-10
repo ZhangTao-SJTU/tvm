@@ -218,16 +218,13 @@ int InitializeAll(Run * run) {
     run->updateVertexEdges();
 
     run->updateGeoinfo();
-    double sum_volume = 0.;
-    for (long int i = 0; i < run->cells_.size(); i++) {
-        sum_volume += run->cells_[i]->volume_;
-    }
-    printf("Total volume: %6f\n", sum_volume);
 
     // initialize volume object
     run->volume_ = new Volume(run);
     // initialize interface object
     run->interface_ = new Interface(run);
+    // initialize reconnection object
+    run->reconnection_ = new Reconnection(run);
 
     return 0;
 }

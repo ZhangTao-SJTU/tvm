@@ -22,7 +22,6 @@ Run::Run() {
     dt_ = 1.0e-4;
     dtr_ = 1.0e-3;
     eta_ = 1.0;
-    Lth_ = 1.0e-3;
     Lx_ = 13.2;
     Ly_ = 200.0/13.2;
     NCell_ = 400;
@@ -90,7 +89,7 @@ int Run::start() {
 
         // reconnect
         if (simulation_time - t_start_ + t_roundError > count_reconnect_ * dtr_) {
-            // TODO reconnect
+            reconnection_->start();
             count_reconnect_++;
         }
 

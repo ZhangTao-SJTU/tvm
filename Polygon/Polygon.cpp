@@ -28,6 +28,7 @@ Polygon::Polygon(Run * run, long int id) {
     }
     area_ = 0.;
     cell_cell = false;
+    candidate_ = false;
 }
 
 int Polygon::updateVertices() {

@@ -13,12 +13,12 @@ class Run;
 #include "../Cell/Cell.h"
 #include "../Energy/Volume.h"
 #include "../Energy/Interface.h"
+#include "../Reconnection/Reconnection.h"
 
 class Run {
   public:
     double  dt_;    // integration time step
     double  dtr_;   // time interval of network reconnection
-    double  Lth_;   // threshold length of network reconnection
     double  eta_;   // friction coefficient of vertex
     double  Lx_;
     double  Ly_;
@@ -33,6 +33,7 @@ class Run {
     long int count_reconnect_;
     Volume * volume_;
     Interface * interface_;
+    Reconnection * reconnection_;
 
     std::vector<Vertex *> vertices_;
     std::vector<Edge *> edges_;
