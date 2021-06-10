@@ -47,6 +47,12 @@ int     Volume::updateForces() {
 }
 
 int Volume::updatePressure() {
+    // update cell volume
+    for (long int i = 0; i < run_->cells_.size(); i++) {
+        run_->cells_[i]->updateVolume();
+//        printf("%6f\n", run_->cells_[i]->volume_);
+    }
+
     for (long int i = 0; i < run_->cells_.size(); i++) {
         run_->cells_[i]->pressure_ = (-1.0)*kcv_/vu0_*(run_->cells_[i]->volume_/vu0_-1.0);
     }

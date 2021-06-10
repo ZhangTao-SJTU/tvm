@@ -26,6 +26,7 @@ Polygon::Polygon(Run * run, long int id) {
         volumeForce_[i]  = 0.;
         interfaceForce_[i]  = 0.;
     }
+    area_ = 0.;
     cell_cell = false;
 }
 

@@ -28,7 +28,7 @@ Run::Run() {
     NCell_ = 400;
     Aic_ = 0.5;
     t_start_ = 0.;
-    t_end_ = 10.;
+    t_end_ = 5.;
     dump_period_ = 1.;
     log_period_ = 0.01;
 }
@@ -48,6 +48,8 @@ int Run::start() {
     printf("Time        ");
     printf("Rte         ");
     printf("Volume      ");
+    printf("E_volume    ");
+    printf("E_interface ");
     printf("Energy      \n");
 
     while (simulation_time < t_end_ + t_roundError) {
@@ -67,10 +69,13 @@ int Run::start() {
             for (long int i = 0; i < cells_.size(); i++) {
                 sum_volume += cells_[i]->volume_;
             }
-            printf("%-12.2f%-12.3f%-12.3f%-12.6f\n", simulation_time,
+            interface_->updateEnergy();
+            printf("%-12.2f%-12.3f%-12.3f%-12.6f%-12.6f%-12.6f\n", simulation_time,
                    (chrono::duration_cast<chrono::microseconds>(chrono::steady_clock::now() - start).count())/1.0e6,
                    sum_volume,
-                   volume_->energy_);
+                   volume_->energy_,
+                   interface_->energy_,
+                   volume_->energy_+interface_->energy_);
             start = chrono::steady_clock::now();
             count_log_++;
         }
@@ -205,11 +210,6 @@ int     Run::updateGeoinfo() {
     // update cell center position
     for (long int i = 0; i < cells_.size(); i++) {
         cells_[i]->updateCenter();
-    }
-    // update cell volume
-    for (long int i = 0; i < cells_.size(); i++) {
-        cells_[i]->updateVolume();
-//        printf("%6f\n", run->cells_[i]->volume_);
     }
     // update polygon type
     updatePolygonType();

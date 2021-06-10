@@ -18,7 +18,7 @@ public:
 
     int updateForces();
     int updatePolygonForces(Polygon *);
-//    int updateEnergy();
+    int updateEnergy();
 private:
     Run * run_;
 };

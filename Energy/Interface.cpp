@@ -54,6 +54,9 @@ int Interface::updatePolygonForces(Polygon *polygon) {
         epsilon = epsilon_co_;
     }
 
+    // reset polygon area
+    polygon->area_ = 0.;
+
     // the polygon center is the reference point
     for (int i = 0; i < polygon->edges_.size(); i++) {
         Edge * edge = polygon->edges_[i];
@@ -88,7 +91,8 @@ int Interface::updatePolygonForces(Polygon *polygon) {
         nv[0] = cv[0][1]*cv[1][2] - cv[1][1]*cv[0][2];
         nv[1] = cv[1][0]*cv[0][2] - cv[0][0]*cv[1][2];
         nv[2] = cv[0][0]*cv[1][1] - cv[1][0]*cv[0][1];
-        double norm_nv = sqrt(nv[0]*nv[0] + nv[1]*nv[1] + nv[1]*nv[1]);
+        double norm_nv = sqrt(nv[0]*nv[0] + nv[1]*nv[1] + nv[2]*nv[2]);
+        polygon->area_ = polygon->area_ + 0.5*norm_nv;
         nv[0] = nv[0] / norm_nv;
         nv[1] = nv[1] / norm_nv;
         nv[2] = nv[2] / norm_nv;
@@ -131,11 +135,17 @@ int Interface::updatePolygonForces(Polygon *polygon) {
     return 0;
 }
 
-//int Volume::updateEnergy() {
-//    energy_ = 0.;
-//    for (long int i = 0; i < run_->cells_.size(); i++) {
-//        energy_ += 0.5*kcv_*pow(run_->cells_[i]->volume_/vu0_-1.0, 2.0);
-//    }
-//
-//    return 0;
-//}
+int Interface::updateEnergy() {
+    energy_ = 0.;
+    for (long int i = 0; i < run_->polygons_.size(); i++) {
+        double epsilon;
+        if (run_->polygons_[i]->cell_cell) {
+            epsilon = epsilon_cc_;
+        } else {
+            epsilon = epsilon_co_;
+        }
+        energy_ += epsilon*run_->polygons_[i]->area_;
+    }
+
+    return 0;
+}

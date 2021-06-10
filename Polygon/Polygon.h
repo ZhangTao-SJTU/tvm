@@ -14,6 +14,7 @@ class Polygon {
 public:
     long int id_;
     double center_[3];
+    double area_;
     double volumeForce_[3];
     double interfaceForce_[3];
     bool cell_cell;
