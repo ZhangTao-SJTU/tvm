@@ -14,12 +14,12 @@ public:
     double vv_[3];  // the vector pointing from vertex 0 to 1
     double center_[3];
     double length_;
-    int reconnection_candidate_;    // reconnection candidate edge type
-    // -1: length larger than Lth, not considered
-    // 0: length less than Lth, and connected to no triangle
-    // 1: length less than Lth, and connected to 1 triangle
-    // 2: length less than Lth, and connected to 2 triangles
-    // 3: length less than Lth, and connected to 3 triangles
+    bool candidate_;    // reconnection candidate edge, length shorter than Lth
+    int triangle_count_;
+    // 0: connected to no triangle
+    // 1: connected to 1 triangle
+    // 2: connected to 2 triangles
+    // 3: connected to 3 triangles
 
     std::vector<Vertex *> vertices_;
     explicit Edge(Run *, long int);

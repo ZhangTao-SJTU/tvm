@@ -26,7 +26,8 @@ Edge::Edge(Run * run, long int id) {
         center_[i] = 0.;
     }
     length_ = 0.;
-    reconnection_candidate_ = (-1);
+    candidate_ = false;
+    triangle_count_ = 0;
 }
 
 bool Edge::crossBoundary() {
