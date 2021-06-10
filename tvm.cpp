@@ -280,6 +280,20 @@ int DumpConfigurationVtk(double simulation_time, Run * run) {
     }
     out << endl;
 
+    out << "CELL_DATA " << Npolygons << endl;
+    out << "SCALARS type int 1" << endl;
+    out << "LOOKUP_TABLE default" << endl;
+    for (long int i = 0; i < run->polygons_.size(); i++) {
+        if (!run->polygons_[i]->crossBoundary()) {
+            if (run->polygons_[i]->cell_cell) {
+                out << left << setw(6) << 0 << endl;
+            } else {
+                out << left << setw(6) << 1 << endl;
+            }
+        }
+    }
+    out << endl;
+
     out.close();
 
     return 0;
