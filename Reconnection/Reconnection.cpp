@@ -118,8 +118,77 @@ int Reconnection::I_H(Edge * edge) {
         exit(1);
     }
 
+    // locate three polygons: 1-1011-4, 2-1011-5, 3-1011-6
+    Polygon * p14 = NULL;
+    Polygon * p25 = NULL;
+    Polygon * p36 = NULL;
+    for (auto polygon : c1245->polygons_) {
+        if (std::find(c1346->polygons_.begin(), c1346->polygons_.end(), polygon) != c1346->polygons_.end()) {
+            p14 = polygon;
+            break;
+        }
+    }
+    for (auto polygon : c2356->polygons_) {
+        if (std::find(c1245->polygons_.begin(), c1245->polygons_.end(), polygon) != c1245->polygons_.end()) {
+            p25 = polygon;
+            break;
+        }
+    }
+    for (auto polygon : c1346->polygons_) {
+        if (std::find(c2356->polygons_.begin(), c2356->polygons_.end(), polygon) != c2356->polygons_.end()) {
+            p36 = polygon;
+            break;
+        }
+    }
+    // locate three polygons: 10-12, 10-23, 10-13
+    Polygon * p12 = NULL;
+    Polygon * p23 = NULL;
+    Polygon * p13 = NULL;
+    for (auto polygon : c1245->polygons_) {
+        if (std::find(c123->polygons_.begin(), c123->polygons_.end(), polygon) != c123->polygons_.end()) {
+            p12 = polygon;
+            break;
+        }
+    }
+    for (auto polygon : c2356->polygons_) {
+        if (std::find(c123->polygons_.begin(), c123->polygons_.end(), polygon) != c123->polygons_.end()) {
+            p23 = polygon;
+            break;
+        }
+    }
+    for (auto polygon : c1346->polygons_) {
+        if (std::find(c123->polygons_.begin(), c123->polygons_.end(), polygon) != c123->polygons_.end()) {
+            p13 = polygon;
+            break;
+        }
+    }
+    // locate three polygons: 11-45, 11-56, 11-46
+    Polygon * p45 = NULL;
+    Polygon * p56 = NULL;
+    Polygon * p46 = NULL;
+    for (auto polygon : c1245->polygons_) {
+        if (std::find(c456->polygons_.begin(), c456->polygons_.end(), polygon) != c456->polygons_.end()) {
+            p45 = polygon;
+            break;
+        }
+    }
+    for (auto polygon : c2356->polygons_) {
+        if (std::find(c456->polygons_.begin(), c456->polygons_.end(), polygon) != c456->polygons_.end()) {
+            p56 = polygon;
+            break;
+        }
+    }
+    for (auto polygon : c1346->polygons_) {
+        if (std::find(c456->polygons_.begin(), c456->polygons_.end(), polygon) != c456->polygons_.end()) {
+            p46 = polygon;
+            break;
+        }
+    }
+
+    return 0;
 }
 
 int Reconnection::H_I(Polygon * polygon) {
 
+    return 0;
 }
