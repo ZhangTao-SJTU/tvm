@@ -193,6 +193,15 @@ int InitializeAll(Run * run) {
         }
     }
     printf("%ld cells generated\n", run->cells_.size());
+    // generate top and bottom virtual cells
+    // generate cells
+    run->cellBottom_ = new Cell(run, -2);
+    run->cellTop_ = new Cell(run, -1);
+    for (long int i = 0; i < NpolygonsBottom; i++) {
+        run->cellBottom_->polygons_.push_back(run->polygons_[i]);
+        run->cellTop_->polygons_.push_back(run->polygons_[NpolygonsBottom+i]);
+    }
+    printf("top and bottom virtual cells generated\n");
 
     // add initial curved surface
     for (long int i = 0; i < run->vertices_.size(); i++) {

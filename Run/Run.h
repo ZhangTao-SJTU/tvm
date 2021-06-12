@@ -31,6 +31,8 @@ class Run {
     long int count_log_;
     double   log_period_;
     long int count_reconnect_;
+    Cell * cellTop_;    // virtual cell on the top to set the boundary
+    Cell * cellBottom_; // virtual cell on the bottom to set the boundary
     Volume * volume_;
     Interface * interface_;
     Reconnection * reconnection_;
