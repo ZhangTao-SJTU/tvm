@@ -34,6 +34,7 @@ int     Reconnection::start() {
         }
         run_->edges_[i]->triangle_count_ = 0;
     }
+    // set edge triangle_count_
     for (long int i = 0; i < run_->polygons_.size(); i++) {
         if (run_->polygons_[i]->edges_.size() == 3) {
             for (int j = 0; j < 3; j++) {
@@ -99,8 +100,7 @@ int     Reconnection::start() {
     }
 
     // update topology and geometry information
-    run_->updatePolygonVertices();
-//    run_->updateVertexEdges();
+    run_->updateVertexCells();
     run_->updateGeoinfo();
 
     return 0;

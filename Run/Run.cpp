@@ -170,6 +170,35 @@ int     Run::updateVertexEdges() {
     return 0;
 }
 
+int     Run::updateVertexCells() {
+    for (long int i = 0; i < vertices_.size(); i++) {
+        vertices_[i]->cells_.clear();
+    }
+    std::vector<Cell *> tpm_cells = cells_;
+    tpm_cells.push_back(cellBottom_);
+    tpm_cells.push_back(cellTop_);
+    for (long int i = 0; i < tpm_cells.size(); i++) {
+        Cell * cell = tpm_cells[i];
+        for (long int j = 0; j < cell->polygons_.size(); j++) {
+            for (long int k = 0; k < cell->polygons_[j]->edges_.size(); k++) {
+                for (long int l = 0; l < 2; l++) {
+                    Vertex * vertex = cell->polygons_[j]->edges_[k]->vertices_[l];
+                    if (std::find(vertex->cells_.begin(), vertex->cells_.end(), cell) == vertex->cells_.end()) {
+                        // new cell to be added
+                        vertex->cells_.push_back(cell);
+                    }
+                }
+            }
+        }
+    }
+
+//    for (long int i = 0; i < vertices_.size(); i++) {
+//        printf("%d\n", vertices_[i]->cells_.size());
+//    }
+
+    return 0;
+}
+
 int     Run::updatePolygonCells() {
     for (long int i = 0; i < polygons_.size(); i++) {
         polygons_[i]->cells_.clear();

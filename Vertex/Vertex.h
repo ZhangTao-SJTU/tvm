@@ -8,6 +8,7 @@
 class Vertex;
 #include "../Run/Run.h"
 #include "../Edge/Edge.h"
+#include "../Cell/Cell.h"
 
 class Vertex {
 public:
@@ -17,6 +18,7 @@ public:
     double interfaceForce_[3];
     double velocity_[3];
     std::vector<Edge *> edges_;
+    std::vector<Cell *> cells_;
     explicit Vertex(Run *, long int);
 private:
     Run * run_;

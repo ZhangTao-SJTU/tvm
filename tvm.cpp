@@ -223,9 +223,7 @@ int InitializeAll(Run * run) {
         }
     }
 
-    run->updatePolygonVertices();
-    run->updateVertexEdges();
-
+    run->updateVertexCells();
     run->updateGeoinfo();
 
     // initialize volume object
@@ -280,6 +278,7 @@ int DumpConfigurationVtk(double simulation_time, Run * run) {
 //    }
 //    out << endl;
 
+    run->updatePolygonVertices();
     long int Npolygons = 0;
     long int NpolygonVertices = 0;
     for (long int i = 0; i < run->polygons_.size(); i++) {

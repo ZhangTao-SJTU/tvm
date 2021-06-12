@@ -50,6 +50,7 @@ class Run {
     int     updatePolygonCells();
     int     updatePolygonType();
     int     updateVertexEdges();
+    int     updateVertexCells();
     int     updateGeoinfo();
     int     updateVerticesVelocity();
     int     updateVerticesPosition();
