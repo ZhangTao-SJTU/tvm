@@ -28,7 +28,6 @@ Polygon::Polygon(Run * run, long int id) {
     }
     area_ = 0.;
     cell_cell = false;
-    candidate_ = false;
 }
 
 int Polygon::updateVertices() {
@@ -116,4 +115,17 @@ bool Polygon::crossBoundary() {
     }
 
     return false;
+}
+
+bool Polygon::checkH() {
+    if (edges_.size() != 3) {
+        return false;
+    }
+    for (int j = 0; j < 3; j++) {
+        if (!edges_[j]->checkH()) {
+            return false;
+        }
+    }
+
+    return true;
 }

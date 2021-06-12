@@ -26,6 +26,8 @@ public:
 
     bool crossBoundary();
     int update();
+    bool checkI();
+    bool checkH();
 private:
     Run * run_;
 };

@@ -18,7 +18,6 @@ public:
     double volumeForce_[3];
     double interfaceForce_[3];
     bool cell_cell;
-    bool candidate_;    // reconnection H type candidate triangle
     std::vector<Edge *> edges_;
     std::vector<Vertex *> vertices_;
     std::vector<Cell *> cells_;
@@ -27,6 +26,7 @@ public:
     int updateVertices();
     int updateCenter();
     bool crossBoundary();
+    bool checkH();
 private:
     Run * run_;
 };

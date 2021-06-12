@@ -67,3 +67,25 @@ int Edge::update() {
 
     return 0;
 }
+
+bool Edge::checkI() {
+    if (!candidate_) {
+        return false;
+    }
+    if (triangle_count_ > 0) {
+        return false;
+    }
+
+    return true;
+}
+
+bool Edge::checkH() {
+    if (!candidate_) {
+        return false;
+    }
+    if (triangle_count_ != 1) {
+        return false;
+    }
+
+    return true;
+}

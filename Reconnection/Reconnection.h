@@ -15,6 +15,8 @@ public:
     explicit Reconnection(Run *);
 
     int start();
+    int I_H(Edge *);
+    int H_I(Polygon *);
 private:
     Run * run_;
 };
