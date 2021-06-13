@@ -20,7 +20,8 @@ using namespace std;
 
 Reconnection::Reconnection(Run * run) {
     run_ = run;
-    Lth_ = 1.0e-3;
+//    Lth_ = 1.0e-3;
+    Lth_ = 0.1;
 }
 
 int     Reconnection::start() {
@@ -241,6 +242,16 @@ int Reconnection::I_H(Edge * edge) {
     run_->resetPosition(v8->position_);
     run_->resetPosition(v9->position_);
     ////////// compute positions of vertices 7, 8, 9 done  /////////
+    // associate cells to vertices 7,8,9
+    v7->cells_.push_back(c1245);
+    v7->cells_.push_back(c1346);
+    v7->cells_.push_back(c123);
+    v8->cells_.push_back(c1245);
+    v8->cells_.push_back(c2356);
+    v8->cells_.push_back(c123);
+    v9->cells_.push_back(c2356);
+    v9->cells_.push_back(c1346);
+    v9->cells_.push_back(c123);
     // create edges 78, 79, 89
     Edge * e78 = run_->addEdge(v7, v8);
     Edge * e79 = run_->addEdge(v7, v9);
@@ -262,22 +273,72 @@ int Reconnection::I_H(Edge * edge) {
     Edge * e74 = run_->addEdge(v7, v4);
     Edge * e85 = run_->addEdge(v8, v5);
     Edge * e96 = run_->addEdge(v9, v6);
-    // update side polygons: 1-1011-4, 2-1011-5, 3-1011-6
-    std::vector<Polygon *> tmp_p = {p14, p25, p36};
-    for (auto p : tmp_p) {
-        auto it = find(p->edges_.begin(), p->edges_.end(), edge);
-        if (it != p->edges_.end()) {
-            p->edges_.erase(it);
-        } else {
-            printf("edge %d not found in polygon %d\n", edge->id_, p->id_);
-            exit(1);
-        }
-    }
+    // update side polygon 1-1011-4
+    p14->shrink(edge);
+    p14->shrink(e1);
+    p14->shrink(e4);
+    p14->expand(e71);
+    p14->expand(e74);
+    // update side polygon 2-1011-5
+    p25->shrink(edge);
+    p25->shrink(e2);
+    p25->shrink(e5);
+    p25->expand(e82);
+    p25->expand(e85);
+    // update side polygon 3-1011-6
+    p36->shrink(edge);
+    p36->shrink(e3);
+    p36->shrink(e6);
+    p36->expand(e93);
+    p36->expand(e96);
+    // update polygon 10-12
+    p12->shrink(e1);
+    p12->shrink(e2);
+    p12->expand(e78);
+    p12->expand(e71);
+    p12->expand(e82);
+    // update polygon 10-23
+    p23->shrink(e2);
+    p23->shrink(e3);
+    p23->expand(e89);
+    p23->expand(e82);
+    p23->expand(e93);
+    // update polygon 10-13
+    p13->shrink(e1);
+    p13->shrink(e3);
+    p13->expand(e79);
+    p13->expand(e71);
+    p13->expand(e93);
+    // update polygon 11-45
+    p45->shrink(e4);
+    p45->shrink(e5);
+    p45->expand(e78);
+    p45->expand(e74);
+    p45->expand(e85);
+    // update polygon 11-56
+    p56->shrink(e5);
+    p56->shrink(e6);
+    p56->expand(e89);
+    p56->expand(e85);
+    p56->expand(e96);
+    // update polygon 11-46
+    p46->shrink(e4);
+    p46->shrink(e6);
+    p46->expand(e79);
+    p46->expand(e74);
+    p46->expand(e96);
 
     // delete vertices 10 and 11
     run_->deleteVertex(v10);
     run_->deleteVertex(v11);
-    // TODO delete edge 1011
+    // delete edges
+    run_->deleteEdge(edge);
+    run_->deleteEdge(e1);
+    run_->deleteEdge(e2);
+    run_->deleteEdge(e3);
+    run_->deleteEdge(e4);
+    run_->deleteEdge(e5);
+    run_->deleteEdge(e6);
 
     return 0;
 }

@@ -129,3 +129,41 @@ bool Polygon::checkH() {
 
     return true;
 }
+
+int Polygon::shrink(Edge* edge) {
+    auto it = find(edges_.begin(), edges_.end(), edge);
+    if (it != edges_.end()) {
+        edges_.erase(it);
+    } else {
+        printf("edge %d not found in polygon %d\n", edge->id_, id_);
+        exit(1);
+    }
+    if (edges_.size() == 3) {
+        for (auto e : edges_) {
+            e->triangle_count_ = e->triangle_count_ + 1;
+        }
+    }
+    if (edges_.size() == 2) {
+        for (auto e : edges_) {
+            e->triangle_count_ = e->triangle_count_ - 1;
+        }
+    }
+
+    return 0;
+}
+
+int Polygon::expand(Edge* edge) {
+    edges_.push_back(edge);
+    if (edges_.size() == 3) {
+        for (auto e : edges_) {
+            e->triangle_count_ = e->triangle_count_ + 1;
+        }
+    }
+    if (edges_.size() == 4) {
+        for (auto e : edges_) {
+            e->triangle_count_ = e->triangle_count_ - 1;
+        }
+    }
+
+    return 0;
+}

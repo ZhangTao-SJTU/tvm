@@ -27,6 +27,8 @@ public:
     int updateCenter();
     bool crossBoundary();
     bool checkH();
+    int shrink(Edge *);
+    int expand(Edge *);
 private:
     Run * run_;
 };

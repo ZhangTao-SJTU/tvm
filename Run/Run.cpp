@@ -82,7 +82,6 @@ int Run::start() {
         // dump
         if (simulation_time - t_start_ + t_roundError > count_dump_ * dump_period_) {
             DumpConfigurationVtk(t_start_ + count_dump_ * dump_period_, this);
-            DumpITypeEdgesVtk(t_start_ + count_dump_ * dump_period_, this);
             count_dump_++;
         }
 
@@ -261,6 +260,19 @@ int     Run::deleteVertex(Vertex * vertex) {
     return 0;
 }
 
+int     Run::deleteEdge(Edge * edge) {
+    auto it = find(edges_.begin(), edges_.end(), edge);
+    if (it != edges_.end()) {
+        edges_.erase(it);
+    } else {
+        printf("edge %d not found in edges_\n", edge->id_);
+        exit(1);
+    }
+    delete edge;
+
+    return 0;
+}
+
 int     Run::resetPosition(double * r) {
     while (r[0] > Lx_) {
         r[0] = r[0] - Lx_;
@@ -289,6 +301,8 @@ Edge *  Run::addEdge(Vertex * v0, Vertex * v1) {
         edge->vertices_.push_back(v1);
         edge->vertices_.push_back(v0);
     }
+    edge->update();
+    edge->candidate_ = false;
 
     return edge;
 }

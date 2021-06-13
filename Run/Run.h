@@ -59,6 +59,7 @@ class Run {
     int     updateVerticesVelocity();
     int     updateVerticesPosition();
     int     deleteVertex(Vertex *);
+    int     deleteEdge(Edge *);
     int     resetPosition(double *);
     Edge *  addEdge(Vertex *, Vertex *);
 };

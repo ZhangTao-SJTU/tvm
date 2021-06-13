@@ -27,6 +27,8 @@ int     DumpITypeEdgesVtk(double simulation_time, Run *);
 int main(int argc, char *argv[]) {
     Run * run = new Run();
     InitializeAll(run);
+    DumpITypeEdgesVtk(0., run);
+
     run->start();
 //    DumpConfigurationVtk(0., run);
 //    DumpCentersVtk(0., run);
@@ -466,43 +468,43 @@ int DumpITypeEdgesVtk(double simulation_time, Run * run) {
         exit(1);
     }
     /////////////////////////////////////////////////////////////////////////
-    out << "LINES " << 7 << " " << 21 << endl;
-    out << left << setw(6) << 2;
-    for (int j = 0; j < edge->vertices_.size(); j++) {
-        out << " " << left << setw(6) << edge->vertices_[j]->id_;
-    }
-    out << endl;
-    out << left << setw(6) << 2;
-    for (int j = 0; j < e1->vertices_.size(); j++) {
-        out << " " << left << setw(6) << e1->vertices_[j]->id_;
-    }
-    out << endl;
-    out << left << setw(6) << 2;
-    for (int j = 0; j < e2->vertices_.size(); j++) {
-        out << " " << left << setw(6) << e2->vertices_[j]->id_;
-    }
-    out << endl;
-    out << left << setw(6) << 2;
-    for (int j = 0; j < e3->vertices_.size(); j++) {
-        out << " " << left << setw(6) << e3->vertices_[j]->id_;
-    }
-    out << endl;
-    out << left << setw(6) << 2;
-    for (int j = 0; j < e4->vertices_.size(); j++) {
-        out << " " << left << setw(6) << e4->vertices_[j]->id_;
-    }
-    out << endl;
-    out << left << setw(6) << 2;
-    for (int j = 0; j < e5->vertices_.size(); j++) {
-        out << " " << left << setw(6) << e5->vertices_[j]->id_;
-    }
-    out << endl;
-    out << left << setw(6) << 2;
-    for (int j = 0; j < e6->vertices_.size(); j++) {
-        out << " " << left << setw(6) << e6->vertices_[j]->id_;
-    }
-    out << endl;
-    out << endl;
+//    out << "LINES " << 7 << " " << 21 << endl;
+//    out << left << setw(6) << 2;
+//    for (int j = 0; j < edge->vertices_.size(); j++) {
+//        out << " " << left << setw(6) << edge->vertices_[j]->id_;
+//    }
+//    out << endl;
+//    out << left << setw(6) << 2;
+//    for (int j = 0; j < e1->vertices_.size(); j++) {
+//        out << " " << left << setw(6) << e1->vertices_[j]->id_;
+//    }
+//    out << endl;
+//    out << left << setw(6) << 2;
+//    for (int j = 0; j < e2->vertices_.size(); j++) {
+//        out << " " << left << setw(6) << e2->vertices_[j]->id_;
+//    }
+//    out << endl;
+//    out << left << setw(6) << 2;
+//    for (int j = 0; j < e3->vertices_.size(); j++) {
+//        out << " " << left << setw(6) << e3->vertices_[j]->id_;
+//    }
+//    out << endl;
+//    out << left << setw(6) << 2;
+//    for (int j = 0; j < e4->vertices_.size(); j++) {
+//        out << " " << left << setw(6) << e4->vertices_[j]->id_;
+//    }
+//    out << endl;
+//    out << left << setw(6) << 2;
+//    for (int j = 0; j < e5->vertices_.size(); j++) {
+//        out << " " << left << setw(6) << e5->vertices_[j]->id_;
+//    }
+//    out << endl;
+//    out << left << setw(6) << 2;
+//    for (int j = 0; j < e6->vertices_.size(); j++) {
+//        out << " " << left << setw(6) << e6->vertices_[j]->id_;
+//    }
+//    out << endl;
+//    out << endl;
 
 //    out << "CELL_DATA " << 7 << endl;
 //    out << "SCALARS type int 1" << endl;
@@ -537,14 +539,55 @@ int DumpITypeEdgesVtk(double simulation_time, Run * run) {
         }
     }
     out << endl;
-
-    // delete vertices 10 and 11
-    run->deleteVertex(v10);
-    run->deleteVertex(v11);
-
-    out << endl;
-
     out.close();
+
+    run->reconnection_->I_H(edge);
+
+    //////////////////////////////////////////////////////////////////////////////////////
+    stringstream filename1;
+    filename1 << setw(10) << setfill('0') << (long int)(floor(simulation_time)) << ".after.vtk";
+    ofstream out1(filename1.str().c_str());
+    if (!out1.is_open()) {
+        cout << "Error opening output file " << filename1.str().c_str() << endl;
+        exit(1);
+    }
+    out1 << "# vtk DataFile Version 2.0" << endl;
+    out1 << "polydata" << endl;
+    out1 << "ASCII" << endl;
+    out1 << "DATASET POLYDATA" << endl;
+    out1 << "POINTS " << run->vertices_.size() << " double" << endl;
+    for (long int i = 0; i < run->vertices_.size(); i++) {
+        // reset vertex id for dumping polygons
+        run->vertices_[i]->id_ = i;
+        out1 << right << setw(12) << scientific << setprecision(5) << run->vertices_[i]->position_[0];
+        out1 << " " << right << setw(12) << scientific << setprecision(5) << run->vertices_[i]->position_[1];
+        out1 << " " << right << setw(12) << scientific << setprecision(5) << run->vertices_[i]->position_[2];
+        out1 << endl;
+    }
+    out1 << endl;
+
+    run->updatePolygonVertices();
+    Npolygons = 0;
+    NpolygonVertices = 0;
+    for (long int i = 0; i < tmp_polygons.size(); i++) {
+        if (!tmp_polygons[i]->crossBoundary()) {
+            Npolygons++;
+            NpolygonVertices += tmp_polygons[i]->vertices_.size();
+        }
+    }
+    out1 << "POLYGONS " << Npolygons << " " << Npolygons + NpolygonVertices << endl;
+    for (long int i = 0; i < tmp_polygons.size(); i++) {
+        if (!tmp_polygons[i]->crossBoundary()) {
+            out1 << left << setw(6) << tmp_polygons[i]->vertices_.size();
+            for (int j = 0; j < tmp_polygons[i]->vertices_.size(); j++) {
+                out1 << " " << left << setw(6) << tmp_polygons[i]->vertices_[j]->id_;
+            }
+            out1 << endl;
+        }
+    }
+    out1 << endl;
+    out1.close();
+
 
     return 0;
 }
