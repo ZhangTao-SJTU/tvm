@@ -28,6 +28,7 @@ public:
     int update();
     bool checkI();
     bool checkH();
+    Vertex * otherVertex(Vertex *);
 private:
     Run * run_;
 };

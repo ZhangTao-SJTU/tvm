@@ -17,6 +17,8 @@ public:
     int start();
     int I_H(Edge *);
     int H_I(Polygon *);
+    Polygon * commonPolygon(Cell *, Cell *);
+    Edge * commonEdge(Polygon *, Polygon *);
 private:
     Run * run_;
 };

@@ -117,72 +117,47 @@ int Reconnection::I_H(Edge * edge) {
         printf("Topology Error: edge %d has 0 neighboring bottom cells\n", edge->id_);
         exit(1);
     }
-
     // locate three polygons: 1-1011-4, 2-1011-5, 3-1011-6
-    Polygon * p14 = NULL;
-    Polygon * p25 = NULL;
-    Polygon * p36 = NULL;
-    for (auto polygon : c1245->polygons_) {
-        if (std::find(c1346->polygons_.begin(), c1346->polygons_.end(), polygon) != c1346->polygons_.end()) {
-            p14 = polygon;
-            break;
-        }
-    }
-    for (auto polygon : c2356->polygons_) {
-        if (std::find(c1245->polygons_.begin(), c1245->polygons_.end(), polygon) != c1245->polygons_.end()) {
-            p25 = polygon;
-            break;
-        }
-    }
-    for (auto polygon : c1346->polygons_) {
-        if (std::find(c2356->polygons_.begin(), c2356->polygons_.end(), polygon) != c2356->polygons_.end()) {
-            p36 = polygon;
-            break;
-        }
-    }
+    Polygon * p14 = commonPolygon(c1245, c1346);
+    Polygon * p25 = commonPolygon(c2356, c1245);
+    Polygon * p36 = commonPolygon(c1346, c2356);
     // locate three polygons: 10-12, 10-23, 10-13
-    Polygon * p12 = NULL;
-    Polygon * p23 = NULL;
-    Polygon * p13 = NULL;
-    for (auto polygon : c1245->polygons_) {
-        if (std::find(c123->polygons_.begin(), c123->polygons_.end(), polygon) != c123->polygons_.end()) {
-            p12 = polygon;
-            break;
-        }
-    }
-    for (auto polygon : c2356->polygons_) {
-        if (std::find(c123->polygons_.begin(), c123->polygons_.end(), polygon) != c123->polygons_.end()) {
-            p23 = polygon;
-            break;
-        }
-    }
-    for (auto polygon : c1346->polygons_) {
-        if (std::find(c123->polygons_.begin(), c123->polygons_.end(), polygon) != c123->polygons_.end()) {
-            p13 = polygon;
-            break;
-        }
-    }
+    Polygon * p12 = commonPolygon(c1245, c123);
+    Polygon * p23 = commonPolygon(c2356, c123);
+    Polygon * p13 = commonPolygon(c1346, c123);
     // locate three polygons: 11-45, 11-56, 11-46
-    Polygon * p45 = NULL;
-    Polygon * p56 = NULL;
-    Polygon * p46 = NULL;
-    for (auto polygon : c1245->polygons_) {
-        if (std::find(c456->polygons_.begin(), c456->polygons_.end(), polygon) != c456->polygons_.end()) {
-            p45 = polygon;
-            break;
-        }
+    Polygon * p45 = commonPolygon(c1245, c456);
+    Polygon * p56 = commonPolygon(c2356, c456);
+    Polygon * p46 = commonPolygon(c1346, c456);
+    if (p14 == NULL || p25 == NULL || p36 == NULL ||
+        p12 == NULL || p23 == NULL || p13 == NULL ||
+        p45 == NULL || p56 == NULL || p46 == NULL) {
+        printf("Topology Error: no common polygon\n");
+        exit(1);
     }
-    for (auto polygon : c2356->polygons_) {
-        if (std::find(c456->polygons_.begin(), c456->polygons_.end(), polygon) != c456->polygons_.end()) {
-            p56 = polygon;
-            break;
-        }
+    // locate six edges: 10-1, 10-2, 10-3, 11-4, 11-5, 11-6
+    Edge * e1 = commonEdge(p12, p13);
+    Edge * e2 = commonEdge(p23, p12);
+    Edge * e3 = commonEdge(p13, p23);
+    Edge * e4 = commonEdge(p45, p46);
+    Edge * e5 = commonEdge(p56, p45);
+    Edge * e6 = commonEdge(p46, p56);
+    if (e1 == NULL || e2 == NULL || e3 == NULL ||
+        e4 == NULL || e5 == NULL || e6 == NULL) {
+        printf("Topology Error: no common edge\n");
+        exit(1);
     }
-    for (auto polygon : c1346->polygons_) {
-        if (std::find(c456->polygons_.begin(), c456->polygons_.end(), polygon) != c456->polygons_.end()) {
-            p46 = polygon;
-            break;
-        }
+    // locate six vertices: 1, 2, 3, 4, 5, 6
+    Vertex * v1 = e1->otherVertex(v10);
+    Vertex * v2 = e2->otherVertex(v10);
+    Vertex * v3 = e3->otherVertex(v10);
+    Vertex * v4 = e4->otherVertex(v11);
+    Vertex * v5 = e5->otherVertex(v11);
+    Vertex * v6 = e6->otherVertex(v11);
+    if (v1 == NULL || v2 == NULL || v3 == NULL ||
+        v4 == NULL || v5 == NULL || v6 == NULL) {
+        printf("Topology Error: no common vertex\n");
+        exit(1);
     }
 
     return 0;
@@ -191,4 +166,24 @@ int Reconnection::I_H(Edge * edge) {
 int Reconnection::H_I(Polygon * polygon) {
 
     return 0;
+}
+
+Polygon * Reconnection::commonPolygon(Cell * c1, Cell * c2) {
+    for (auto polygon : c1->polygons_) {
+        if (std::find(c2->polygons_.begin(), c2->polygons_.end(), polygon) != c2->polygons_.end()) {
+            return polygon;
+        }
+    }
+    return NULL;
+}
+
+Edge * Reconnection::commonEdge(Polygon * e1, Polygon * e2) {
+    for (auto edge : e1->edges_) {
+        if (std::find(e2->edges_.begin(), e2->edges_.end(), edge) != e2->edges_.end()) {
+            return edge;
+        }
+    }
+    printf("Topology Error: polygons %d and %d have no common edge\n", e1->id_, e2->id_);
+    exit(1);
+    return NULL;
 }
