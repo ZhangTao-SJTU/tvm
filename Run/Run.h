@@ -31,6 +31,10 @@ class Run {
     long int count_log_;
     double   log_period_;
     long int count_reconnect_;
+    long int count_vertices_;
+    long int count_edges_;
+    long int count_polygons_;
+    long int count_cells_;
     Cell * cellTop_;    // virtual cell on the top to set the boundary
     Cell * cellBottom_; // virtual cell on the bottom to set the boundary
     Volume * volume_;
@@ -54,6 +58,9 @@ class Run {
     int     updateGeoinfo();
     int     updateVerticesVelocity();
     int     updateVerticesPosition();
+    int     deleteVertex(Vertex *);
+    int     resetPosition(double *);
+    Edge *  addEdge(Vertex *, Vertex *);
 };
 
 #endif

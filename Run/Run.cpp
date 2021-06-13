@@ -17,6 +17,7 @@
 using namespace std;
 
 int DumpConfigurationVtk(double simulation_time, Run *);
+int DumpITypeEdgesVtk(double simulation_time, Run *);
 
 Run::Run() {
     dt_ = 1.0e-4;
@@ -81,6 +82,7 @@ int Run::start() {
         // dump
         if (simulation_time - t_start_ + t_roundError > count_dump_ * dump_period_) {
             DumpConfigurationVtk(t_start_ + count_dump_ * dump_period_, this);
+            DumpITypeEdgesVtk(t_start_ + count_dump_ * dump_period_, this);
             count_dump_++;
         }
 
@@ -243,4 +245,50 @@ int     Run::updateGeoinfo() {
     updatePolygonType();
 
     return 0;
+}
+
+int     Run::deleteVertex(Vertex * vertex) {
+    auto it = find(vertices_.begin(), vertices_.end(), vertex);
+    if (it != vertices_.end()) {
+//        int index = it - vertices_.begin();
+        vertices_.erase(it);
+    } else {
+        printf("vertex %d not found in vertices_\n", vertex->id_);
+        exit(1);
+    }
+    delete vertex;
+
+    return 0;
+}
+
+int     Run::resetPosition(double * r) {
+    while (r[0] > Lx_) {
+        r[0] = r[0] - Lx_;
+    }
+    while (r[0] < 0.) {
+        r[0] = r[0] + Lx_;
+    }
+    while (r[1] > Ly_) {
+        r[1] = r[1] - Ly_;
+    }
+    while (r[1] < 0.) {
+        r[1] = r[1] + Ly_;
+    }
+
+    return 0;
+}
+
+Edge *  Run::addEdge(Vertex * v0, Vertex * v1) {
+    Edge * edge = new Edge(this, count_edges_);
+    count_edges_ += 1;
+    edges_.push_back(edge);
+    if (v0->id_ < v1->id_) {
+        edge->vertices_.push_back(v0);
+        edge->vertices_.push_back(v1);
+    } else {
+        edge->vertices_.push_back(v1);
+        edge->vertices_.push_back(v0);
+    }
+
+    return edge;
 }

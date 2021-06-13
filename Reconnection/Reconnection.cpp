@@ -79,6 +79,8 @@ int Reconnection::I_H(Edge * edge) {
     Vertex * v11 = edge->vertices_[1];
 
     // locate five cells: 10-123, 11-456, 1011-1245, 1011-2356, 1011-1346
+    // if using finite boundary condition, cellTop_ and cellBottom_ will be the same,
+    // and this part should be modified
     if (v10->cells_.size() != 4) {
         printf("Topology Error: vertex %d has %d neighboring cells\n", v10->id_, v10->cells_.size());
         exit(1);
@@ -117,7 +119,7 @@ int Reconnection::I_H(Edge * edge) {
         printf("Topology Error: edge %d has 0 neighboring bottom cells\n", edge->id_);
         exit(1);
     }
-    // locate three polygons: 1-1011-4, 2-1011-5, 3-1011-6
+    // locate three side polygons: 1-1011-4, 2-1011-5, 3-1011-6
     Polygon * p14 = commonPolygon(c1245, c1346);
     Polygon * p25 = commonPolygon(c2356, c1245);
     Polygon * p36 = commonPolygon(c1346, c2356);
@@ -160,6 +162,123 @@ int Reconnection::I_H(Edge * edge) {
         exit(1);
     }
 
+    // create vertices 7, 8, 9
+    Vertex * v7 = new Vertex(run_, run_->count_vertices_);
+    run_->count_vertices_ = run_->count_vertices_ + 1;
+    run_->vertices_.push_back(v7);
+    Vertex * v8 = new Vertex(run_, run_->count_vertices_);
+    run_->count_vertices_ = run_->count_vertices_ + 1;
+    run_->vertices_.push_back(v8);
+    Vertex * v9 = new Vertex(run_, run_->count_vertices_);
+    run_->count_vertices_ = run_->count_vertices_ + 1;
+    run_->vertices_.push_back(v9);
+    ////////// compute positions of vertices 7, 8, 9 ///////////////
+    // r0: midpoint position of edge
+    // uT: unit direction vector of edge
+    double r0[3];
+    double uT[3];
+    for (int m = 0; m < 3; m++) {
+        r0[m] = edge->center_[m];
+        uT[m] = edge->vv_[m];
+    }
+    double uTL = sqrt(uT[0]*uT[0] + uT[1]*uT[1] + uT[2]*uT[2]);
+    for (int m = 0; m < 3; m++) {
+        uT[m] = uT[m]/uTL;
+    }
+    // compute vectors indicating orientation of neighboring polygons
+    double w7[3];
+    double w8[3];
+    double w9[3];
+    double r01[3];
+    double r02[3];
+    double r03[3];
+    double r04[3];
+    double r05[3];
+    double r06[3];
+    computeDirection(r0, v1->position_, r01);
+    computeDirection(r0, v2->position_, r02);
+    computeDirection(r0, v3->position_, r03);
+    computeDirection(r0, v4->position_, r04);
+    computeDirection(r0, v5->position_, r05);
+    computeDirection(r0, v6->position_, r06);
+    for (int m = 0; m < 3; m++) {
+        w7[m] = 0.5*(r01[m] + r04[m]);
+        w8[m] = 0.5*(r02[m] + r05[m]);
+        w9[m] = 0.5*(r03[m] + r06[m]);
+    }
+    // compute vectors indicating orientation of vertices 7, 8, 9
+    double wv7[3];
+    double wv8[3];
+    double wv9[3];
+    double dP_w7_uT = 0.;
+    double dP_w8_uT = 0.;
+    double dP_w9_uT = 0.;
+    for (int m = 0; m < 3; m++) {
+        dP_w7_uT += w7[m]*uT[m];
+        dP_w8_uT += w8[m]*uT[m];
+        dP_w9_uT += w9[m]*uT[m];
+    }
+    for (int m = 0; m < 3; m++) {
+        wv7[m] = w7[m] - dP_w7_uT*uT[m];
+        wv8[m] = w8[m] - dP_w8_uT*uT[m];
+        wv9[m] = w9[m] - dP_w9_uT*uT[m];
+    }
+    double Lmax = 0.;
+    std::vector<double *> tmp_wv = {wv7, wv8, wv9};
+    for (auto wv : tmp_wv) {
+        double wvL = sqrt(wv[0]*wv[0] + wv[1]*wv[1] + wv[2]*wv[2]);
+        if (wvL > Lmax) {
+            Lmax = wvL;
+        }
+    }
+    // compute position of vertices 7, 8, 9
+    for (int m = 0; m < 3; m++) {
+        v7->position_[m] = r0[m] + Lth_/Lmax*wv7[m];
+        v8->position_[m] = r0[m] + Lth_/Lmax*wv8[m];
+        v9->position_[m] = r0[m] + Lth_/Lmax*wv9[m];
+    }
+    run_->resetPosition(v7->position_);
+    run_->resetPosition(v8->position_);
+    run_->resetPosition(v9->position_);
+    ////////// compute positions of vertices 7, 8, 9 done  /////////
+    // create edges 78, 79, 89
+    Edge * e78 = run_->addEdge(v7, v8);
+    Edge * e79 = run_->addEdge(v7, v9);
+    Edge * e89 = run_->addEdge(v8, v9);
+    // create polygon 789
+    Polygon * p789 = new Polygon(run_, run_->count_polygons_);
+    run_->count_polygons_ = run_->count_polygons_ + 1;
+    run_->polygons_.push_back(p789);
+    p789->edges_.push_back(e78);
+    p789->edges_.push_back(e79);
+    p789->edges_.push_back(e89);
+    // associate p789 to c123 and c456
+    c123->polygons_.push_back(p789);
+    c456->polygons_.push_back(p789);
+    // create edges: 71,82,93,74,85,96
+    Edge * e71 = run_->addEdge(v7, v1);
+    Edge * e82 = run_->addEdge(v8, v2);
+    Edge * e93 = run_->addEdge(v9, v3);
+    Edge * e74 = run_->addEdge(v7, v4);
+    Edge * e85 = run_->addEdge(v8, v5);
+    Edge * e96 = run_->addEdge(v9, v6);
+    // update side polygons: 1-1011-4, 2-1011-5, 3-1011-6
+    std::vector<Polygon *> tmp_p = {p14, p25, p36};
+    for (auto p : tmp_p) {
+        auto it = find(p->edges_.begin(), p->edges_.end(), edge);
+        if (it != p->edges_.end()) {
+            p->edges_.erase(it);
+        } else {
+            printf("edge %d not found in polygon %d\n", edge->id_, p->id_);
+            exit(1);
+        }
+    }
+
+    // delete vertices 10 and 11
+    run_->deleteVertex(v10);
+    run_->deleteVertex(v11);
+    // TODO delete edge 1011
+
     return 0;
 }
 
@@ -183,7 +302,29 @@ Edge * Reconnection::commonEdge(Polygon * e1, Polygon * e2) {
             return edge;
         }
     }
-    printf("Topology Error: polygons %d and %d have no common edge\n", e1->id_, e2->id_);
-    exit(1);
     return NULL;
+}
+
+int Reconnection::computeDirection(double * r0, double * r1, double * w) {
+    for (int m = 0; m < 3; m++) {
+        w[m] = r1[m] - r0[m];
+    }
+    while (w[0] > run_->Lx_/2.0) {
+        w[0] = w[0] - run_->Lx_;
+    }
+    while (w[0] < (-1.0)*run_->Lx_/2.0) {
+        w[0] = w[0] + run_->Lx_;
+    }
+    while (w[1] > run_->Ly_/2.0) {
+        w[1] = w[1] - run_->Ly_;
+    }
+    while (w[1] < (-1.0)*run_->Ly_/2.0) {
+        w[1] = w[1] + run_->Ly_;
+    }
+    double wL = sqrt(w[0]*w[0] + w[1]*w[1] + w[2]*w[2]);
+    for (int m = 0; m < 3; m++) {
+        w[m] = w[m]/wL;
+    }
+
+    return 0;
 }
