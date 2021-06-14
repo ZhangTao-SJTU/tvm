@@ -28,6 +28,7 @@ Edge::Edge(Run * run, long int id) {
     length_ = 0.;
     candidate_ = false;
     triangle_count_ = 0;
+    markToDelete_ = false;
 }
 
 bool Edge::crossBoundary() {

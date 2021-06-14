@@ -29,6 +29,7 @@ public:
     bool checkH();
     int shrink(Edge *);
     int expand(Edge *);
+    int logEdges(std::string);
 private:
     Run * run_;
 };

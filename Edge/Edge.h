@@ -16,6 +16,7 @@ public:
     double length_;
     bool candidate_;    // reconnection candidate edge, length shorter than Lth
     int triangle_count_;
+    bool markToDelete_;
     // 0: connected to no triangle
     // 1: connected to 1 triangle
     // 2: connected to 2 triangles

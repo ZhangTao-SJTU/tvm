@@ -167,3 +167,12 @@ int Polygon::expand(Edge* edge) {
 
     return 0;
 }
+
+int Polygon::logEdges(std::string name) {
+    printf("%s %ld\n",name.c_str(), id_);
+    printf("%ld",edges_.size());
+    for (auto edge : edges_) {
+        printf(" %ld",edge->id_);
+    }
+    printf("\n");
+}

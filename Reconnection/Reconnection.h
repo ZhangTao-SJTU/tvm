@@ -15,11 +15,14 @@ public:
     explicit Reconnection(Run *);
 
     int start();
-    int I_H(Edge *);
+    int I_H(Edge *, bool verbose);
     int H_I(Polygon *);
     Polygon * commonPolygon(Cell *, Cell *);
+    Polygon * commonPolygon(Edge *, Cell *, Cell *);
+    Polygon * commonPolygon(Vertex *, Cell *, Cell *);
     Edge * commonEdge(Polygon *, Polygon *);
     int computeDirection(double *, double *, double *);
+    int dumpVtk(std::vector<Polygon *>, bool, bool);
 private:
     Run * run_;
 };

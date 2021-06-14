@@ -16,9 +16,6 @@
 
 using namespace std;
 
-int DumpConfigurationVtk(double simulation_time, Run *);
-int DumpITypeEdgesVtk(double simulation_time, Run *);
-
 Run::Run() {
     dt_ = 1.0e-4;
     dtr_ = 1.0e-3;
@@ -34,13 +31,11 @@ Run::Run() {
 }
 
 int Run::start() {
-    double simulation_time;
-    double t_roundError = 0.01*dt_;
-
     count_reconnect_ = 0;
     count_dump_ = 0;
     count_log_ = 0;
-    simulation_time = t_start_;
+    simulation_time_ = t_start_;
+    double t_roundError = 0.01*dt_;
     auto start = chrono::steady_clock::now();
 
     printf("\nSimulation Start ...\n");
@@ -52,7 +47,7 @@ int Run::start() {
     printf("E_interface ");
     printf("Energy      \n");
 
-    while (simulation_time < t_end_ + t_roundError) {
+    while (simulation_time_ < t_end_ + t_roundError) {
         // update geometry information
         updateGeoinfo();
         // update volumeForces
@@ -63,14 +58,14 @@ int Run::start() {
         updateVerticesVelocity();
 
         // log to screen
-        if (simulation_time - t_start_ + t_roundError  > count_log_ * log_period_) {
+        if (simulation_time_ - t_start_ + t_roundError  > count_log_ * log_period_) {
             volume_->updateEnergy();
             double sum_volume = 0.;
             for (long int i = 0; i < cells_.size(); i++) {
                 sum_volume += cells_[i]->volume_;
             }
             interface_->updateEnergy();
-            printf("%-12.2f%-12.3f%-12.3f%-12.6f%-12.6f%-12.6f\n", simulation_time,
+            printf("%-12.2f%-12.3f%-12.3f%-12.6f%-12.6f%-12.6f\n", simulation_time_,
                    (chrono::duration_cast<chrono::microseconds>(chrono::steady_clock::now() - start).count())/1.0e6,
                    sum_volume,
                    volume_->energy_,
@@ -80,8 +75,8 @@ int Run::start() {
             count_log_++;
         }
         // dump
-        if (simulation_time - t_start_ + t_roundError > count_dump_ * dump_period_) {
-            DumpConfigurationVtk(t_start_ + count_dump_ * dump_period_, this);
+        if (simulation_time_ - t_start_ + t_roundError > count_dump_ * dump_period_) {
+            dumpConfigurationVtk();
             count_dump_++;
         }
 
@@ -89,12 +84,12 @@ int Run::start() {
         updateVerticesPosition();
 
         // reconnect
-        if (simulation_time - t_start_ + t_roundError > count_reconnect_ * dtr_) {
+        if (simulation_time_ - t_start_ + t_roundError > count_reconnect_ * dtr_) {
             reconnection_->start();
             count_reconnect_++;
         }
 
-        simulation_time += dt_;
+        simulation_time_ += dt_;
     }
 
 //    for (long int i = 0; i < cells_.size(); i++) {
@@ -252,7 +247,7 @@ int     Run::deleteVertex(Vertex * vertex) {
 //        int index = it - vertices_.begin();
         vertices_.erase(it);
     } else {
-        printf("vertex %d not found in vertices_\n", vertex->id_);
+        printf("vertex %ld not found in vertices_\n", vertex->id_);
         exit(1);
     }
     delete vertex;
@@ -263,12 +258,13 @@ int     Run::deleteVertex(Vertex * vertex) {
 int     Run::deleteEdge(Edge * edge) {
     auto it = find(edges_.begin(), edges_.end(), edge);
     if (it != edges_.end()) {
-        edges_.erase(it);
+        edges_[it-edges_.begin()]->markToDelete_ = true;
+//        edges_.erase(it);
     } else {
-        printf("edge %d not found in edges_\n", edge->id_);
+        printf("edge %ld not found in edges_\n", edge->id_);
         exit(1);
     }
-    delete edge;
+//    delete edge;
 
     return 0;
 }
@@ -305,4 +301,86 @@ Edge *  Run::addEdge(Vertex * v0, Vertex * v1) {
     edge->candidate_ = false;
 
     return edge;
+}
+
+int Run::dumpConfigurationVtk() {
+    //////////////////////////////////////////////////////////////////////////////////////
+    stringstream filename;
+    filename << setw(10) << setfill('0') << (long int)(floor(simulation_time_)) << ".sample.vtk";
+    ofstream out(filename.str().c_str());
+    if (!out.is_open()) {
+        cout << "Error opening output file " << filename.str().c_str() << endl;
+        exit(1);
+    }
+    out << "# vtk DataFile Version 2.0" << endl;
+    out << "polydata" << endl;
+    out << "ASCII" << endl;
+    out << "DATASET POLYDATA" << endl;
+    out << "POINTS " << vertices_.size() << " double" << endl;
+    for (long int i = 0; i < vertices_.size(); i++) {
+        // reset vertex id for dumping polygons
+        vertices_[i]->id_ = i;
+        out << right << setw(12) << scientific << setprecision(5) << vertices_[i]->position_[0];
+        out << " " << right << setw(12) << scientific << setprecision(5) << vertices_[i]->position_[1];
+        out << " " << right << setw(12) << scientific << setprecision(5) << vertices_[i]->position_[2];
+        out << endl;
+    }
+    out << endl;
+
+//    long int Nedges = 0;
+//    for (long int i = 0; i < run->edges_.size(); i++) {
+//        if (!run->edges_[i]->crossBoundary()) {
+//            Nedges++;
+//        }
+//    }
+//    out << "LINES " << Nedges << " " << 3*Nedges << endl;
+//    for (long int i = 0; i < run->edges_.size(); i++) {
+//        if (!run->edges_[i]->crossBoundary()) {
+//            out << left << setw(6) << 2;
+//            for (int j = 0; j < run->edges_[i]->vertices_.size(); j++) {
+//                out << " " << left << setw(6) << run->edges_[i]->vertices_[j]->id_;
+//            }
+//            out << endl;
+//        }
+//    }
+//    out << endl;
+
+    updatePolygonVertices();
+    long int Npolygons = 0;
+    long int NpolygonVertices = 0;
+    for (long int i = 0; i < polygons_.size(); i++) {
+        if (!polygons_[i]->crossBoundary()) {
+            Npolygons++;
+            NpolygonVertices += polygons_[i]->vertices_.size();
+        }
+    }
+    out << "POLYGONS " << Npolygons << " " << Npolygons + NpolygonVertices << endl;
+    for (long int i = 0; i < polygons_.size(); i++) {
+        if (!polygons_[i]->crossBoundary()) {
+            out << left << setw(6) << polygons_[i]->vertices_.size();
+            for (int j = 0; j < polygons_[i]->vertices_.size(); j++) {
+                out << " " << left << setw(6) << polygons_[i]->vertices_[j]->id_;
+            }
+            out << endl;
+        }
+    }
+    out << endl;
+
+    out << "CELL_DATA " << Npolygons << endl;
+    out << "SCALARS type int 1" << endl;
+    out << "LOOKUP_TABLE default" << endl;
+    for (long int i = 0; i < polygons_.size(); i++) {
+        if (!polygons_[i]->crossBoundary()) {
+            if (polygons_[i]->cell_cell) {
+                out << left << setw(6) << 0 << endl;
+            } else {
+                out << left << setw(6) << 1 << endl;
+            }
+        }
+    }
+    out << endl;
+
+    out.close();
+
+    return 0;
 }

@@ -122,3 +122,12 @@ int Cell::updateVolume() {
 
     return 0;
 }
+
+int Cell::logPolygons(std::string name) {
+    printf("%s %ld\n",name.c_str(), id_);
+    printf("%ld",polygons_.size());
+    for (auto polygon : polygons_) {
+        printf(" %ld",polygon->id_);
+    }
+    printf("\n");
+}

@@ -28,3 +28,21 @@ Vertex::Vertex(Run * run, long int id) {
         velocity_[i] = 0.;
     }
 }
+
+int Vertex::logCells(std::string name) {
+    printf("%s %ld\n",name.c_str(), id_);
+    printf("%ld",cells_.size());
+    for (auto cell : cells_) {
+        printf(" %ld",cell->id_);
+    }
+    printf("\n");
+}
+
+int Vertex::logEdges(std::string name) {
+    printf("%s %ld\n",name.c_str(), id_);
+    printf("%ld",edges_.size());
+    for (auto edge : edges_) {
+        printf(" %ld",edge->id_);
+    }
+    printf("\n");
+}

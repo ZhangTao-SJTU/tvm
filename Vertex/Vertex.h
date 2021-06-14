@@ -20,6 +20,9 @@ public:
     std::vector<Edge *> edges_;
     std::vector<Cell *> cells_;
     explicit Vertex(Run *, long int);
+
+    int logCells(std::string);
+    int logEdges(std::string);
 private:
     Run * run_;
 };

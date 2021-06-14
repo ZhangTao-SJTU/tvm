@@ -24,6 +24,7 @@ class Run {
     double  Ly_;
     int     NCell_;
     double  Aic_;
+    double  simulation_time_;
     double   t_start_;
     double   t_end_;
     long int count_dump_;
@@ -62,6 +63,7 @@ class Run {
     int     deleteEdge(Edge *);
     int     resetPosition(double *);
     Edge *  addEdge(Vertex *, Vertex *);
+    int     dumpConfigurationVtk();
 };
 
 #endif

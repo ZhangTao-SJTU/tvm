@@ -21,6 +21,7 @@ public:
 
     int updateCenter();
     int updateVolume();
+    int logPolygons(std::string);
 private:
     Run * run_;
 };

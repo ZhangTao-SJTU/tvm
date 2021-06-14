@@ -52,11 +52,15 @@ int     Reconnection::start() {
     }
 
     // I -> H reconnection
-    for (long int i = 0; i < run_->edges_.size(); i++) {
-        if (!run_->edges_[i]->checkI()) {
+    std::vector<Edge *> tmp_edges = run_->edges_;
+    for (long int i = 0; i < tmp_edges.size(); i++) {
+        if (tmp_edges[i]->markToDelete_) {
             continue;
         }
-        I_H(run_->edges_[i]);
+        if (!tmp_edges[i]->checkI()) {
+            continue;
+        }
+        I_H(tmp_edges[i], false);
     }
 
     // H -> I reconnection
@@ -67,6 +71,20 @@ int     Reconnection::start() {
         H_I(triangleCandidates[i]);
     }
 
+    // delete marked edges
+//    printf("%ld %ld ", tmp_edges.size(), run_->edges_.size());
+    tmp_edges.clear();
+    tmp_edges = run_->edges_;
+    run_->edges_.clear();
+    for (auto edge: tmp_edges) {
+        if (edge->markToDelete_) {
+            delete edge;
+        } else {
+            run_->edges_.push_back(edge);
+        }
+    }
+//    printf("%ld\n", run_->edges_.size());
+
     // update topology and geometry information
     run_->updateVertexCells();
     run_->updateGeoinfo();
@@ -74,7 +92,7 @@ int     Reconnection::start() {
     return 0;
 }
 
-int Reconnection::I_H(Edge * edge) {
+int Reconnection::I_H(Edge * edge, bool verbose) {
     // locate two vertices: 10 and 11
     Vertex * v10 = edge->vertices_[0];
     Vertex * v11 = edge->vertices_[1];
@@ -83,11 +101,11 @@ int Reconnection::I_H(Edge * edge) {
     // if using finite boundary condition, cellTop_ and cellBottom_ will be the same,
     // and this part should be modified
     if (v10->cells_.size() != 4) {
-        printf("Topology Error: vertex %d has %d neighboring cells\n", v10->id_, v10->cells_.size());
+        printf("Topology Error: vertex %ld has %ld neighboring cells\n", v10->id_, v10->cells_.size());
         exit(1);
     }
     if (v11->cells_.size() != 4) {
-        printf("Topology Error: vertex %d has %d neighboring cells\n", v11->id_, v11->cells_.size());
+        printf("Topology Error: vertex %ld has %ld neighboring cells\n", v11->id_, v11->cells_.size());
         exit(1);
     }
     Cell * c123 = NULL;
@@ -104,7 +122,7 @@ int Reconnection::I_H(Edge * edge) {
         }
     }
     if (sideCells.size() != 3) {
-        printf("Topology Error: edge %d has %d neighboring side cells\n", edge->id_, sideCells.size());
+        printf("Topology Error: edge %ld has %ld neighboring side cells\n", edge->id_, sideCells.size());
         exit(1);
     }
     c1245 = sideCells[0];
@@ -117,26 +135,52 @@ int Reconnection::I_H(Edge * edge) {
         }
     }
     if (c456 == NULL) {
-        printf("Topology Error: edge %d has 0 neighboring bottom cells\n", edge->id_);
+        printf("Topology Error: edge %ld has 0 neighboring bottom cells\n", edge->id_);
         exit(1);
     }
+    // check if top/bottom pair of cells already have common polygon
+    if (commonPolygon(c123, c456) != NULL) {
+//        c123->logPolygons("c123");
+//        c456->logPolygons("c456");
+//        printf("Topology Error: polygon %ld and %ld already have common edge before I->H reconnection\n", c123->id_, c456->id_);
+        return 1;
+    }
     // locate three side polygons: 1-1011-4, 2-1011-5, 3-1011-6
-    Polygon * p14 = commonPolygon(c1245, c1346);
-    Polygon * p25 = commonPolygon(c2356, c1245);
-    Polygon * p36 = commonPolygon(c1346, c2356);
+    Polygon * p14 = commonPolygon(edge, c1245, c1346);
+    Polygon * p25 = commonPolygon(edge, c2356, c1245);
+    Polygon * p36 = commonPolygon(edge, c1346, c2356);
     // locate three polygons: 10-12, 10-23, 10-13
-    Polygon * p12 = commonPolygon(c1245, c123);
-    Polygon * p23 = commonPolygon(c2356, c123);
-    Polygon * p13 = commonPolygon(c1346, c123);
+    Polygon * p12 = commonPolygon(v10, c1245, c123);
+    Polygon * p23 = commonPolygon(v10, c2356, c123);
+    Polygon * p13 = commonPolygon(v10, c1346, c123);
     // locate three polygons: 11-45, 11-56, 11-46
-    Polygon * p45 = commonPolygon(c1245, c456);
-    Polygon * p56 = commonPolygon(c2356, c456);
-    Polygon * p46 = commonPolygon(c1346, c456);
+    Polygon * p45 = commonPolygon(v11, c1245, c456);
+    Polygon * p56 = commonPolygon(v11, c2356, c456);
+    Polygon * p46 = commonPolygon(v11, c1346, c456);
     if (p14 == NULL || p25 == NULL || p36 == NULL ||
         p12 == NULL || p23 == NULL || p13 == NULL ||
         p45 == NULL || p56 == NULL || p46 == NULL) {
         printf("Topology Error: no common polygon\n");
         exit(1);
+    }
+    // check if top/bottom pair of polygons already have common edge
+    if (commonEdge(p12, p45) != NULL) {
+//        p12->logEdges("p12");
+//        p45->logEdges("p45");
+//        printf("Topology Error: polygon %ld and %ld already have common edge before I->H reconnection\n", p12->id_, p45->id_);
+        return 1;
+    }
+    if (commonEdge(p23, p56) != NULL) {
+//        p23->logEdges("p23");
+//        p56->logEdges("p56");
+//        printf("Topology Error: polygon %ld and %ld already have common edge before I->H reconnection\n", p23->id_, p56->id_);
+        return 1;
+    }
+    if (commonEdge(p13, p46) != NULL) {
+//        p13->logEdges("p13");
+//        p46->logEdges("p46");
+//        printf("Topology Error: polygon %ld and %ld already have common edge before I->H reconnection\n", p13->id_, p46->id_);
+        return 1;
     }
     // locate six edges: 10-1, 10-2, 10-3, 11-4, 11-5, 11-6
     Edge * e1 = commonEdge(p12, p13);
@@ -148,6 +192,35 @@ int Reconnection::I_H(Edge * edge) {
     if (e1 == NULL || e2 == NULL || e3 == NULL ||
         e4 == NULL || e5 == NULL || e6 == NULL) {
         printf("Topology Error: no common edge\n");
+        run_->updateVertexEdges();
+        v10->logEdges("v10");
+        v11->logEdges("v11");
+        v10->logCells("v10");
+        v11->logCells("v11");
+        c123->logPolygons("c123");
+        c456->logPolygons("c456");
+        c1245->logPolygons("c1245");
+        c1346->logPolygons("c1346");
+        c2356->logPolygons("c2356");
+        printf("edge %ld\n",edge->id_);
+        printf("e1 %ld\n",e1->id_);
+        printf("e2 %ld\n",e2->id_);
+        printf("e3 %ld\n",e3->id_);
+//        printf("e4 %ld\n",e4->id_);
+        printf("e5 %ld\n",e5->id_);
+        printf("e6 %ld\n",e6->id_);
+        p14->logEdges("p14");
+        p25->logEdges("p25");
+        p36->logEdges("p36");
+        p12->logEdges("p12");
+        p23->logEdges("p23");
+        p13->logEdges("p13");
+        p45->logEdges("p45");
+        p56->logEdges("p56");
+        p46->logEdges("p46");
+        run_->updatePolygonVertices();
+        std::vector<Polygon *> tmp_polygons = {p14,p25,p36,p12,p23,p13,p45,p46,p56};
+        dumpVtk(tmp_polygons, true, true);
         exit(1);
     }
     // locate six vertices: 1, 2, 3, 4, 5, 6
@@ -161,6 +234,12 @@ int Reconnection::I_H(Edge * edge) {
         v4 == NULL || v5 == NULL || v6 == NULL) {
         printf("Topology Error: no common vertex\n");
         exit(1);
+    }
+
+    if (verbose) {
+        run_->updatePolygonVertices();
+        std::vector<Polygon *> tmp_polygons = {p14,p25,p36,p12,p23,p13,p45,p46,p56};
+        dumpVtk(tmp_polygons, true, true);
     }
 
     // create vertices 7, 8, 9
@@ -340,6 +419,12 @@ int Reconnection::I_H(Edge * edge) {
     run_->deleteEdge(e5);
     run_->deleteEdge(e6);
 
+    if (verbose) {
+        run_->updatePolygonVertices();
+        std::vector<Polygon *> tmp_polygons = {p14,p25,p36,p12,p23,p13,p45,p46,p56};
+        dumpVtk(tmp_polygons, true, false);
+    }
+
     return 0;
 }
 
@@ -349,21 +434,86 @@ int Reconnection::H_I(Polygon * polygon) {
 }
 
 Polygon * Reconnection::commonPolygon(Cell * c1, Cell * c2) {
+    std::vector<Polygon *> candidates;
     for (auto polygon : c1->polygons_) {
         if (std::find(c2->polygons_.begin(), c2->polygons_.end(), polygon) != c2->polygons_.end()) {
-            return polygon;
+            candidates.push_back(polygon);
         }
     }
-    return NULL;
+    if (candidates.size() == 1) {
+        return candidates[0];
+    } else if (candidates.size() == 0) {
+        return NULL;
+    } else {
+        c1->logPolygons("c1");
+        c2->logPolygons("c2");
+        printf("Topology Error: cell %ld and %ld have more than two common polygons\n", c1->id_, c2->id_);
+        exit(1);
+    }
 }
 
-Edge * Reconnection::commonEdge(Polygon * e1, Polygon * e2) {
-    for (auto edge : e1->edges_) {
-        if (std::find(e2->edges_.begin(), e2->edges_.end(), edge) != e2->edges_.end()) {
-            return edge;
+Polygon * Reconnection::commonPolygon(Edge * edge, Cell * c1, Cell * c2) {
+    std::vector<Polygon *> candidates;
+    for (auto polygon : c1->polygons_) {
+        if (std::find(c2->polygons_.begin(), c2->polygons_.end(), polygon) != c2->polygons_.end()) {
+            candidates.push_back(polygon);
         }
     }
-    return NULL;
+    if (candidates.size() == 1) {
+        return candidates[0];
+    } else if (candidates.size() == 0) {
+        return NULL;
+    } else {
+        // two cells have more than one common polygons
+        for (auto polygon : candidates) {
+            if (std::find(polygon->edges_.begin(), polygon->edges_.end(), edge) != polygon->edges_.end()) {
+                return polygon;
+            }
+        }
+        return NULL;
+    }
+}
+
+Polygon * Reconnection::commonPolygon(Vertex * vertex, Cell * c1, Cell * c2) {
+    std::vector<Polygon *> candidates;
+    for (auto polygon : c1->polygons_) {
+        if (std::find(c2->polygons_.begin(), c2->polygons_.end(), polygon) != c2->polygons_.end()) {
+            candidates.push_back(polygon);
+        }
+    }
+    if (candidates.size() == 1) {
+        return candidates[0];
+    } else if (candidates.size() == 0) {
+        return NULL;
+    } else {
+        // two cells have more than one common polygons
+        for (auto polygon : candidates) {
+            polygon->updateVertices();
+            if (std::find(polygon->vertices_.begin(), polygon->vertices_.end(), vertex) != polygon->vertices_.end()) {
+                return polygon;
+            }
+        }
+        return NULL;
+    }
+}
+
+Edge * Reconnection::commonEdge(Polygon * p1, Polygon * p2) {
+    std::vector<Edge *> candidates;
+    for (auto edge : p1->edges_) {
+        if (std::find(p2->edges_.begin(), p2->edges_.end(), edge) != p2->edges_.end()) {
+            candidates.push_back(edge);
+        }
+    }
+    if (candidates.size() == 1) {
+        return candidates[0];
+    } else if (candidates.size() == 0) {
+        return NULL;
+    } else {
+        p1->logEdges("e1");
+        p2->logEdges("e2");
+        printf("Topology Error: polygon %ld and %ld have more than two common edges\n", p1->id_, p2->id_);
+        exit(1);
+    }
 }
 
 int Reconnection::computeDirection(double * r0, double * r1, double * w) {
@@ -386,6 +536,66 @@ int Reconnection::computeDirection(double * r0, double * r1, double * w) {
     for (int m = 0; m < 3; m++) {
         w[m] = w[m]/wL;
     }
+
+    return 0;
+}
+
+int Reconnection::dumpVtk(std::vector<Polygon *> tmp_polygons, bool IH, bool before) {
+    //////////////////////////////////////////////////////////////////////////////////////
+    stringstream filename;
+    if (IH) {
+        if (before) {
+            filename << setw(10) << setfill('0') << (long int) (floor(run_->simulation_time_)) << ".IH.before.vtk";
+        } else {
+            filename << setw(10) << setfill('0') << (long int) (floor(run_->simulation_time_)) << ".IH.after.vtk";
+        }
+    } else {
+        if (before) {
+            filename << setw(10) << setfill('0') << (long int) (floor(run_->simulation_time_)) << ".HI.before.vtk";
+        } else {
+            filename << setw(10) << setfill('0') << (long int) (floor(run_->simulation_time_)) << ".HI.after.vtk";
+        }
+    }
+    ofstream out(filename.str().c_str());
+    if (!out.is_open()) {
+        cout << "Error opening output file " << filename.str().c_str() << endl;
+        exit(1);
+    }
+    out << "# vtk DataFile Version 2.0" << endl;
+    out << "polydata" << endl;
+    out << "ASCII" << endl;
+    out << "DATASET POLYDATA" << endl;
+    out << "POINTS " << run_->vertices_.size() << " double" << endl;
+    for (long int i = 0; i < run_->vertices_.size(); i++) {
+        // reset vertex id for dumping polygons
+        run_->vertices_[i]->id_ = i;
+        out << right << setw(12) << scientific << setprecision(5) << run_->vertices_[i]->position_[0];
+        out << " " << right << setw(12) << scientific << setprecision(5) << run_->vertices_[i]->position_[1];
+        out << " " << right << setw(12) << scientific << setprecision(5) << run_->vertices_[i]->position_[2];
+        out << endl;
+    }
+    out << endl;
+
+    long int Npolygons = 0;
+    long int NpolygonVertices = 0;
+    for (long int i = 0; i < tmp_polygons.size(); i++) {
+        if (!tmp_polygons[i]->crossBoundary()) {
+            Npolygons++;
+            NpolygonVertices += tmp_polygons[i]->vertices_.size();
+        }
+    }
+    out << "POLYGONS " << Npolygons << " " << Npolygons + NpolygonVertices << endl;
+    for (long int i = 0; i < tmp_polygons.size(); i++) {
+        if (!tmp_polygons[i]->crossBoundary()) {
+            out << left << setw(6) << tmp_polygons[i]->vertices_.size();
+            for (int j = 0; j < tmp_polygons[i]->vertices_.size(); j++) {
+                out << " " << left << setw(6) << tmp_polygons[i]->vertices_[j]->id_;
+            }
+            out << endl;
+        }
+    }
+    out << endl;
+    out.close();
 
     return 0;
 }
