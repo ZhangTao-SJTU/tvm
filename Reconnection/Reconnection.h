@@ -16,10 +16,8 @@ public:
 
     int start();
     int I_H(Edge *, bool verbose);
-    int H_I(Polygon *);
+    int H_I(Polygon *, bool verbose);
     Polygon * commonPolygon(Cell *, Cell *);
-    Polygon * commonPolygon(Edge *, Cell *, Cell *);
-    Polygon * commonPolygon(Vertex *, Cell *, Cell *);
     Edge * commonEdge(Polygon *, Polygon *);
     int computeDirection(double *, double *, double *);
     int dumpVtk(std::vector<Polygon *>, bool, bool);
