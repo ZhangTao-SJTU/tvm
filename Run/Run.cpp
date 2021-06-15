@@ -269,6 +269,20 @@ int     Run::deleteEdge(Edge * edge) {
     return 0;
 }
 
+int     Run::deletePolygon(Polygon * polygon) {
+    auto it = find(polygons_.begin(), polygons_.end(), polygon);
+    if (it != polygons_.end()) {
+//        int index = it - vertices_.begin();
+        polygons_.erase(it);
+    } else {
+        printf("polygon %ld not found in polygons_\n", polygon->id_);
+        exit(1);
+    }
+    delete polygon;
+
+    return 0;
+}
+
 int     Run::resetPosition(double * r) {
     while (r[0] > Lx_) {
         r[0] = r[0] - Lx_;

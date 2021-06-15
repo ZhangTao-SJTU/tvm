@@ -535,19 +535,19 @@ int Reconnection::H_I(Polygon * polygon, bool verbose) {
     if (commonEdge(p36, p14) != NULL) {
         return 1;
     }
-    // locate nine edges: 7-8, 8-9, 7-9, 10-1, 10-2, 10-3, 11-4, 11-5, 11-6
+    // locate nine edges: 7-8, 8-9, 7-9, 7-1, 8-2, 9-3, 7-4, 8-5, 9-6
     Edge * e78 = commonEdge(p12, p45);
     Edge * e89 = commonEdge(p23, p56);
     Edge * e79 = commonEdge(p13, p46);
-    Edge * e1 = commonEdge(p12, p13);
-    Edge * e2 = commonEdge(p23, p12);
-    Edge * e3 = commonEdge(p13, p23);
-    Edge * e4 = commonEdge(p45, p46);
-    Edge * e5 = commonEdge(p56, p45);
-    Edge * e6 = commonEdge(p46, p56);
+    Edge * e71 = commonEdge(p12, p13);
+    Edge * e82 = commonEdge(p23, p12);
+    Edge * e93 = commonEdge(p13, p23);
+    Edge * e74 = commonEdge(p45, p46);
+    Edge * e85 = commonEdge(p56, p45);
+    Edge * e96 = commonEdge(p46, p56);
     if (e78 == NULL || e89 == NULL || e79 == NULL ||
-        e1 == NULL || e2 == NULL || e3 == NULL ||
-        e4 == NULL || e5 == NULL || e6 == NULL) {
+        e71 == NULL || e82 == NULL || e93 == NULL ||
+        e74 == NULL || e85 == NULL || e96 == NULL) {
         printf("Topology Error: H->I no common edge\n");
 //        run_->updatePolygonVertices();
 //        std::vector<Polygon *> tmp_polygons = {p14,p25,p36,p12,p23,p13,p45,p46,p56};
@@ -555,12 +555,12 @@ int Reconnection::H_I(Polygon * polygon, bool verbose) {
         exit(1);
     }
     // locate six vertices: 1, 2, 3, 4, 5, 6
-    Vertex * v1 = e1->otherVertex(v7);
-    Vertex * v2 = e2->otherVertex(v8);
-    Vertex * v3 = e3->otherVertex(v9);
-    Vertex * v4 = e4->otherVertex(v7);
-    Vertex * v5 = e5->otherVertex(v8);
-    Vertex * v6 = e6->otherVertex(v9);
+    Vertex * v1 = e71->otherVertex(v7);
+    Vertex * v2 = e82->otherVertex(v8);
+    Vertex * v3 = e93->otherVertex(v9);
+    Vertex * v4 = e74->otherVertex(v7);
+    Vertex * v5 = e85->otherVertex(v8);
+    Vertex * v6 = e96->otherVertex(v9);
     if (v1 == NULL || v2 == NULL || v3 == NULL ||
         v4 == NULL || v5 == NULL || v6 == NULL) {
         printf("Topology Error: no common vertex\n");
@@ -570,10 +570,172 @@ int Reconnection::H_I(Polygon * polygon, bool verbose) {
     if (verbose) {
         run_->updatePolygonVertices();
         std::vector<Polygon *> tmp_polygons = {p14,p25,p36,p12,p23,p13,p45,p46,p56};
-        dumpVtk(tmp_polygons, true, true);
+        dumpVtk(tmp_polygons, false, true);
     }
 
-    
+    // create vertices 10, 11
+    Vertex * v10 = new Vertex(run_, run_->count_vertices_);
+    run_->count_vertices_ = run_->count_vertices_ + 1;
+    run_->vertices_.push_back(v10);
+    Vertex * v11 = new Vertex(run_, run_->count_vertices_);
+    run_->count_vertices_ = run_->count_vertices_ + 1;
+    run_->vertices_.push_back(v11);
+    ////////// compute positions of vertices 10, 11     ///////////////
+    double r78[3];
+    double r79[3];
+    computeDirection(v7->position_, v8->position_, r78);
+    computeDirection(v7->position_, v9->position_, r79);
+    // r0: midpoint position of triangle 789
+    // uT: unit normal vector of triangle 789
+    double r0[3];
+    double uT[3];
+    for (int m = 0; m < 3; m++) {
+        r0[m] = v7->position_[m] + 1.0/3.0*(r78[m] + r79[m]);
+    }
+    uT[0] = r78[1]*r79[2] - r79[1]*r78[2];
+    uT[1] = r79[0]*r78[2] - r78[0]*r79[2];
+    uT[2] = r78[0]*r79[1] - r79[0]*r78[1];
+    double uTL = sqrt(uT[0]*uT[0] + uT[1]*uT[1] + uT[2]*uT[2]);
+    for (int m = 0; m < 3; m++) {
+        uT[m] = uT[m]/uTL;
+    }
+    // compute position of center of triangle 123
+    double r01[3];
+    double r02[3];
+    double r03[3];
+    double r0TopCenter[3];
+    computeDirection(r0, v1->position_, r01);
+    computeDirection(r0, v2->position_, r02);
+    computeDirection(r0, v3->position_, r03);
+    for (int m = 0; m < 3; m++) {
+        r0TopCenter[m] = 1.0/3.0*(r01[m] + r02[m] + r03[m]);
+    }
+    // compute positions of vertices 10, 11
+    double dPuTr0TopCenter = 0.;
+    for (int m = 0; m < 3; m++) {
+        dPuTr0TopCenter += uT[m]*r0TopCenter[m];
+    }
+    if (dPuTr0TopCenter > 0) {
+        // uT points to the top triangle 123
+        for (int m = 0; m < 3; m++) {
+            v10->position_[m] = r0[m] + 0.5*Lth_*uT[m];
+            v11->position_[m] = r0[m] - 0.5*Lth_*uT[m];
+        }
+    } else {
+        // uT points to the bottom triangle 456
+        for (int m = 0; m < 3; m++) {
+            v10->position_[m] = r0[m] - 0.5*Lth_*uT[m];
+            v11->position_[m] = r0[m] + 0.5*Lth_*uT[m];
+        }
+    }
+    run_->resetPosition(v10->position_);
+    run_->resetPosition(v11->position_);
+    ////////// compute positions of vertices 10, 11 done      /////////
+    // associate cells to vertices 10, 11
+    v10->cells_.push_back(c1245);
+    v10->cells_.push_back(c1346);
+    v10->cells_.push_back(c2356);
+    v10->cells_.push_back(c123);
+    v11->cells_.push_back(c1245);
+    v11->cells_.push_back(c1346);
+    v11->cells_.push_back(c2356);
+    v11->cells_.push_back(c456);
+    // create edge 10-11
+    Edge * e1011 = run_->addEdge(v10, v11);
+    // create edges: 10-1,10-2,10-3,11-4,11-5,11-6
+    Edge * e1 = run_->addEdge(v10, v1);
+    Edge * e2 = run_->addEdge(v10, v2);
+    Edge * e3 = run_->addEdge(v10, v3);
+    Edge * e4 = run_->addEdge(v11, v4);
+    Edge * e5 = run_->addEdge(v11, v5);
+    Edge * e6 = run_->addEdge(v11, v6);
+    // update side polygon 1-1011-4
+    p14->shrink(e71);
+    p14->shrink(e74);
+    p14->expand(e1011);
+    p14->expand(e1);
+    p14->expand(e4);
+    // update side polygon 2-1011-5
+    p25->shrink(e82);
+    p25->shrink(e85);
+    p25->expand(e1011);
+    p25->expand(e2);
+    p25->expand(e5);
+    // update side polygon 3-1011-6
+    p36->shrink(e93);
+    p36->shrink(e96);
+    p36->expand(e1011);
+    p36->expand(e3);
+    p36->expand(e6);
+    // update polygon 10-12
+    p12->shrink(e78);
+    p12->shrink(e71);
+    p12->shrink(e82);
+    p12->expand(e1);
+    p12->expand(e2);
+    // update polygon 10-23
+    p23->shrink(e89);
+    p23->shrink(e82);
+    p23->shrink(e93);
+    p23->expand(e2);
+    p23->expand(e3);
+    // update polygon 10-13
+    p13->shrink(e79);
+    p13->shrink(e71);
+    p13->shrink(e93);
+    p13->expand(e1);
+    p13->expand(e3);
+    // update polygon 11-45
+    p45->shrink(e78);
+    p45->shrink(e74);
+    p45->shrink(e85);
+    p45->expand(e4);
+    p45->expand(e5);
+    // update polygon 11-56
+    p56->shrink(e89);
+    p56->shrink(e85);
+    p56->shrink(e96);
+    p56->expand(e5);
+    p56->expand(e6);
+    // update polygon 11-46
+    p46->shrink(e79);
+    p46->shrink(e74);
+    p46->shrink(e96);
+    p46->expand(e4);
+    p46->expand(e6);
+
+    // delete vertices 7, 8, 9
+    run_->deleteVertex(v7);
+    run_->deleteVertex(v8);
+    run_->deleteVertex(v9);
+    // delete edges
+    run_->deleteEdge(e78);
+    run_->deleteEdge(e89);
+    run_->deleteEdge(e79);
+    run_->deleteEdge(e71);
+    run_->deleteEdge(e82);
+    run_->deleteEdge(e93);
+    run_->deleteEdge(e74);
+    run_->deleteEdge(e85);
+    run_->deleteEdge(e96);
+    // delete polygon 789
+    std::vector<Cell *> tmp_cells = {c123, c456};
+    for (auto cell : tmp_cells) {
+        auto it = find(cell->polygons_.begin(), cell->polygons_.end(), polygon);
+        if (it != cell->polygons_.end()) {
+            cell->polygons_.erase(it);
+        } else {
+            printf("polygon 789 %ld not found in cell->polygons\n", polygon->id_);
+            exit(1);
+        }
+    }
+    run_->deletePolygon(polygon);
+
+    if (verbose) {
+        run_->updatePolygonVertices();
+        std::vector<Polygon *> tmp_polygons = {p14,p25,p36,p12,p23,p13,p45,p46,p56};
+        dumpVtk(tmp_polygons, false, false);
+    }
 
     return 0;
 }

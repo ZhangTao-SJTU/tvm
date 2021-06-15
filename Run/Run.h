@@ -61,6 +61,7 @@ class Run {
     int     updateVerticesPosition();
     int     deleteVertex(Vertex *);
     int     deleteEdge(Edge *);
+    int     deletePolygon(Polygon *);
     int     resetPosition(double *);
     Edge *  addEdge(Vertex *, Vertex *);
     int     dumpConfigurationVtk();
