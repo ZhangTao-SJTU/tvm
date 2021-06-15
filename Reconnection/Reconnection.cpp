@@ -325,12 +325,15 @@ int Reconnection::I_H(Edge * edge, bool verbose) {
     v7->cells_.push_back(c1245);
     v7->cells_.push_back(c1346);
     v7->cells_.push_back(c123);
+    v7->cells_.push_back(c456);
     v8->cells_.push_back(c1245);
     v8->cells_.push_back(c2356);
     v8->cells_.push_back(c123);
+    v8->cells_.push_back(c456);
     v9->cells_.push_back(c2356);
     v9->cells_.push_back(c1346);
     v9->cells_.push_back(c123);
+    v9->cells_.push_back(c456);
     // create edges 78, 79, 89
     Edge * e78 = run_->addEdge(v7, v8);
     Edge * e79 = run_->addEdge(v7, v9);
