@@ -43,6 +43,8 @@ int Run::start() {
     printf("Time        ");
     printf("Rte         ");
     printf("Volume      ");
+    printf("I->H        ");
+    printf("H->I        ");
     printf("E_volume    ");
     printf("E_interface ");
     printf("Energy      \n");
@@ -65,13 +67,17 @@ int Run::start() {
                 sum_volume += cells_[i]->volume_;
             }
             interface_->updateEnergy();
-            printf("%-12.2f%-12.3f%-12.3f%-12.6f%-12.6f%-12.6f\n", simulation_time_,
+            printf("%-12.2f%-12.3f%-12.3f%-12ld%-12ld%-12.6f%-12.6f%-12.6f%-12ld%-12ld\n", simulation_time_,
                    (chrono::duration_cast<chrono::microseconds>(chrono::steady_clock::now() - start).count())/1.0e6,
                    sum_volume,
+                   reconnection_->count_IH_,
+                   reconnection_->count_HI_,
                    volume_->energy_,
                    interface_->energy_,
                    volume_->energy_+interface_->energy_);
             start = chrono::steady_clock::now();
+            reconnection_->count_IH_ = 0;
+            reconnection_->count_HI_ = 0;
             count_log_++;
         }
         // dump
@@ -114,6 +120,7 @@ int     Run::updateVerticesPosition() {
         for (int m = 0; m < 3; m++) {
             vertices_[i]->position_[m] = vertices_[i]->position_[m] + vertices_[i]->velocity_[m] * dt_;
         }
+        resetPosition(vertices_[i]->position_);
     }
 
     return 0;
@@ -284,18 +291,14 @@ int     Run::deletePolygon(Polygon * polygon) {
 }
 
 int     Run::resetPosition(double * r) {
-    while (r[0] > Lx_) {
-        r[0] = r[0] - Lx_;
+    if (fabs(r[0]) > 1e6) {
+        printf("%e\n",r[0]);
     }
-    while (r[0] < 0.) {
-        r[0] = r[0] + Lx_;
+    if (fabs(r[1]) > 1e6) {
+        printf("%e\n",r[1]);
     }
-    while (r[1] > Ly_) {
-        r[1] = r[1] - Ly_;
-    }
-    while (r[1] < 0.) {
-        r[1] = r[1] + Ly_;
-    }
+    r[0] = r[0] - Lx_ * floor(r[0] / Lx_);
+    r[1] = r[1] - Ly_ * floor(r[1] / Ly_);
 
     return 0;
 }
@@ -320,7 +323,7 @@ Edge *  Run::addEdge(Vertex * v0, Vertex * v1) {
 int Run::dumpConfigurationVtk() {
     //////////////////////////////////////////////////////////////////////////////////////
     stringstream filename;
-    filename << setw(10) << setfill('0') << (long int)(floor(simulation_time_)) << ".sample.vtk";
+    filename << setw(10) << setfill('0') << (long int)(floor(simulation_time_+0.01*dt_)) << ".sample.vtk";
     ofstream out(filename.str().c_str());
     if (!out.is_open()) {
         cout << "Error opening output file " << filename.str().c_str() << endl;

@@ -11,6 +11,8 @@ class Reconnection;
 class Reconnection {
 public:
     double  Lth_;   // threshold length of network reconnection
+    long int count_IH_;
+    long int count_HI_;
 
     explicit Reconnection(Run *);
 

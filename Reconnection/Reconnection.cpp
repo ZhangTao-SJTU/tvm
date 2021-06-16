@@ -21,7 +21,9 @@ using namespace std;
 Reconnection::Reconnection(Run * run) {
     run_ = run;
 //    Lth_ = 1.0e-3;
-    Lth_ = 0.5;
+    Lth_ = 0.3;
+    count_IH_ = 0;
+    count_HI_ = 0;
 }
 
 int     Reconnection::start() {
@@ -60,7 +62,7 @@ int     Reconnection::start() {
         if (!tmp_edges[i]->checkI()) {
             continue;
         }
-//        I_H(tmp_edges[i], false);
+        I_H(tmp_edges[i], false);
     }
 
     // H -> I reconnection
@@ -428,6 +430,8 @@ int Reconnection::I_H(Edge * edge, bool verbose) {
         dumpVtk(tmp_polygons, true, false);
     }
 
+    count_IH_ += 1;
+
     return 0;
 }
 
@@ -736,6 +740,8 @@ int Reconnection::H_I(Polygon * polygon, bool verbose) {
         std::vector<Polygon *> tmp_polygons = {p14,p25,p36,p12,p23,p13,p45,p46,p56};
         dumpVtk(tmp_polygons, false, false);
     }
+
+    count_HI_ += 1;
 
     return 0;
 }
