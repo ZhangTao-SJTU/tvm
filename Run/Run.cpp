@@ -62,14 +62,10 @@ int Run::start() {
         // log to screen
         if (simulation_time_ - t_start_ + t_roundError  > count_log_ * log_period_) {
             volume_->updateEnergy();
-            double sum_volume = 0.;
-            for (long int i = 0; i < cells_.size(); i++) {
-                sum_volume += cells_[i]->volume_;
-            }
             interface_->updateEnergy();
             printf("%-12.2f%-12.3f%-12.3f%-12ld%-12ld%-12.6f%-12.6f%-12.6f%-12ld%-12ld\n", simulation_time_,
                    (chrono::duration_cast<chrono::microseconds>(chrono::steady_clock::now() - start).count())/1.0e6,
-                   sum_volume,
+                   volume_->totalVolume_,
                    reconnection_->count_IH_,
                    reconnection_->count_HI_,
                    volume_->energy_,

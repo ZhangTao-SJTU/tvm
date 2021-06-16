@@ -15,11 +15,10 @@ public:
     bool growing_;
     double volume_;
     double pressure_;
-    double center_[3];
     std::vector<Polygon *> polygons_;
+    std::unordered_map<long int, bool> polygonDirections_;
     explicit Cell(Run *, long int);
 
-    int updateCenter();
     int updateVolume();
     int logPolygons(std::string);
 private:

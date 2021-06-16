@@ -24,55 +24,104 @@ Cell::Cell(Run * run, long int id) {
     growing_ = false;
     volume_ = 0.;
     pressure_ = 0.;
-    for (int i = 0; i < 3; i++) {
-        center_[i] = 0.;
-    }
-}
-
-int Cell::updateCenter() {
-    // set reference point
-    double tmp_origin[3];
-    for (int i = 0; i < 3; i++) {
-        tmp_origin[i] = polygons_[0]->edges_[0]->vertices_[0]->position_[i];
-    }
-
-    double sum_x = 0.;
-    double sum_y = 0.;
-    double sum_z = 0.;
-    for (int i = 0; i < polygons_.size(); i++) {
-        double dx = polygons_[i]->center_[0] - tmp_origin[0];
-        double dy = polygons_[i]->center_[1] - tmp_origin[1];
-        double dz = polygons_[i]->center_[2] - tmp_origin[2];
-        while (dx > run_->Lx_/2.0) {
-            dx -= run_->Lx_;
-        }
-        while (dx < (-1.0)*run_->Lx_/2.0) {
-            dx += run_->Lx_;
-        }
-        while (dy > run_->Ly_/2.0) {
-            dy -= run_->Ly_;
-        }
-        while (dy < (-1.0)*run_->Ly_/2.0) {
-            dy += run_->Ly_;
-        }
-        sum_x += dx;
-        sum_y += dy;
-        sum_z += dz;
-    }
-    center_[0] = sum_x/polygons_.size() + tmp_origin[0];
-    center_[1] = sum_y/polygons_.size() + tmp_origin[1];
-    center_[2] = sum_z/polygons_.size() + tmp_origin[2];
-
-    return 0;
 }
 
 int Cell::updateVolume() {
+    // compute direction of polygons
+    polygonDirections_.clear();
+
+    // update direction of each polygon
+    std::unordered_map<long int, bool> edgeDirections;
+    std::vector<Polygon *> tmp_polygons;
+    while (tmp_polygons.size() < polygons_.size()) {
+        for (auto polygon : polygons_) {
+            if (std::find(tmp_polygons.begin(), tmp_polygons.end(), polygon) != tmp_polygons.end()) {
+                continue;
+            }
+            if (tmp_polygons.size() == 0) {
+                tmp_polygons.push_back(polygon);
+                // no need to adjust the direction of the first polygon
+                polygonDirections_[polygon->id_] = true;
+                // record the direction of edges of the first polygon
+                for (int i = 0; i < polygon->vertices_.size(); i++) {
+                    Vertex * v0 = polygon->vertices_[i];
+                    Vertex * v1 = polygon->vertices_[(i + 1)%polygon->vertices_.size()];
+                    if (v0->id_ < v1->id_) {
+                        long int edgeID = v0->id_*run_->count_vertices_ + v1->id_;
+                        edgeDirections[edgeID] = true;
+                        // true: v0->v1 is from lower vertex id to larger vertex id
+                    } else {
+                        long int edgeID = v1->id_*run_->count_vertices_ + v0->id_;
+                        edgeDirections[edgeID] = false;
+                        // false: v0->v1 is from larger vertex id to lower vertex id
+                    }
+                }
+                continue;
+            }
+            // check if this polygon has any registered edge
+            bool registered = false;
+            bool oppositeDirection = true;
+            for (int i = 0; i < polygon->vertices_.size(); i++) {
+                Vertex * v0 = polygon->vertices_[i];
+                Vertex * v1 = polygon->vertices_[(i + 1)%polygon->vertices_.size()];
+                long int edgeID;
+                bool edgeDirection;
+                if (v0->id_ < v1->id_) {
+                    edgeID = v0->id_*run_->count_vertices_ + v1->id_;
+                    edgeDirection = true;
+                } else {
+                    edgeID = v1->id_*run_->count_vertices_ + v0->id_;
+                    edgeDirection = false;
+                }
+                if (edgeDirections.find(edgeID) != edgeDirections.end()) {
+                    registered = true;
+                    if (edgeDirection != edgeDirections[edgeID]) {
+                        oppositeDirection = true;
+                    } else {
+                        oppositeDirection = false;
+                    }
+                    break;
+                }
+            }
+            if (!registered) {
+                continue;
+            }
+            tmp_polygons.push_back(polygon);
+            // adjust the direction of the polygon
+            polygonDirections_[polygon->id_] = oppositeDirection;
+            // record the direction of extra edges of the polygon
+            for (int i = 0; i < polygon->vertices_.size(); i++) {
+                Vertex * v0 = polygon->vertices_[i];
+                Vertex * v1 = polygon->vertices_[(i + 1)%polygon->vertices_.size()];
+                long int edgeID;
+                bool edgeDirection;
+                if (v0->id_ < v1->id_) {
+                    edgeID = v0->id_*run_->count_vertices_ + v1->id_;
+                    edgeDirection = true;
+                } else {
+                    edgeID = v1->id_*run_->count_vertices_ + v0->id_;
+                    edgeDirection = false;
+                }
+                if (edgeDirections.find(edgeID) == edgeDirections.end()) {
+                    if (!oppositeDirection) {
+                        edgeDirection = (!edgeDirection);
+                    }
+                    edgeDirections[edgeID] = edgeDirection;
+                }
+            }
+        }
+        printf("Cell::updateVolume Error: cannot find next polygon in polygons_\n");
+        exit(1);
+    }
+    edgeDirections.clear();
+
+    // compute cell volume
     volume_ = 0.;
-    for (int i = 0; i < polygons_.size(); i++) {
-        // the polygon center is the reference point
-        double cc[3];   // the vector pointing from polygon center to cell center
+    for (auto polygon : polygons_) {
+        // the origin is the reference point
+        double cc[3];   // the vector pointing from origin to polygon center
         for (int m = 0; m < 3; m++) {
-            cc[m] = center_[m] - polygons_[i]->center_[m];
+            cc[m] = polygon->center_[m];
         }
         while (cc[0] > run_->Lx_/2.0) {
             cc[0] = cc[0] - run_->Lx_;
@@ -86,11 +135,10 @@ int Cell::updateVolume() {
         while (cc[1] < (-1.0)*run_->Ly_/2.0) {
             cc[1] = cc[1] + run_->Ly_;
         }
-
-        for (int j = 0; j < polygons_[i]->edges_.size(); j++) {
+        for (int i = 0; i < polygon->vertices_.size(); i++) {
             double cv[2][3];   // the vectors pointing from polygon center to edge vertices
             for (int k = 0; k < 2; k++) {
-                Vertex * vertex = polygons_[i]->edges_[j]->vertices_[k];
+                Vertex * vertex = polygon->vertices_[(i + k)%polygon->vertices_.size()];
                 for (int m = 0; m < 3; m++) {
                     cv[k][m] = vertex->position_[m] - polygons_[i]->center_[m];
                 }
@@ -116,7 +164,18 @@ int Cell::updateVolume() {
             for (int m = 0; m < 3; m++) {
                 dP += cc[m]*cP[m];
             }
-            volume_ += 1.0/6.0*fabs(dP);
+            if (polygonDirections_[polygon->id_]) {
+                volume_ += 1.0/6.0*dP;
+            } else {
+                volume_ -= 1.0/6.0*dP;
+            }
+        }
+    }
+
+    if (volume_ < 0.) {
+        volume_ = fabs(volume_);
+        for (auto polygon : polygons_) {
+            polygonDirections_[polygon->id_] = (!polygonDirections_[polygon->id_]);
         }
     }
 

@@ -12,11 +12,13 @@ class Volume {
 public:
     double kcv_;
     double vu0_;
+    double totalVolume_;
     double energy_;
 
     explicit Volume(Run *);
 
     int updateForces();
+    int updateVolume();
     int updatePressure();
     int updatePolygonForces(Cell *, Polygon *);
     int updateEnergy();

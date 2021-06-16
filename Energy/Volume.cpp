@@ -22,6 +22,7 @@ Volume::Volume(Run * run) {
     run_ = run;
     kcv_ = 14.;
     vu0_ = 1.;
+    totalVolume_ = 0.;
     energy_ = 0.;
 }
 
@@ -32,6 +33,9 @@ int     Volume::updateForces() {
             run_->vertices_[i]->volumeForce_[j] = 0.;
         }
     }
+
+    // update volume of each cell, and direction of polygons in each cell
+    updateVolume();
 
     // update pressure in each cell
     updatePressure();
@@ -46,13 +50,20 @@ int     Volume::updateForces() {
     return 0;
 }
 
-int Volume::updatePressure() {
+int Volume::updateVolume() {
+    run_->updatePolygonVertices();
     // update cell volume
-    for (long int i = 0; i < run_->cells_.size(); i++) {
-        run_->cells_[i]->updateVolume();
+    totalVolume_ = 0.;
+    for (auto cell : run_->cells_) {
+        cell->updateVolume();
 //        printf("%6f\n", run_->cells_[i]->volume_);
+        totalVolume_ += cell->volume_;
     }
 
+    return 0;
+}
+
+int Volume::updatePressure() {
     for (long int i = 0; i < run_->cells_.size(); i++) {
         run_->cells_[i]->pressure_ = (-1.0)*kcv_/vu0_*(run_->cells_[i]->volume_/vu0_-1.0);
     }
