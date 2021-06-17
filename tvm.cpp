@@ -24,12 +24,15 @@ int     InitializeAll(Run *);
 int main(int argc, char *argv[]) {
     Run * run = new Run();
     InitializeAll(run);
+    run->updatePolygonVertices();
+    run->cells_[1]->updateVolume();
+    printf("%f\n", run->cells_[1]->volume_);
 //    run->reconnection_->Lth_ = 0.5;
 //    run->reconnection_->I_H(run->edges_[2700], true);
 //    run->reconnection_->Lth_ = 2.0;
 //    run->reconnection_->H_I(run->polygons_[run->polygons_.size()-1], true);
 
-    run->start();
+//    run->start();
 
     return 0;
 }
@@ -205,25 +208,25 @@ int InitializeAll(Run * run) {
     }
     printf("top and bottom virtual cells generated\n");
 
-    // add initial curved surface
-    for (long int i = 0; i < run->vertices_.size(); i++) {
-        Vertex * vertex = run->vertices_[i];
-        double x = vertex->position_[0];
-        double y = vertex->position_[1];
-        double z = vertex->position_[2];
-        vertex->position_[2] = z + run->Aic_*cos(2.0*M_PI/run->Lx_*x)*cos(2.0*M_PI/run->Ly_*y);
-    }
-
-    // add random displacement to vertex positions
-    const double stddev = sqrt(0.001);
-    unsigned long int seed = 6399402827626050;
-    std::default_random_engine generator(seed);
-    std::normal_distribution<double> dist(0., stddev);
-    for (long int i = 0; i < run->vertices_.size(); i++) {
-        for (int m = 0; m < 3; m++) {
-            run->vertices_[i]->position_[m] = run->vertices_[i]->position_[m] + dist(generator);
-        }
-    }
+//    // add initial curved surface
+//    for (long int i = 0; i < run->vertices_.size(); i++) {
+//        Vertex * vertex = run->vertices_[i];
+//        double x = vertex->position_[0];
+//        double y = vertex->position_[1];
+//        double z = vertex->position_[2];
+//        vertex->position_[2] = z + run->Aic_*cos(2.0*M_PI/run->Lx_*x)*cos(2.0*M_PI/run->Ly_*y);
+//    }
+//
+//    // add random displacement to vertex positions
+//    const double stddev = sqrt(0.001);
+//    unsigned long int seed = 6399402827626050;
+//    std::default_random_engine generator(seed);
+//    std::normal_distribution<double> dist(0., stddev);
+//    for (long int i = 0; i < run->vertices_.size(); i++) {
+//        for (int m = 0; m < 3; m++) {
+//            run->vertices_[i]->position_[m] = run->vertices_[i]->position_[m] + dist(generator);
+//        }
+//    }
 
     run->count_vertices_ = run->vertices_.size();
     run->count_edges_ = run->edges_.size();

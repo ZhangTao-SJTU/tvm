@@ -234,10 +234,6 @@ int     Run::updateGeoinfo() {
     for (long int i = 0; i < polygons_.size(); i++) {
         polygons_[i]->updateCenter();
     }
-    // update cell center position
-    for (long int i = 0; i < cells_.size(); i++) {
-        cells_[i]->updateCenter();
-    }
     // update polygon type
     updatePolygonType();
 

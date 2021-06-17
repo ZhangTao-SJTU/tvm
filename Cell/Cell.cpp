@@ -30,10 +30,18 @@ int Cell::updateVolume() {
     // compute direction of polygons
     polygonDirections_.clear();
 
+    for (auto polygon : polygons_) {
+        for (auto vertex : polygon->vertices_) {
+            printf("%ld ", vertex->id_);
+        }
+        printf("\n");
+    }
+
     // update direction of each polygon
     std::unordered_map<long int, bool> edgeDirections;
     std::vector<Polygon *> tmp_polygons;
     while (tmp_polygons.size() < polygons_.size()) {
+        bool foundNextPolygon = false;
         for (auto polygon : polygons_) {
             if (std::find(tmp_polygons.begin(), tmp_polygons.end(), polygon) != tmp_polygons.end()) {
                 continue;
@@ -56,7 +64,8 @@ int Cell::updateVolume() {
                         // false: v0->v1 is from larger vertex id to lower vertex id
                     }
                 }
-                continue;
+                foundNextPolygon = true;
+                break;
             }
             // check if this polygon has any registered edge
             bool registered = false;
@@ -109,19 +118,39 @@ int Cell::updateVolume() {
                     edgeDirections[edgeID] = edgeDirection;
                 }
             }
+            foundNextPolygon = true;
+            break;
         }
-        printf("Cell::updateVolume Error: cannot find next polygon in polygons_\n");
-        exit(1);
+        if (!foundNextPolygon) {
+            printf("Cell::updateVolume Error: cannot find next polygon in polygons_\n");
+            printf("number of polygons found %ld/%ld\n", tmp_polygons.size(), polygons_.size());
+            exit(1);
+        }
+        printf("loop %ld: \n", tmp_polygons.size());
+        for (auto polygon : tmp_polygons) {
+            printf("polygon %ld:", polygon->id_);
+            if (polygonDirections_[polygon->id_]) {
+                for (int i = 0; i < polygon->vertices_.size(); i++) {
+                    printf(" (%ld,%ld)", polygon->vertices_[i]->id_, polygon->vertices_[(i+1)%polygon->vertices_.size()]->id_);
+                }
+            } else {
+                for (int i = polygon->vertices_.size() - 1; i >= 0; i--) {
+                    printf(" (%ld,%ld)", polygon->vertices_[(i+1)%polygon->vertices_.size()]->id_, polygon->vertices_[i]->id_);
+                }
+            }
+            printf("\n");
+        }
     }
     edgeDirections.clear();
 
     // compute cell volume
     volume_ = 0.;
+    double origin[3] = {1., 1., 1.};
     for (auto polygon : polygons_) {
         // the origin is the reference point
         double cc[3];   // the vector pointing from origin to polygon center
         for (int m = 0; m < 3; m++) {
-            cc[m] = polygon->center_[m];
+            cc[m] = polygon->center_[m] - origin[m];
         }
         while (cc[0] > run_->Lx_/2.0) {
             cc[0] = cc[0] - run_->Lx_;
@@ -155,7 +184,7 @@ int Cell::updateVolume() {
                     cv[k][1] = cv[k][1] + run_->Ly_;
                 }
             }
-            // compute the volume of the tetrahedron formed by cell center, polygon center, and edge vertices
+            // compute the volume of the tetrahedron formed by origin, polygon center, and edge vertices
             double cP[3];
             double dP = 0.;
             cP[0] = cv[0][1]*cv[1][2] - cv[1][1]*cv[0][2];
