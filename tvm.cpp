@@ -25,14 +25,18 @@ int main(int argc, char *argv[]) {
     Run * run = new Run();
     InitializeAll(run);
     run->updatePolygonVertices();
-    run->cells_[1]->updateVolume();
-    printf("%f\n", run->cells_[1]->volume_);
+//    for (auto cell : run->cells_) {
+//        cell->updateVolume();
+//        printf("%f\n", cell->volume_);
+//    }
+//    run->cells_[200]->updateVolume();
+//    printf("%f\n", run->cells_[200]->volume_);
 //    run->reconnection_->Lth_ = 0.5;
 //    run->reconnection_->I_H(run->edges_[2700], true);
 //    run->reconnection_->Lth_ = 2.0;
 //    run->reconnection_->H_I(run->polygons_[run->polygons_.size()-1], true);
 
-//    run->start();
+    run->start();
 
     return 0;
 }

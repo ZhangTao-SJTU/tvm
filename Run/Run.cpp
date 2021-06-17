@@ -63,7 +63,7 @@ int Run::start() {
         if (simulation_time_ - t_start_ + t_roundError  > count_log_ * log_period_) {
             volume_->updateEnergy();
             interface_->updateEnergy();
-            printf("%-12.2f%-12.3f%-12.3f%-12ld%-12ld%-12.6f%-12.6f%-12.6f%-12ld%-12ld\n", simulation_time_,
+            printf("%-12.2f%-12.3f%-12.3f%-12ld%-12ld%-12.6f%-12.6f%-12.6f\n", simulation_time_,
                    (chrono::duration_cast<chrono::microseconds>(chrono::steady_clock::now() - start).count())/1.0e6,
                    volume_->totalVolume_,
                    reconnection_->count_IH_,
