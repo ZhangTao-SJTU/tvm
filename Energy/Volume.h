@@ -18,6 +18,7 @@ public:
     explicit Volume(Run *);
 
     int updateForces();
+    int updatePolygonDirections();
     int updateVolume();
     int updatePressure();
     int updatePolygonForces(Cell *, Polygon *);

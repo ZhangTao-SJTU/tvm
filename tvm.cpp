@@ -237,15 +237,17 @@ int InitializeAll(Run * run) {
     run->count_polygons_ = run->polygons_.size();
     run->count_cells_ = run->cells_.size();
 
-    run->updateVertexCells();
-    run->updateGeoinfo();
-
     // initialize volume object
     run->volume_ = new Volume(run);
     // initialize interface object
     run->interface_ = new Interface(run);
     // initialize reconnection object
     run->reconnection_ = new Reconnection(run);
+
+    // update geometry and topology information
+    run->updateGeoinfo();
+    run->updateVertexCells();
+    run->volume_->updatePolygonDirections();
 
     return 0;
 }

@@ -87,9 +87,10 @@ int     Reconnection::start() {
     }
 //    printf("%ld\n", run_->edges_.size());
 
-    // update topology and geometry information
-    run_->updateVertexCells();
+    // update geometry and topology information
     run_->updateGeoinfo();
+    run_->updateVertexCells();
+    run_->volume_->updatePolygonDirections();
 
     return 0;
 }

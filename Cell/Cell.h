@@ -19,6 +19,7 @@ public:
     std::unordered_map<long int, bool> polygonDirections_;
     explicit Cell(Run *, long int);
 
+    int updatePolygonDirections();
     int updateVolume();
     int logPolygons(std::string);
 private:
