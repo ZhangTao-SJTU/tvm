@@ -55,7 +55,7 @@ int Run::start() {
         // update volumeForces
         volume_->updateForces();
         // update interfaceForces
-//        interface_->updateForces();
+        interface_->updateForces();
         // update velocities
         updateVerticesVelocity();
 
