@@ -13,6 +13,7 @@ class Cell {
 public:
     long int id_;
     bool growing_;
+    double vu0_;
     double volume_;
     double pressure_;
     std::vector<Polygon *> polygons_;

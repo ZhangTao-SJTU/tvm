@@ -232,6 +232,16 @@ int InitializeAll(Run * run) {
         }
     }
 
+    // assign cell growth type
+    std::uniform_real_distribution<double> urdist(0., 1.);
+    for (auto cell : run->cells_) {
+        if (urdist(generator) < run->rho_growth_) {
+            cell->growing_ = true;
+        } else {
+            cell->growing_ = false;
+        }
+    }
+
     run->count_vertices_ = run->vertices_.size();
     run->count_edges_ = run->edges_.size();
     run->count_polygons_ = run->polygons_.size();

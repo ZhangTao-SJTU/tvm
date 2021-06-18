@@ -24,6 +24,7 @@ Run::Run() {
     Ly_ = 200.0/13.2;
     NCell_ = 400;
     Aic_ = 0.5;
+    rho_growth_ = 0.75;
     t_start_ = 0.;
     t_end_ = 5.;
     dump_period_ = 1.;
@@ -224,6 +225,35 @@ int     Run::updatePolygonType() {
     return 0;
 }
 
+int     Run::updatePolygonDumpType() {
+    // 0: red
+    // 1: grey
+    // 2: blue
+    updatePolygonCells();
+    for (auto polygon : polygons_) {
+        if (polygon->cells_.size() == 1) {
+            if (polygon->cells_[0]->growing_) {
+                polygon->dumpType = 0;
+            } else {
+                polygon->dumpType = 1;
+            }
+        } else if (polygon->cells_.size() == 2) {
+            if (polygon->cells_[0]->growing_ != polygon->cells_[1]->growing_) {
+                polygon->dumpType = 2;
+            } else if (polygon->cells_[0]->growing_) {
+                polygon->dumpType = 0;
+            } else {
+                polygon->dumpType = 1;
+            }
+        } else {
+            printf("polygon %ld has %d neighboring cells\n", polygon->id_, polygon->cells_.size());
+            exit(1);
+        }
+    }
+
+    return 0;
+}
+
 int     Run::updateGeoinfo() {
     // update edge midpoint and length
     for (long int i = 0; i < edges_.size(); i++) {
@@ -375,16 +405,13 @@ int Run::dumpConfigurationVtk() {
     }
     out << endl;
 
+    updatePolygonDumpType();
     out << "CELL_DATA " << Npolygons << endl;
     out << "SCALARS type int 1" << endl;
     out << "LOOKUP_TABLE default" << endl;
     for (long int i = 0; i < polygons_.size(); i++) {
         if (!polygons_[i]->crossBoundary()) {
-            if (polygons_[i]->cell_cell) {
-                out << left << setw(6) << 0 << endl;
-            } else {
-                out << left << setw(6) << 1 << endl;
-            }
+            out << left << setw(6) << polygons_[i]->dumpType << endl;
         }
     }
     out << endl;

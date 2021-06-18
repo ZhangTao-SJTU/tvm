@@ -22,6 +22,7 @@ Cell::Cell(Run * run, long int id) {
     run_ = run;
     id_ = id;
     growing_ = false;
+    vu0_ = 1.;
     volume_ = 0.;
     pressure_ = 0.;
 }

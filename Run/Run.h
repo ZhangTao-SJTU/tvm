@@ -24,6 +24,7 @@ class Run {
     double  Ly_;
     int     NCell_;
     double  Aic_;
+    double  rho_growth_;
     double  simulation_time_;
     double   t_start_;
     double   t_end_;
@@ -54,6 +55,7 @@ class Run {
     int     updatePolygonVertices();
     int     updatePolygonCells();
     int     updatePolygonType();
+    int     updatePolygonDumpType();
     int     updateVertexEdges();
     int     updateVertexCells();
     int     updateGeoinfo();
