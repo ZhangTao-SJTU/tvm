@@ -21,7 +21,7 @@ using namespace std;
 Reconnection::Reconnection(Run * run) {
     run_ = run;
 //    Lth_ = 1.0e-3;
-    Lth_ = 0.3;
+    Lth_ = 0.1;
     count_IH_ = 0;
     count_HI_ = 0;
 }
@@ -87,9 +87,10 @@ int     Reconnection::start() {
     }
 //    printf("%ld\n", run_->edges_.size());
 
-    // update topology and geometry information
-    run_->updateVertexCells();
+    // update geometry and topology information
     run_->updateGeoinfo();
+    run_->updateVertexCells();
+    run_->volume_->updatePolygonDirections();
 
     return 0;
 }

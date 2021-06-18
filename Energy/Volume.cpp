@@ -22,6 +22,7 @@ Volume::Volume(Run * run) {
     run_ = run;
     kcv_ = 14.;
     vu0_ = 1.;
+    totalVolume_ = 0.;
     energy_ = 0.;
 }
 
@@ -32,6 +33,9 @@ int     Volume::updateForces() {
             run_->vertices_[i]->volumeForce_[j] = 0.;
         }
     }
+
+    // update volume of each cell, and direction of polygons in each cell
+    updateVolume();
 
     // update pressure in each cell
     updatePressure();
@@ -46,13 +50,30 @@ int     Volume::updateForces() {
     return 0;
 }
 
-int Volume::updatePressure() {
-    // update cell volume
-    for (long int i = 0; i < run_->cells_.size(); i++) {
-        run_->cells_[i]->updateVolume();
-//        printf("%6f\n", run_->cells_[i]->volume_);
+int Volume::updatePolygonDirections() {
+    run_->updatePolygonVertices();
+    for (auto cell : run_->cells_) {
+        cell->updatePolygonDirections();
     }
 
+    return 0;
+}
+
+int Volume::updateVolume() {
+    // update cell volume
+    totalVolume_ = 0.;
+    for (auto cell : run_->cells_) {
+        cell->updateVolume();
+//        if (run_->simulation_time_ < run_->t_start_+0.01*run_->dt_) {
+//            printf("%6f\n", cell->volume_);
+//        }
+        totalVolume_ += cell->volume_;
+    }
+
+    return 0;
+}
+
+int Volume::updatePressure() {
     for (long int i = 0; i < run_->cells_.size(); i++) {
         run_->cells_[i]->pressure_ = (-1.0)*kcv_/vu0_*(run_->cells_[i]->volume_/vu0_-1.0);
     }
@@ -62,70 +83,50 @@ int Volume::updatePressure() {
 
 int Volume::updatePolygonForces(Cell *cell, Polygon *polygon) {
     double pressure = cell->pressure_;
+    bool correctDirection = cell->polygonDirections_[polygon->id_];
+    int Nv = polygon->vertices_.size();
     // reset volumeForce values of the polygon center
     for (int m = 0; m < 3; m++) {
         polygon->volumeForce_[m] = 0.;
     }
 
-    // the polygon center is the reference point
-    double cc[3];   // the vector pointing from polygon center to cell center
-                    // be used to determine the outer direction of triangle face
-    for (int m = 0; m < 3; m++) {
-        cc[m] = cell->center_[m] - polygon->center_[m];
-    }
-    while (cc[0] > run_->Lx_/2.0) {
-        cc[0] = cc[0] - run_->Lx_;
-    }
-    while (cc[0] < (-1.0)*run_->Lx_/2.0) {
-        cc[0] = cc[0] + run_->Lx_;
-    }
-    while (cc[1] > run_->Ly_/2.0) {
-        cc[1] = cc[1] - run_->Ly_;
-    }
-    while (cc[1] < (-1.0)*run_->Ly_/2.0) {
-        cc[1] = cc[1] + run_->Ly_;
-    }
-
-    for (int i = 0; i < polygon->edges_.size(); i++) {
-        Edge * edge = polygon->edges_[i];
-        double cv[2][3];   // the vectors pointing from polygon center to edge vertices
-        for (int k = 0; k < 2; k++) {
-            Vertex * vertex = edge->vertices_[k];
-            for (int m = 0; m < 3; m++) {
-                cv[k][m] = vertex->position_[m] - polygon->center_[m];
-            }
-            while (cv[k][0] > run_->Lx_/2.0) {
-                cv[k][0] = cv[k][0] - run_->Lx_;
-            }
-            while (cv[k][0] < (-1.0)*run_->Lx_/2.0) {
-                cv[k][0] = cv[k][0] + run_->Lx_;
-            }
-            while (cv[k][1] > run_->Ly_/2.0) {
-                cv[k][1] = cv[k][1] - run_->Ly_;
-            }
-            while (cv[k][1] < (-1.0)*run_->Ly_/2.0) {
-                cv[k][1] = cv[k][1] + run_->Ly_;
-            }
-        }
-        // compute the vector of the triangle interface formed by polygon center, and edge vertices
-        double interface[3];
-        interface[0] = 0.5*(cv[0][1]*cv[1][2] - cv[1][1]*cv[0][2]);
-        interface[1] = 0.5*(cv[1][0]*cv[0][2] - cv[0][0]*cv[1][2]);
-        interface[2] = 0.5*(cv[0][0]*cv[1][1] - cv[1][0]*cv[0][1]);
-        double dP = 0.;
+    double cv[Nv][3];   // the vectors pointing from polygon center to edge vertices
+    for (int i = 0; i < Nv; i++) {
         for (int m = 0; m < 3; m++) {
-            dP += cc[m]*interface[m];
+            cv[i][m] = polygon->vertices_[i]->position_[m] - polygon->center_[m];
         }
+        while (cv[i][0] > run_->Lx_/2.0) {
+            cv[i][0] = cv[i][0] - run_->Lx_;
+        }
+        while (cv[i][0] < (-1.0)*run_->Lx_/2.0) {
+            cv[i][0] = cv[i][0] + run_->Lx_;
+        }
+        while (cv[i][1] > run_->Ly_/2.0) {
+            cv[i][1] = cv[i][1] - run_->Ly_;
+        }
+        while (cv[i][1] < (-1.0)*run_->Ly_/2.0) {
+            cv[i][1] = cv[i][1] + run_->Ly_;
+        }
+    }
+    for (int i = 0; i < Nv; i++) {
+        // compute the vector of the triangle interface formed by polygon center, and edge vertices
+        int j = (i + 1)%Nv;
+        double interface[3];
+        interface[0] = 0.5*(cv[i][1]*cv[j][2] - cv[j][1]*cv[i][2]);
+        interface[1] = 0.5*(cv[j][0]*cv[i][2] - cv[i][0]*cv[j][2]);
+        interface[2] = 0.5*(cv[i][0]*cv[j][1] - cv[j][0]*cv[i][1]);
         // make the interface vector pointing outwards
-        if (dP > 0.) {
+        if (!correctDirection) {
             for (int m = 0; m < 3; m++) {
                 interface[m] = (-1.0)*interface[m];
             }
         }
         // update volumeForces
+        Vertex * v0 = polygon->vertices_[i];
+        Vertex * v1 = polygon->vertices_[j];
         for (int m = 0; m < 3; m++) {
-            edge->vertices_[0]->volumeForce_[m] = edge->vertices_[0]->volumeForce_[m] + 1.0/3.0*pressure*interface[m];
-            edge->vertices_[1]->volumeForce_[m] = edge->vertices_[1]->volumeForce_[m] + 1.0/3.0*pressure*interface[m];
+            v0->volumeForce_[m] = v0->volumeForce_[m] + 1.0/3.0*pressure*interface[m];
+            v1->volumeForce_[m] = v1->volumeForce_[m] + 1.0/3.0*pressure*interface[m];
             polygon->volumeForce_[m] = polygon->volumeForce_[m] + 1.0/3.0*pressure*interface[m];
         }
     }

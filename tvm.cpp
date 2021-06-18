@@ -24,6 +24,13 @@ int     InitializeAll(Run *);
 int main(int argc, char *argv[]) {
     Run * run = new Run();
     InitializeAll(run);
+    run->updatePolygonVertices();
+//    for (auto cell : run->cells_) {
+//        cell->updateVolume();
+//        printf("%f\n", cell->volume_);
+//    }
+//    run->cells_[200]->updateVolume();
+//    printf("%f\n", run->cells_[200]->volume_);
 //    run->reconnection_->Lth_ = 0.5;
 //    run->reconnection_->I_H(run->edges_[2700], true);
 //    run->reconnection_->Lth_ = 2.0;
@@ -230,15 +237,17 @@ int InitializeAll(Run * run) {
     run->count_polygons_ = run->polygons_.size();
     run->count_cells_ = run->cells_.size();
 
-    run->updateVertexCells();
-    run->updateGeoinfo();
-
     // initialize volume object
     run->volume_ = new Volume(run);
     // initialize interface object
     run->interface_ = new Interface(run);
     // initialize reconnection object
     run->reconnection_ = new Reconnection(run);
+
+    // update geometry and topology information
+    run->updateGeoinfo();
+    run->updateVertexCells();
+    run->volume_->updatePolygonDirections();
 
     return 0;
 }

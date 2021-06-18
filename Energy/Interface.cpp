@@ -57,63 +57,93 @@ int Interface::updatePolygonForces(Polygon *polygon) {
     // reset polygon area
     polygon->area_ = 0.;
 
+    double cv[polygon->vertices_.size()][3];
+    double nv[polygon->vertices_.size()][3];
+    double vv[polygon->vertices_.size()][3];
+    bool edgeDirections[polygon->vertices_.size()];
     // the polygon center is the reference point
-    for (int i = 0; i < polygon->edges_.size(); i++) {
-        Edge * edge = polygon->edges_[i];
-        // the vectors pointing from polygon center to edge vertices
-        double cv[2][3];
-        for (int k = 0; k < 2; k++) {
-            Vertex * vertex = edge->vertices_[k];
-            for (int m = 0; m < 3; m++) {
-                cv[k][m] = vertex->position_[m] - polygon->center_[m];
-            }
-            while (cv[k][0] > run_->Lx_/2.0) {
-                cv[k][0] = cv[k][0] - run_->Lx_;
-            }
-            while (cv[k][0] < (-1.0)*run_->Lx_/2.0) {
-                cv[k][0] = cv[k][0] + run_->Lx_;
-            }
-            while (cv[k][1] > run_->Ly_/2.0) {
-                cv[k][1] = cv[k][1] - run_->Ly_;
-            }
-            while (cv[k][1] < (-1.0)*run_->Ly_/2.0) {
-                cv[k][1] = cv[k][1] + run_->Ly_;
-            }
-        }
-        // the edge vector
-        double vv[3];
+    for (int i = 0; i < polygon->vertices_.size(); i++) {
         for (int m = 0; m < 3; m++) {
-            vv[m] = cv[1][m] - cv[0][m];
+            cv[i][m] = polygon->vertices_[i]->position_[m] - polygon->center_[m];
+        }
+        while (cv[i][0] > run_->Lx_ / 2.0) {
+            cv[i][0] = cv[i][0] - run_->Lx_;
+        }
+        while (cv[i][0] < (-1.0) * run_->Lx_ / 2.0) {
+            cv[i][0] = cv[i][0] + run_->Lx_;
+        }
+        while (cv[i][1] > run_->Ly_ / 2.0) {
+            cv[i][1] = cv[i][1] - run_->Ly_;
+        }
+        while (cv[i][1] < (-1.0) * run_->Ly_ / 2.0) {
+            cv[i][1] = cv[i][1] + run_->Ly_;
+        }
+    }
+    for (int i = 0; i < polygon->vertices_.size(); i++) {
+        int j = (i + 1) % polygon->vertices_.size();
+        // the edge vector
+        for (int m = 0; m < 3; m++) {
+            vv[i][m] = cv[j][m] - cv[i][m];
             // vv[m] = edge->vv_[m];
         }
         // compute the normal vector of the triangle interface formed by polygon center, and edge vertices
-        double nv[3];
-        nv[0] = cv[0][1]*cv[1][2] - cv[1][1]*cv[0][2];
-        nv[1] = cv[1][0]*cv[0][2] - cv[0][0]*cv[1][2];
-        nv[2] = cv[0][0]*cv[1][1] - cv[1][0]*cv[0][1];
-        double norm_nv = sqrt(nv[0]*nv[0] + nv[1]*nv[1] + nv[2]*nv[2]);
-        polygon->area_ = polygon->area_ + 0.5*norm_nv;
-        nv[0] = nv[0] / norm_nv;
-        nv[1] = nv[1] / norm_nv;
-        nv[2] = nv[2] / norm_nv;
+        nv[i][0] = cv[i][1] * cv[j][2] - cv[j][1] * cv[i][2];
+        nv[i][1] = cv[j][0] * cv[i][2] - cv[i][0] * cv[j][2];
+        nv[i][2] = cv[i][0] * cv[j][1] - cv[j][0] * cv[i][1];
+        double norm_nv = sqrt(nv[i][0] * nv[i][0] + nv[i][1] * nv[i][1] + nv[i][2] * nv[i][2]);
+        nv[i][0] = nv[i][0] / norm_nv;
+        nv[i][1] = nv[i][1] / norm_nv;
+        nv[i][2] = nv[i][2] / norm_nv;
+        if (i == 0) {
+            edgeDirections[i] = true;
+            polygon->area_ = polygon->area_ + 0.5 * norm_nv;
+            continue;
+        }
+        // check direction of nv with nv0
+        double dP = 0.;
+        for (int m = 0; m < 3; m++) {
+            dP += nv[i][m]*nv[0][m];
+        }
+        if (dP > 0.) {
+            edgeDirections[i] = true;
+            polygon->area_ = polygon->area_ + 0.5 * norm_nv;
+        } else {
+            edgeDirections[i] = false;
+            polygon->area_ = polygon->area_ - 0.5 * norm_nv;
+        }
+    }
+
+    if (polygon->area_ < 0.) {
+        polygon->area_ = fabs(polygon->area_);
+        for (int i = 0; i < polygon->vertices_.size(); i++) {
+            edgeDirections[i] = (!edgeDirections[i]);
+        }
+    }
+
+    for (int i = 0; i < polygon->vertices_.size(); i++) {
+        int j = (i + 1) % polygon->vertices_.size();
         // compute forces on triangle edges
         double Fcv0[3];
         double Fcv1[3];
         double Fvv[3];
-        Fvv[0] = epsilon*(nv[1]*vv[2] - vv[1]*nv[2]);
-        Fvv[1] = epsilon*(vv[0]*nv[2] - nv[0]*vv[2]);
-        Fvv[2] = epsilon*(nv[0]*vv[1] - vv[0]*nv[1]);
-        Fcv0[0] = epsilon*(nv[1]*cv[0][2] - cv[0][1]*nv[2]);
-        Fcv0[1] = epsilon*(cv[0][0]*nv[2] - nv[0]*cv[0][2]);
-        Fcv0[2] = epsilon*(nv[0]*cv[0][1] - cv[0][0]*nv[1]);
-        Fcv1[0] = epsilon*(cv[1][1]*nv[2] - nv[1]*cv[1][2]);
-        Fcv1[1] = epsilon*(nv[0]*cv[1][2] - cv[1][0]*nv[2]);
-        Fcv1[2] = epsilon*(cv[1][0]*nv[1] - nv[0]*cv[1][1]);
+        Fvv[0] = epsilon*(nv[i][1]*vv[i][2] - vv[i][1]*nv[i][2]);
+        Fvv[1] = epsilon*(vv[i][0]*nv[i][2] - nv[i][0]*vv[i][2]);
+        Fvv[2] = epsilon*(nv[i][0]*vv[i][1] - vv[i][0]*nv[i][1]);
+        Fcv0[0] = epsilon*(nv[i][1]*cv[i][2] - cv[i][1]*nv[i][2]);
+        Fcv0[1] = epsilon*(cv[i][0]*nv[i][2] - nv[i][0]*cv[i][2]);
+        Fcv0[2] = epsilon*(nv[i][0]*cv[i][1] - cv[i][0]*nv[i][1]);
+        Fcv1[0] = epsilon*(cv[j][1]*nv[i][2] - nv[i][1]*cv[j][2]);
+        Fcv1[1] = epsilon*(nv[i][0]*cv[j][2] - cv[j][0]*nv[i][2]);
+        Fcv1[2] = epsilon*(cv[j][0]*nv[i][1] - nv[i][0]*cv[j][1]);
         // update interfaceForces
+        double sign = 1.0;
+        if (!edgeDirections[i]) {
+            sign = (-1.0);
+        }
         for (int m = 0; m < 3; m++) {
-            edge->vertices_[0]->interfaceForce_[m] = edge->vertices_[0]->interfaceForce_[m] + 0.5*(Fcv0[m]+Fvv[m]);
-            edge->vertices_[1]->interfaceForce_[m] = edge->vertices_[1]->interfaceForce_[m] + 0.5*(Fcv1[m]+Fvv[m]);
-            polygon->interfaceForce_[m] = polygon->interfaceForce_[m] + 0.5*(Fcv0[m]+Fcv1[m]);
+            polygon->vertices_[i]->interfaceForce_[m] = polygon->vertices_[i]->interfaceForce_[m] + sign*0.5*(Fcv0[m]+Fvv[m]);
+            polygon->vertices_[j]->interfaceForce_[m] = polygon->vertices_[j]->interfaceForce_[m] + sign*0.5*(Fcv1[m]+Fvv[m]);
+            polygon->interfaceForce_[m] = polygon->interfaceForce_[m] + sign*0.5*(Fcv0[m]+Fcv1[m]);
         }
     }
 
