@@ -36,6 +36,8 @@ int Vertex::logCells(std::string name) {
         printf(" %ld",cell->id_);
     }
     printf("\n");
+
+    return 0;
 }
 
 int Vertex::logEdges(std::string name) {
@@ -45,4 +47,6 @@ int Vertex::logEdges(std::string name) {
         printf(" %ld",edge->id_);
     }
     printf("\n");
+
+    return 0;
 }

@@ -26,7 +26,7 @@ Run::Run() {
     Aic_ = 0.5;
     rho_growth_ = 0.75;
     t_start_ = 0.;
-    t_end_ = 5.;
+    t_end_ = 4000.;
     dump_period_ = 1.;
     log_period_ = 0.01;
 }
@@ -246,7 +246,7 @@ int     Run::updatePolygonDumpType() {
                 polygon->dumpType = 1;
             }
         } else {
-            printf("polygon %ld has %d neighboring cells\n", polygon->id_, polygon->cells_.size());
+            printf("polygon %ld has %ld neighboring cells\n", polygon->id_, polygon->cells_.size());
             exit(1);
         }
     }
@@ -345,7 +345,7 @@ Edge *  Run::addEdge(Vertex * v0, Vertex * v1) {
 int Run::dumpConfigurationVtk() {
     //////////////////////////////////////////////////////////////////////////////////////
     stringstream filename;
-    filename << setw(10) << setfill('0') << (long int)(floor(simulation_time_+0.01*dt_)) << ".sample.vtk";
+    filename << setw(6) << setfill('0') << (long int)(floor(simulation_time_+0.01*dt_)) << ".sample.vtk";
     ofstream out(filename.str().c_str());
     if (!out.is_open()) {
         cout << "Error opening output file " << filename.str().c_str() << endl;

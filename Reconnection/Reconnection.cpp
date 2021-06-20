@@ -62,7 +62,7 @@ int     Reconnection::start() {
         if (!tmp_edges[i]->checkI()) {
             continue;
         }
-        I_H(tmp_edges[i], false);
+        I_H(tmp_edges[i], true);
     }
 
     // H -> I reconnection
@@ -70,7 +70,7 @@ int     Reconnection::start() {
         if (!triangleCandidates[i]->checkH()) {
             continue;
         }
-        H_I(triangleCandidates[i], false);
+        H_I(triangleCandidates[i], true);
     }
 
     // delete marked edges
@@ -814,15 +814,15 @@ int Reconnection::dumpVtk(std::vector<Polygon *> tmp_polygons, bool IH, bool bef
     stringstream filename;
     if (IH) {
         if (before) {
-            filename << setw(10) << setfill('0') << (long int) (floor(run_->simulation_time_)) << ".IH.before.vtk";
+            filename << setw(6) << setfill('0') << (long int) (floor(run_->simulation_time_)) << setw(4) << setfill('0') << run_->count_dump_ << ".IH.before.vtk";
         } else {
-            filename << setw(10) << setfill('0') << (long int) (floor(run_->simulation_time_)) << ".IH.after.vtk";
+            filename << setw(6) << setfill('0') << (long int) (floor(run_->simulation_time_)) << setw(4) << setfill('0') << run_->count_dump_ << ".IH.after.vtk";
         }
     } else {
         if (before) {
-            filename << setw(10) << setfill('0') << (long int) (floor(run_->simulation_time_)) << ".HI.before.vtk";
+            filename << setw(6) << setfill('0') << (long int) (floor(run_->simulation_time_)) << setw(4) << setfill('0') << run_->count_dump_ << ".HI.before.vtk";
         } else {
-            filename << setw(10) << setfill('0') << (long int) (floor(run_->simulation_time_)) << ".HI.after.vtk";
+            filename << setw(6) << setfill('0') << (long int) (floor(run_->simulation_time_)) << setw(4) << setfill('0') << run_->count_dump_ << ".HI.after.vtk";
         }
     }
     ofstream out(filename.str().c_str());

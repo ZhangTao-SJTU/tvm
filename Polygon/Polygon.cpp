@@ -136,7 +136,7 @@ int Polygon::shrink(Edge* edge) {
     if (it != edges_.end()) {
         edges_.erase(it);
     } else {
-        printf("edge %d not found in polygon %d\n", edge->id_, id_);
+        printf("edge %ld not found in polygon %ld\n", edge->id_, id_);
         exit(1);
     }
     if (edges_.size() == 3) {
@@ -176,4 +176,6 @@ int Polygon::logEdges(std::string name) {
         printf(" %ld",edge->id_);
     }
     printf("\n");
+
+    return 0;
 }

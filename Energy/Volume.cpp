@@ -86,6 +86,8 @@ int Volume::updateCellvu0() {
             cell->vu0_ = vu0_;
         }
     }
+
+    return 0;
 }
 
 int Volume::updatePressure() {
