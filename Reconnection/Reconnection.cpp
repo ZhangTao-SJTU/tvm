@@ -148,6 +148,11 @@ int Reconnection::I_H(Edge * edge, bool verbose) {
 //        printf("Topology Error: polygon %ld and %ld already have common edge before I->H reconnection\n", c123->id_, c456->id_);
         return 1;
     }
+    // check if top/bottom pair of cells are both virtual cells
+    if ((c123 == run_->cellTop_ && c456 == run_->cellBottom_) || (c123 == run_->cellBottom_ && c456 == run_->cellTop_)) {
+        printf("I->H Topology Error: edge %ld is between two virtual cells\n", edge->id_);
+        return 1;
+    }
     // locate three side polygons: 1-1011-4, 2-1011-5, 3-1011-6
     Polygon * p14 = commonPolygon(c1245, c1346);
     Polygon * p25 = commonPolygon(c2356, c1245);

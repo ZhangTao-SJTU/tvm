@@ -35,8 +35,8 @@ int     Interface::updateForces() {
 
     // update interfaceForce values
     for (long int i = 0; i < run_->polygons_.size(); i++) {
-//        updatePolygonForces(run_->polygons_[i]);
-        updatePolygonForcesDeprecated(run_->polygons_[i]);
+        updatePolygonForces(run_->polygons_[i]);
+//        updatePolygonForcesDeprecated(run_->polygons_[i]);
     }
 
     return 0;
