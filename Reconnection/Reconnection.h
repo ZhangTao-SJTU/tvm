@@ -22,6 +22,7 @@ public:
     Polygon * commonPolygon(Cell *, Cell *);
     Edge * commonEdge(Polygon *, Polygon *);
     int computeDirection(double *, double *, double *);
+    int computeDistance(double *, double *, double *);
     int dumpVtk(std::vector<Polygon *>, bool, bool);
 private:
     Run * run_;

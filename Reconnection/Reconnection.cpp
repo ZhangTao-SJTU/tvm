@@ -625,8 +625,8 @@ int Reconnection::H_I(Polygon * polygon, bool verbose) {
     ////////// compute positions of vertices 10, 11     ///////////////
     double r78[3];
     double r79[3];
-    computeDirection(v7->position_, v8->position_, r78);
-    computeDirection(v7->position_, v9->position_, r79);
+    computeDistance(v7->position_, v8->position_, r78);
+    computeDistance(v7->position_, v9->position_, r79);
     // r0: midpoint position of triangle 789
     // uT: unit normal vector of triangle 789
     double r0[3];
@@ -646,9 +646,9 @@ int Reconnection::H_I(Polygon * polygon, bool verbose) {
     double r02[3];
     double r03[3];
     double r0TopCenter[3];
-    computeDirection(r0, v1->position_, r01);
-    computeDirection(r0, v2->position_, r02);
-    computeDirection(r0, v3->position_, r03);
+    computeDistance(r0, v1->position_, r01);
+    computeDistance(r0, v2->position_, r02);
+    computeDistance(r0, v3->position_, r03);
     for (int m = 0; m < 3; m++) {
         r0TopCenter[m] = 1.0/3.0*(r01[m] + r02[m] + r03[m]);
     }
@@ -849,6 +849,26 @@ int Reconnection::computeDirection(double * r0, double * r1, double * w) {
     double wL = sqrt(w[0]*w[0] + w[1]*w[1] + w[2]*w[2]);
     for (int m = 0; m < 3; m++) {
         w[m] = w[m]/wL;
+    }
+
+    return 0;
+}
+
+int Reconnection::computeDistance(double * r0, double * r1, double * w) {
+    for (int m = 0; m < 3; m++) {
+        w[m] = r1[m] - r0[m];
+    }
+    while (w[0] > run_->Lx_/2.0) {
+        w[0] = w[0] - run_->Lx_;
+    }
+    while (w[0] < (-1.0)*run_->Lx_/2.0) {
+        w[0] = w[0] + run_->Lx_;
+    }
+    while (w[1] > run_->Ly_/2.0) {
+        w[1] = w[1] - run_->Ly_;
+    }
+    while (w[1] < (-1.0)*run_->Ly_/2.0) {
+        w[1] = w[1] + run_->Ly_;
     }
 
     return 0;
