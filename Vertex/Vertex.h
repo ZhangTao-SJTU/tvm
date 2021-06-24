@@ -13,6 +13,7 @@ class Vertex;
 class Vertex {
 public:
     long int id_;
+    long int dumpID_;
     double position_[3];
     double volumeForce_[3];
     double interfaceForce_[3];

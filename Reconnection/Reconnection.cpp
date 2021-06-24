@@ -29,48 +29,48 @@ Reconnection::Reconnection(Run * run) {
 int     Reconnection::start() {
     run_->updateGeoinfo();
     // set edge candidate
-    for (long int i = 0; i < run_->edges_.size(); i++) {
-        if (run_->edges_[i]->length_ < Lth_) {
-            run_->edges_[i]->candidate_ = true;
+    for (auto edge : run_->edges_) {
+        if (edge->length_ < Lth_) {
+            edge->candidate_ = true;
         } else {
-            run_->edges_[i]->candidate_ = false;
+            edge->candidate_ = false;
         }
-        run_->edges_[i]->triangle_count_ = 0;
+        edge->triangle_count_ = 0;
     }
     // set edge triangle_count_
-    for (long int i = 0; i < run_->polygons_.size(); i++) {
-        if (run_->polygons_[i]->edges_.size() == 3) {
-            for (int j = 0; j < 3; j++) {
-                run_->polygons_[i]->edges_[j]->triangle_count_ = run_->polygons_[i]->edges_[j]->triangle_count_ + 1;
+    for (auto polygon : run_->polygons_) {
+        if (polygon->edges_.size() == 3) {
+            for (auto edge : polygon->edges_) {
+                edge->triangle_count_ = edge->triangle_count_ + 1;
             }
         }
     }
     // look for H type triangle candidates
     std::vector<Polygon *> triangleCandidates;
-    for (long int i = 0; i < run_->polygons_.size(); i++) {
-        if (run_->polygons_[i]->checkH()) {
-            triangleCandidates.push_back(run_->polygons_[i]);
+    for (auto polygon : run_->polygons_) {
+        if (polygon->checkH()) {
+            triangleCandidates.push_back(polygon);
         }
     }
 
     // I -> H reconnection
     std::vector<Edge *> tmp_edges = run_->edges_;
-    for (long int i = 0; i < tmp_edges.size(); i++) {
-        if (tmp_edges[i]->markToDelete_) {
+    for (auto edge : tmp_edges) {
+        if (edge->markToDelete_) {
             continue;
         }
-        if (!tmp_edges[i]->checkI()) {
+        if (!edge->checkI()) {
             continue;
         }
-        I_H(tmp_edges[i], true);
+        I_H(edge, true);
     }
 
     // H -> I reconnection
-    for (long int i = 0; i < triangleCandidates.size(); i++) {
-        if (!triangleCandidates[i]->checkH()) {
+    for (auto polygon : triangleCandidates) {
+        if (!polygon->checkH()) {
             continue;
         }
-        H_I(triangleCandidates[i], true);
+        H_I(polygon, true);
     }
 
     // delete marked edges
@@ -150,7 +150,19 @@ int Reconnection::I_H(Edge * edge, bool verbose) {
     }
     // check if top/bottom pair of cells are both virtual cells
     if ((c123 == run_->cellTop_ && c456 == run_->cellBottom_) || (c123 == run_->cellBottom_ && c456 == run_->cellTop_)) {
-        printf("I->H Topology Error: edge %ld is between two virtual cells\n", edge->id_);
+//        printf("I->H Topology Error: edge %ld is between two virtual cells\n", edge->id_);
+        return 1;
+    }
+    // check if both top and bottom virtual cells are involved
+    std::vector<Cell *> tmpCells = {c123, c456, c1245, c2356, c1346};
+    int count_tb = 0;
+    for (auto cell : tmpCells) {
+        if (cell == run_->cellTop_ || cell == run_->cellBottom_) {
+            count_tb += 1;
+        }
+    }
+    if (count_tb >= 2) {
+        printf("I->H Topology Error: edge %ld has more than one virtual cells\n", edge->id_);
         return 1;
     }
     // locate three side polygons: 1-1011-4, 2-1011-5, 3-1011-6
@@ -430,6 +442,14 @@ int Reconnection::I_H(Edge * edge, bool verbose) {
     run_->deleteEdge(e5);
     run_->deleteEdge(e6);
 
+    // debug: turn off reconnection for all related edges
+    std::vector<Polygon *> tmp_polygons = {p14, p25, p36, p12, p23, p13, p45, p56, p46, p789};
+    for (auto polygon : tmp_polygons) {
+        for (auto edge : polygon->edges_) {
+            edge->candidate_ = false;
+        }
+    }
+
     if (verbose) {
         run_->updatePolygonVertices();
         std::vector<Polygon *> tmp_polygons = {p14,p25,p36,p12,p23,p13,p45,p46,p56};
@@ -516,6 +536,18 @@ int Reconnection::H_I(Polygon * polygon, bool verbose) {
     if (c1346 == NULL) {
         printf("Topology Error: c1346 not found in polygon %ld\n", polygon->id_);
         exit(1);
+    }
+    // check if both top and bottom virtual cells are involved
+    std::vector<Cell *> tmpCells = {c123, c456, c1245, c2356, c1346};
+    int count_tb = 0;
+    for (auto cell : tmpCells) {
+        if (cell == run_->cellTop_ || cell == run_->cellBottom_) {
+            count_tb += 1;
+        }
+    }
+    if (count_tb >= 2) {
+        printf("H->I Topology Error: polygon %ld has more than one virtual cells\n", polygon->id_);
+        return 1;
     }
     // locate three side polygons: 1-1011-4, 2-1011-5, 3-1011-6
     Polygon * p14 = commonPolygon(c1245, c1346);
@@ -741,6 +773,14 @@ int Reconnection::H_I(Polygon * polygon, bool verbose) {
     }
     run_->deletePolygon(polygon);
 
+    // debug: turn off reconnection for all related edges
+    std::vector<Polygon *> tmp_polygons = {p14, p25, p36, p12, p23, p13, p45, p56, p46};
+    for (auto polygon : tmp_polygons) {
+        for (auto edge : polygon->edges_) {
+            edge->candidate_ = false;
+        }
+    }
+
     if (verbose) {
         run_->updatePolygonVertices();
         std::vector<Polygon *> tmp_polygons = {p14,p25,p36,p12,p23,p13,p45,p46,p56};
@@ -842,7 +882,7 @@ int Reconnection::dumpVtk(std::vector<Polygon *> tmp_polygons, bool IH, bool bef
     out << "POINTS " << run_->vertices_.size() << " double" << endl;
     for (long int i = 0; i < run_->vertices_.size(); i++) {
         // reset vertex id for dumping polygons
-        run_->vertices_[i]->id_ = i;
+        run_->vertices_[i]->dumpID_ = i;
         out << right << setw(12) << scientific << setprecision(5) << run_->vertices_[i]->position_[0];
         out << " " << right << setw(12) << scientific << setprecision(5) << run_->vertices_[i]->position_[1];
         out << " " << right << setw(12) << scientific << setprecision(5) << run_->vertices_[i]->position_[2];
@@ -863,7 +903,7 @@ int Reconnection::dumpVtk(std::vector<Polygon *> tmp_polygons, bool IH, bool bef
         if (!tmp_polygons[i]->crossBoundary()) {
             out << left << setw(6) << tmp_polygons[i]->vertices_.size();
             for (int j = 0; j < tmp_polygons[i]->vertices_.size(); j++) {
-                out << " " << left << setw(6) << tmp_polygons[i]->vertices_[j]->id_;
+                out << " " << left << setw(6) << tmp_polygons[i]->vertices_[j]->dumpID_;
             }
             out << endl;
         }

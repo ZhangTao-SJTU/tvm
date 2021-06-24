@@ -171,18 +171,16 @@ int     Run::updateVertexEdges() {
 }
 
 int     Run::updateVertexCells() {
-    for (long int i = 0; i < vertices_.size(); i++) {
-        vertices_[i]->cells_.clear();
+    for (auto vertex : vertices_) {
+        vertex->cells_.clear();
     }
-    std::vector<Cell *> tpm_cells = cells_;
-    tpm_cells.push_back(cellBottom_);
-    tpm_cells.push_back(cellTop_);
-    for (long int i = 0; i < tpm_cells.size(); i++) {
-        Cell * cell = tpm_cells[i];
-        for (long int j = 0; j < cell->polygons_.size(); j++) {
-            for (long int k = 0; k < cell->polygons_[j]->edges_.size(); k++) {
-                for (long int l = 0; l < 2; l++) {
-                    Vertex * vertex = cell->polygons_[j]->edges_[k]->vertices_[l];
+    std::vector<Cell *> tmp_cells = cells_;
+    tmp_cells.push_back(cellBottom_);
+    tmp_cells.push_back(cellTop_);
+    for (auto cell : tmp_cells) {
+        for (auto polygon : cell->polygons_) {
+            for (auto edge : polygon->edges_) {
+                for (auto vertex : edge->vertices_) {
                     if (std::find(vertex->cells_.begin(), vertex->cells_.end(), cell) == vertex->cells_.end()) {
                         // new cell to be added
                         vertex->cells_.push_back(cell);
@@ -358,7 +356,7 @@ int Run::dumpConfigurationVtk() {
     out << "POINTS " << vertices_.size() << " double" << endl;
     for (long int i = 0; i < vertices_.size(); i++) {
         // reset vertex id for dumping polygons
-        vertices_[i]->id_ = i;
+        vertices_[i]->dumpID_ = i;
         out << right << setw(12) << scientific << setprecision(5) << vertices_[i]->position_[0];
         out << " " << right << setw(12) << scientific << setprecision(5) << vertices_[i]->position_[1];
         out << " " << right << setw(12) << scientific << setprecision(5) << vertices_[i]->position_[2];
@@ -398,7 +396,7 @@ int Run::dumpConfigurationVtk() {
         if (!polygons_[i]->crossBoundary()) {
             out << left << setw(6) << polygons_[i]->vertices_.size();
             for (int j = 0; j < polygons_[i]->vertices_.size(); j++) {
-                out << " " << left << setw(6) << polygons_[i]->vertices_[j]->id_;
+                out << " " << left << setw(6) << polygons_[i]->vertices_[j]->dumpID_;
             }
             out << endl;
         }
