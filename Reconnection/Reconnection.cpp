@@ -879,15 +879,15 @@ int Reconnection::dumpVtk(std::vector<Polygon *> tmp_polygons, bool IH, bool bef
     stringstream filename;
     if (IH) {
         if (before) {
-            filename << setw(6) << setfill('0') << (long int) (floor(run_->simulation_time_)) << setw(4) << setfill('0') << run_->count_dump_ << ".IH.before.vtk";
+            filename << setw(6) << setfill('0') << (long int) (floor(run_->simulation_time_)) << setw(8) << setfill('0') << run_->count_reconnect_ << ".IH.before.vtk";
         } else {
-            filename << setw(6) << setfill('0') << (long int) (floor(run_->simulation_time_)) << setw(4) << setfill('0') << run_->count_dump_ << ".IH.after.vtk";
+            filename << setw(6) << setfill('0') << (long int) (floor(run_->simulation_time_)) << setw(8) << setfill('0') << run_->count_reconnect_ << ".IH.after.vtk";
         }
     } else {
         if (before) {
-            filename << setw(6) << setfill('0') << (long int) (floor(run_->simulation_time_)) << setw(4) << setfill('0') << run_->count_dump_ << ".HI.before.vtk";
+            filename << setw(6) << setfill('0') << (long int) (floor(run_->simulation_time_)) << setw(8) << setfill('0') << run_->count_reconnect_ << ".HI.before.vtk";
         } else {
-            filename << setw(6) << setfill('0') << (long int) (floor(run_->simulation_time_)) << setw(4) << setfill('0') << run_->count_dump_ << ".HI.after.vtk";
+            filename << setw(6) << setfill('0') << (long int) (floor(run_->simulation_time_)) << setw(8) << setfill('0') << run_->count_reconnect_ << ".HI.after.vtk";
         }
     }
     ofstream out(filename.str().c_str());
@@ -928,6 +928,12 @@ int Reconnection::dumpVtk(std::vector<Polygon *> tmp_polygons, bool IH, bool bef
             out << endl;
         }
     }
+    out << endl;
+
+    out << "CELL_DATA 9" << endl;
+    out << "SCALARS type int 1" << endl;
+    out << "LOOKUP_TABLE default" << endl;
+    out << "0\n0\n0\n1\n1\n1\n2\n2\n2\n" << endl;
     out << endl;
     out.close();
 
