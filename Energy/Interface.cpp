@@ -59,8 +59,8 @@ int Interface::updatePolygonForces(Polygon *polygon) {
     polygon->area_ = 0.;
 
     double cv[polygon->vertices_.size()][3];
-    double nv[polygon->vertices_.size()][3];
     double vv[polygon->vertices_.size()][3];
+    double nv[polygon->vertices_.size()][3];
     bool edgeDirections[polygon->vertices_.size()];
     // the polygon center is the reference point
     for (int i = 0; i < polygon->vertices_.size(); i++) {
@@ -85,7 +85,18 @@ int Interface::updatePolygonForces(Polygon *polygon) {
         // the edge vector
         for (int m = 0; m < 3; m++) {
             vv[i][m] = cv[j][m] - cv[i][m];
-            // vv[m] = edge->vv_[m];
+        }
+        while (vv[i][0] > run_->Lx_ / 2.0) {
+            vv[i][0] = vv[i][0] - run_->Lx_;
+        }
+        while (vv[i][0] < (-1.0) * run_->Lx_ / 2.0) {
+            vv[i][0] = vv[i][0] + run_->Lx_;
+        }
+        while (vv[i][1] > run_->Ly_ / 2.0) {
+            vv[i][1] = vv[i][1] - run_->Ly_;
+        }
+        while (vv[i][1] < (-1.0) * run_->Ly_ / 2.0) {
+            vv[i][1] = vv[i][1] + run_->Ly_;
         }
         // compute the normal vector of the triangle interface formed by polygon center, and edge vertices
         nv[i][0] = cv[i][1] * cv[j][2] - cv[j][1] * cv[i][2];

@@ -223,7 +223,7 @@ int     Run::updatePolygonType() {
     return 0;
 }
 
-int     Run::updatePolygonDumpType() {
+int     Run::updatePolygonDumpTypeVolumeRatio() {
     // 0: red
     // 1: grey
     // 2: blue
@@ -235,6 +235,7 @@ int     Run::updatePolygonDumpType() {
             } else {
                 polygon->dumpType = 1;
             }
+            polygon->dumpVolumeRatio = polygon->cells_[0]->volume_/polygon->cells_[0]->vu0_;
         } else if (polygon->cells_.size() == 2) {
             if (polygon->cells_[0]->growing_ != polygon->cells_[1]->growing_) {
                 polygon->dumpType = 2;
@@ -243,6 +244,7 @@ int     Run::updatePolygonDumpType() {
             } else {
                 polygon->dumpType = 1;
             }
+            polygon->dumpVolumeRatio = 1.0;
         } else {
             printf("polygon %ld has %ld neighboring cells\n", polygon->id_, polygon->cells_.size());
             exit(1);
@@ -403,13 +405,21 @@ int Run::dumpConfigurationVtk() {
     }
     out << endl;
 
-    updatePolygonDumpType();
+    updatePolygonDumpTypeVolumeRatio();
     out << "CELL_DATA " << Npolygons << endl;
     out << "SCALARS type int 1" << endl;
     out << "LOOKUP_TABLE default" << endl;
     for (long int i = 0; i < polygons_.size(); i++) {
         if (!polygons_[i]->crossBoundary()) {
             out << left << setw(6) << polygons_[i]->dumpType << endl;
+        }
+    }
+    out << endl;
+    out << "SCALARS volumeRatio double 1" << endl;
+    out << "LOOKUP_TABLE default" << endl;
+    for (long int i = 0; i < polygons_.size(); i++) {
+        if (!polygons_[i]->crossBoundary()) {
+            out << left << setw(6) << polygons_[i]->dumpVolumeRatio << endl;
         }
     }
     out << endl;

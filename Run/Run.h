@@ -55,7 +55,7 @@ class Run {
     int     updatePolygonVertices();
     int     updatePolygonCells();
     int     updatePolygonType();
-    int     updatePolygonDumpType();
+    int     updatePolygonDumpTypeVolumeRatio();
     int     updateVertexEdges();
     int     updateVertexCells();
     int     updateGeoinfo();

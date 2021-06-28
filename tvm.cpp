@@ -223,8 +223,9 @@ int InitializeAll(Run * run) {
 
     // add random displacement to vertex positions
     const double stddev = sqrt(0.001);
-    unsigned long int seed = 6399402827626050;
-    std::default_random_engine generator(seed);
+//    unsigned long int seed = 6399402827626050;
+//    std::default_random_engine generator(seed);
+    std::default_random_engine generator(std::random_device{}());
     std::normal_distribution<double> dist(0., stddev);
     for (long int i = 0; i < run->vertices_.size(); i++) {
         for (int m = 0; m < 3; m++) {
