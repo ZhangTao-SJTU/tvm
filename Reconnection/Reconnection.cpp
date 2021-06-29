@@ -442,13 +442,13 @@ int Reconnection::I_H(Edge * edge, bool verbose) {
     run_->deleteEdge(e5);
     run_->deleteEdge(e6);
 
-    // debug: turn off reconnection for all related edges
-    std::vector<Polygon *> tmp_polygons = {p14, p25, p36, p12, p23, p13, p45, p56, p46, p789};
-    for (auto polygon : tmp_polygons) {
-        for (auto edge : polygon->edges_) {
-            edge->candidate_ = false;
-        }
-    }
+//    // debug: turn off reconnection for all related edges
+//    std::vector<Polygon *> tmp_polygons = {p14, p25, p36, p12, p23, p13, p45, p56, p46, p789};
+//    for (auto polygon : tmp_polygons) {
+//        for (auto edge : polygon->edges_) {
+//            edge->candidate_ = false;
+//        }
+//    }
 
     if (verbose) {
         run_->updatePolygonVertices();
@@ -773,13 +773,13 @@ int Reconnection::H_I(Polygon * polygon, bool verbose) {
     }
     run_->deletePolygon(polygon);
 
-    // debug: turn off reconnection for all related edges
-    std::vector<Polygon *> tmp_polygons = {p14, p25, p36, p12, p23, p13, p45, p56, p46};
-    for (auto polygon : tmp_polygons) {
-        for (auto edge : polygon->edges_) {
-            edge->candidate_ = false;
-        }
-    }
+//    // debug: turn off reconnection for all related edges
+//    std::vector<Polygon *> tmp_polygons = {p14, p25, p36, p12, p23, p13, p45, p56, p46};
+//    for (auto polygon : tmp_polygons) {
+//        for (auto edge : polygon->edges_) {
+//            edge->candidate_ = false;
+//        }
+//    }
 
     if (verbose) {
         run_->updatePolygonVertices();
