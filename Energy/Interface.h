@@ -18,7 +18,6 @@ public:
 
     int updateForces();
     int updatePolygonForces(Polygon *);
-    int updatePolygonForcesDeprecated(Polygon *);
     int updateEnergy();
 private:
     Run * run_;
