@@ -62,7 +62,7 @@ int     Reconnection::start() {
         if (!edge->checkI()) {
             continue;
         }
-        I_H(edge, true);
+        I_H(edge, false);
     }
 
     // H -> I reconnection
@@ -70,7 +70,7 @@ int     Reconnection::start() {
         if (!polygon->checkH()) {
             continue;
         }
-        H_I(polygon, true);
+        H_I(polygon, false);
     }
 
     // delete marked edges
