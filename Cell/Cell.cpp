@@ -165,6 +165,12 @@ int Cell::updatePolygonDirections() {
         while (cc[1] < (-1.0)*run_->Ly_/2.0) {
             cc[1] = cc[1] + run_->Ly_;
         }
+        while (cc[2] > run_->Lz_/2.0) {
+            cc[2] = cc[2] - run_->Lz_;
+        }
+        while (cc[2] < (-1.0)*run_->Lz_/2.0) {
+            cc[2] = cc[2] + run_->Lz_;
+        }
         for (int i = 0; i < polygon->vertices_.size(); i++) {
             double cv[2][3];   // the vectors pointing from polygon center to edge vertices
             for (int k = 0; k < 2; k++) {
@@ -183,6 +189,12 @@ int Cell::updatePolygonDirections() {
                 }
                 while (cv[k][1] < (-1.0)*run_->Ly_/2.0) {
                     cv[k][1] = cv[k][1] + run_->Ly_;
+                }
+                while (cv[k][2] > run_->Lz_/2.0) {
+                    cv[k][2] = cv[k][2] - run_->Lz_;
+                }
+                while (cv[k][2] < (-1.0)*run_->Lz_/2.0) {
+                    cv[k][2] = cv[k][2] + run_->Lz_;
                 }
             }
             // compute the volume of the tetrahedron formed by origin, polygon center, and edge vertices
@@ -234,6 +246,12 @@ int Cell::updateVolume() {
         while (cc[1] < (-1.0)*run_->Ly_/2.0) {
             cc[1] = cc[1] + run_->Ly_;
         }
+        while (cc[2] > run_->Lz_/2.0) {
+            cc[2] = cc[2] - run_->Lz_;
+        }
+        while (cc[2] < (-1.0)*run_->Lz_/2.0) {
+            cc[2] = cc[2] + run_->Lz_;
+        }
         int Nv = polygon->vertices_.size();
         double cv[Nv][3];   // the vectors pointing from polygon center to edge vertices
         for (int i = 0; i < Nv; i++) {
@@ -251,6 +269,12 @@ int Cell::updateVolume() {
             }
             while (cv[i][1] < (-1.0)*run_->Ly_/2.0) {
                 cv[i][1] = cv[i][1] + run_->Ly_;
+            }
+            while (cv[i][2] > run_->Lz_/2.0) {
+                cv[i][2] = cv[i][2] - run_->Lz_;
+            }
+            while (cv[i][2] < (-1.0)*run_->Lz_/2.0) {
+                cv[i][2] = cv[i][2] + run_->Lz_;
             }
         }
         for (int i = 0; i < Nv; i++) {

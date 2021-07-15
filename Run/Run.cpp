@@ -123,32 +123,6 @@ int     Run::updateVerticesPosition() {
     return 0;
 }
 
-double Run::computeD(double* v1, double* v2) {
-    double dx = fabs(v2[0] - v1[0]);
-    double dy = fabs(v2[1] - v1[1]);
-    while (dx > Lx_/2.0) {
-        dx -= Lx_;
-    }
-    while (dy > Ly_/2.0) {
-        dy -= Ly_;
-    }
-
-    return sqrt(dx*dx + dy*dy);
-}
-
-double Run::computeD(double cx, double cy, double* v) {
-    double dx = fabs(v[0] - cx);
-    double dy = fabs(v[1] - cy);
-    while (dx > Lx_/2.0) {
-        dx -= Lx_;
-    }
-    while (dy > Ly_/2.0) {
-        dy -= Ly_;
-    }
-
-    return sqrt(dx*dx + dy*dy);
-}
-
 int     Run::updatePolygonVertices() {
     // update vertices in polygon
     for (long int i = 0; i < polygons_.size(); i++) {
@@ -317,8 +291,12 @@ int     Run::resetPosition(double * r) {
     if (fabs(r[1]) > 1e6) {
         printf("%e\n",r[1]);
     }
+    if (fabs(r[2]) > 1e6) {
+        printf("%e\n",r[2]);
+    }
     r[0] = r[0] - Lx_ * floor(r[0] / Lx_);
     r[1] = r[1] - Ly_ * floor(r[1] / Ly_);
+    r[2] = r[2] - Lz_ * floor(r[2] / Lz_);
 
     return 0;
 }

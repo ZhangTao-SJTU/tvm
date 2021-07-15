@@ -819,6 +819,12 @@ int Reconnection::computeDirection(double * r0, double * r1, double * w) {
     while (w[1] < (-1.0)*run_->Ly_/2.0) {
         w[1] = w[1] + run_->Ly_;
     }
+    while (w[2] > run_->Lz_/2.0) {
+        w[2] = w[2] - run_->Lz_;
+    }
+    while (w[2] < (-1.0)*run_->Lz_/2.0) {
+        w[2] = w[2] + run_->Lz_;
+    }
     double wL = sqrt(w[0]*w[0] + w[1]*w[1] + w[2]*w[2]);
     for (int m = 0; m < 3; m++) {
         w[m] = w[m]/wL;
@@ -842,6 +848,12 @@ int Reconnection::computeDistance(double * r0, double * r1, double * w) {
     }
     while (w[1] < (-1.0)*run_->Ly_/2.0) {
         w[1] = w[1] + run_->Ly_;
+    }
+    while (w[2] > run_->Lz_/2.0) {
+        w[2] = w[2] - run_->Lz_;
+    }
+    while (w[2] < (-1.0)*run_->Lz_/2.0) {
+        w[2] = w[2] + run_->Lz_;
     }
 
     return 0;

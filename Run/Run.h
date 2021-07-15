@@ -48,8 +48,6 @@ class Run {
 
     Run();
     int     start();
-    double  computeD(double *, double *);
-    double  computeD(double , double, double *);
     int     updatePolygonVertices();
     int     updatePolygonCells();
     int     updatePolygonType();

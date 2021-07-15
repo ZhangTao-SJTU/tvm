@@ -61,6 +61,12 @@ int Edge::update() {
     while (dy < (-1.0)*run_->Ly_/2.0) {
         dy += run_->Ly_;
     }
+    while (dz > run_->Lz_/2.0) {
+        dz -= run_->Lz_;
+    }
+    while (dz < (-1.0)*run_->Lz_/2.0) {
+        dz += run_->Lz_;
+    }
 //    dx = dx - run_->Lx_ * floor((dx + run_->Lx_/2.0) / run_->Lx_);
 //    dy = dy - run_->Ly_ * floor((dy + run_->Ly_/2.0) / run_->Ly_);
     vv_[0] = dx;

@@ -97,6 +97,12 @@ int Polygon::updateCenter() {
         while (dy < (-1.0)*run_->Ly_/2.0) {
             dy += run_->Ly_;
         }
+        while (dz > run_->Lz_/2.0) {
+            dz -= run_->Lz_;
+        }
+        while (dz < (-1.0)*run_->Lz_/2.0) {
+            dz += run_->Lz_;
+        }
         sum_lx += length*dx;
         sum_ly += length*dy;
         sum_lz += length*dz;

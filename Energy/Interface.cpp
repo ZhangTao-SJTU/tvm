@@ -79,6 +79,12 @@ int Interface::updatePolygonForces(Polygon *polygon) {
             while (cv[k][1] < (-1.0)*run_->Ly_/2.0) {
                 cv[k][1] = cv[k][1] + run_->Ly_;
             }
+            while (cv[k][2] > run_->Lz_/2.0) {
+                cv[k][2] = cv[k][2] - run_->Lz_;
+            }
+            while (cv[k][2] < (-1.0)*run_->Lz_/2.0) {
+                cv[k][2] = cv[k][2] + run_->Lz_;
+            }
         }
         // the edge vector
         double vv[3];
