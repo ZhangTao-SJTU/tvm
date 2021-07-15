@@ -20,10 +20,10 @@ Run::Run() {
     dt_ = 1.0e-4;
     dtr_ = 1.0e-3;
     eta_ = 1.0;
-    Lx_ = 13.2;
-    Ly_ = 200.0/13.2;
-    NCell_ = 400;
-    Aic_ = 0.5;
+    Lx_ = 8.;
+    Ly_ = 8.;
+    Lz_ = 8.;
+    NCell_ = 512;
     rho_growth_ = 0.75;
     t_start_ = 0.;
     t_end_ = 4000.;
@@ -175,8 +175,6 @@ int     Run::updateVertexCells() {
         vertex->cells_.clear();
     }
     std::vector<Cell *> tmp_cells = cells_;
-    tmp_cells.push_back(cellBottom_);
-    tmp_cells.push_back(cellTop_);
     for (auto cell : tmp_cells) {
         for (auto polygon : cell->polygons_) {
             for (auto edge : polygon->edges_) {

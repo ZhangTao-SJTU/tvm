@@ -38,6 +38,9 @@ bool Edge::crossBoundary() {
     if (fabs(vertices_[1]->position_[1] - vertices_[0]->position_[1]) > run_->Ly_/2.0) {
         return true;
     }
+    if (fabs(vertices_[1]->position_[2] - vertices_[0]->position_[2]) > run_->Lz_/2.0) {
+        return true;
+    }
 
     return false;
 }

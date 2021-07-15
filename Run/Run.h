@@ -22,8 +22,8 @@ class Run {
     double  eta_;   // friction coefficient of vertex
     double  Lx_;
     double  Ly_;
+    double  Lz_;
     int     NCell_;
-    double  Aic_;
     double  rho_growth_;
     double  simulation_time_;
     double   t_start_;
@@ -37,8 +37,6 @@ class Run {
     long int count_edges_;
     long int count_polygons_;
     long int count_cells_;
-    Cell * cellTop_;    // virtual cell on the top to set the boundary
-    Cell * cellBottom_; // virtual cell on the bottom to set the boundary
     Volume * volume_;
     Interface * interface_;
     Reconnection * reconnection_;

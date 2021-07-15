@@ -148,23 +148,7 @@ int Reconnection::I_H(Edge * edge, bool verbose) {
 //        printf("Topology Error: polygon %ld and %ld already have common edge before I->H reconnection\n", c123->id_, c456->id_);
         return 1;
     }
-    // check if top/bottom pair of cells are both virtual cells
-    if ((c123 == run_->cellTop_ && c456 == run_->cellBottom_) || (c123 == run_->cellBottom_ && c456 == run_->cellTop_)) {
-//        printf("I->H Topology Error: edge %ld is between two virtual cells\n", edge->id_);
-        return 1;
-    }
-    // check if both top and bottom virtual cells are involved
-    std::vector<Cell *> tmpCells = {c123, c456, c1245, c2356, c1346};
-    int count_tb = 0;
-    for (auto cell : tmpCells) {
-        if (cell == run_->cellTop_ || cell == run_->cellBottom_) {
-            count_tb += 1;
-        }
-    }
-    if (count_tb >= 2) {
-        printf("I->H Topology Error: edge %ld has more than one virtual cells\n", edge->id_);
-        return 1;
-    }
+
     // locate three side polygons: 1-1011-4, 2-1011-5, 3-1011-6
     Polygon * p14 = commonPolygon(c1245, c1346);
     Polygon * p25 = commonPolygon(c2356, c1245);
@@ -537,18 +521,7 @@ int Reconnection::H_I(Polygon * polygon, bool verbose) {
         printf("Topology Error: c1346 not found in polygon %ld\n", polygon->id_);
         exit(1);
     }
-    // check if both top and bottom virtual cells are involved
-    std::vector<Cell *> tmpCells = {c123, c456, c1245, c2356, c1346};
-    int count_tb = 0;
-    for (auto cell : tmpCells) {
-        if (cell == run_->cellTop_ || cell == run_->cellBottom_) {
-            count_tb += 1;
-        }
-    }
-    if (count_tb >= 2) {
-        printf("H->I Topology Error: polygon %ld has more than one virtual cells\n", polygon->id_);
-        return 1;
-    }
+
     // locate three side polygons: 1-1011-4, 2-1011-5, 3-1011-6
     Polygon * p14 = commonPolygon(c1245, c1346);
     Polygon * p25 = commonPolygon(c2356, c1245);
