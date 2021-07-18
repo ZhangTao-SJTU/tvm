@@ -21,7 +21,6 @@ using namespace std;
 Interface::Interface(Run * run) {
     run_ = run;
     epsilon_cc_ = 1.;
-    epsilon_co_ = 0.7;
     energy_ = 0.;
 }
 
@@ -48,11 +47,7 @@ int Interface::updatePolygonForces(Polygon *polygon) {
     }
 
     double epsilon;
-    if (polygon->cell_cell) {
-        epsilon = epsilon_cc_;
-    } else {
-        epsilon = epsilon_co_;
-    }
+    epsilon = epsilon_cc_;
 
     // reset polygon area
     polygon->area_ = 0.;
@@ -145,11 +140,7 @@ int Interface::updateEnergy() {
     energy_ = 0.;
     for (long int i = 0; i < run_->polygons_.size(); i++) {
         double epsilon;
-        if (run_->polygons_[i]->cell_cell) {
-            epsilon = epsilon_cc_;
-        } else {
-            epsilon = epsilon_co_;
-        }
+        epsilon = epsilon_cc_;
         energy_ += epsilon*run_->polygons_[i]->area_;
     }
 

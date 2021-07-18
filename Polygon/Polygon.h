@@ -17,8 +17,6 @@ public:
     double area_;
     double volumeForce_[3];
     double interfaceForce_[3];
-    bool cell_cell;
-    int dumpType;
     double dumpVolumeRatio;
     std::vector<Edge *> edges_;
     std::vector<Vertex *> vertices_;

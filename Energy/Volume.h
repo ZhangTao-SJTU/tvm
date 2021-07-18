@@ -12,7 +12,6 @@ class Volume {
 public:
     double kcv_;
     double vu0_;
-    double  V_growth_;
     double totalVolume_;
     double energy_;
 
@@ -21,7 +20,6 @@ public:
     int updateForces();
     int updatePolygonDirections();
     int updateVolume();
-    int updateCellvu0();
     int updatePressure();
     int updatePolygonForces(Cell *, Polygon *);
     int updateEnergy();

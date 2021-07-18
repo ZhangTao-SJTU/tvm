@@ -22,8 +22,6 @@ Volume::Volume(Run * run) {
     run_ = run;
     kcv_ = 14.;
     vu0_ = 1.;
-    V_growth_ = 1.0e-3;
-//    V_growth_ = 0.8;
     totalVolume_ = 0.;
     energy_ = 0.;
 }
@@ -35,9 +33,6 @@ int     Volume::updateForces() {
             run_->vertices_[i]->volumeForce_[j] = 0.;
         }
     }
-
-    // update vu0 of each cell
-    updateCellvu0();
 
     // update volume of each cell, and direction of polygons in each cell
     updateVolume();
@@ -78,21 +73,9 @@ int Volume::updateVolume() {
     return 0;
 }
 
-int Volume::updateCellvu0() {
-    for (auto cell : run_->cells_) {
-        if (cell->growing_) {
-             cell->vu0_ = (1.0 + V_growth_*run_->simulation_time_)*vu0_;
-        } else {
-            cell->vu0_ = vu0_;
-        }
-    }
-
-    return 0;
-}
-
 int Volume::updatePressure() {
     for (auto cell : run_->cells_) {
-        cell->pressure_ = (-1.0)*kcv_/cell->vu0_*(cell->volume_/cell->vu0_-1.0);
+        cell->pressure_ = (-1.0)*kcv_/vu0_*(cell->volume_/vu0_-1.0);
     }
 
     return 0;
@@ -175,7 +158,7 @@ int Volume::updatePolygonForces(Cell *cell, Polygon *polygon) {
 int Volume::updateEnergy() {
     energy_ = 0.;
     for (auto cell : run_->cells_) {
-        energy_ += 0.5*kcv_*pow(cell->volume_/cell->vu0_-1.0, 2.0);
+        energy_ += 0.5*kcv_*pow(cell->volume_/vu0_-1.0, 2.0);
     }
 
     return 0;

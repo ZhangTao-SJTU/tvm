@@ -24,7 +24,6 @@ Run::Run() {
     Ly_ = 8.;
     Lz_ = 8.;
     NCell_ = 512;
-    rho_growth_ = 0.75;
     t_start_ = 0.;
     t_end_ = 4000.;
     dump_period_ = 1.;
@@ -182,41 +181,14 @@ int     Run::updatePolygonCells() {
     return 0;
 }
 
-int     Run::updatePolygonType() {
-    updatePolygonCells();
-    for (long int i = 0; i < polygons_.size(); i++) {
-        if (polygons_[i]->cells_.size() > 1) {
-            polygons_[i]->cell_cell = true;
-        } else {
-            polygons_[i]->cell_cell = false;
-        }
-    }
-
-    return 0;
-}
-
-int     Run::updatePolygonDumpTypeVolumeRatio() {
+int     Run::updatePolygonVolumeRatio() {
     // 0: red
     // 1: grey
     // 2: blue
     updatePolygonCells();
     for (auto polygon : polygons_) {
-        if (polygon->cells_.size() == 1) {
-            if (polygon->cells_[0]->growing_) {
-                polygon->dumpType = 0;
-            } else {
-                polygon->dumpType = 1;
-            }
-            polygon->dumpVolumeRatio = polygon->cells_[0]->volume_/polygon->cells_[0]->vu0_;
-        } else if (polygon->cells_.size() == 2) {
-            if (polygon->cells_[0]->growing_ != polygon->cells_[1]->growing_) {
-                polygon->dumpType = 2;
-            } else if (polygon->cells_[0]->growing_) {
-                polygon->dumpType = 0;
-            } else {
-                polygon->dumpType = 1;
-            }
-            polygon->dumpVolumeRatio = 1.0;
+        if (polygon->cells_.size() == 2) {
+            polygon->dumpVolumeRatio = (polygon->cells_[0]->volume_+polygon->cells_[1]->volume_)/(2.0*volume_->vu0_);
         } else {
             printf("polygon %ld has %ld neighboring cells\n", polygon->id_, polygon->cells_.size());
             exit(1);
@@ -236,8 +208,6 @@ int     Run::updateGeoinfo() {
     for (long int i = 0; i < polygons_.size(); i++) {
         polygons_[i]->updateCenter();
     }
-    // update polygon type
-    updatePolygonType();
 
     return 0;
 }
@@ -381,16 +351,16 @@ int Run::dumpConfigurationVtk() {
     }
     out << endl;
 
-    updatePolygonDumpTypeVolumeRatio();
+    updatePolygonVolumeRatio();
     out << "CELL_DATA " << Npolygons << endl;
-    out << "SCALARS type int 1" << endl;
-    out << "LOOKUP_TABLE default" << endl;
-    for (long int i = 0; i < polygons_.size(); i++) {
-        if (!polygons_[i]->crossBoundary()) {
-            out << left << setw(6) << polygons_[i]->dumpType << endl;
-        }
-    }
-    out << endl;
+//    out << "SCALARS type int 1" << endl;
+//    out << "LOOKUP_TABLE default" << endl;
+//    for (long int i = 0; i < polygons_.size(); i++) {
+//        if (!polygons_[i]->crossBoundary()) {
+//            out << left << setw(6) << polygons_[i]->dumpType << endl;
+//        }
+//    }
+//    out << endl;
     out << "SCALARS volumeRatio double 1" << endl;
     out << "LOOKUP_TABLE default" << endl;
     for (long int i = 0; i < polygons_.size(); i++) {

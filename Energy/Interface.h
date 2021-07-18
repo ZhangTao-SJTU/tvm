@@ -11,7 +11,6 @@ class Interface;
 class Interface {
 public:
     double epsilon_cc_;
-    double epsilon_co_;
     double energy_;
 
     explicit Interface(Run *);
