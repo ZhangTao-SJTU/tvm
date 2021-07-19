@@ -194,7 +194,7 @@ int     Run::updatePolygonVolumeRatio() {
     updatePolygonCells();
     for (auto polygon : polygons_) {
         if (polygon->cells_.size() == 2) {
-            polygon->dumpVolumeRatio = (polygon->cells_[0]->volume_+polygon->cells_[1]->volume_)/(2.0*volume_->vu0_);
+            polygon->dumpVolumeRatio = (polygon->cells_[0]->volume_+polygon->cells_[1]->volume_)/2.0;
         } else {
             printf("polygon %ld has %ld neighboring cells\n", polygon->id_, polygon->cells_.size());
             exit(1);
