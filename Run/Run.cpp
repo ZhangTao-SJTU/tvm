@@ -194,7 +194,7 @@ int     Run::updatePolygonVolumeRatio() {
     updatePolygonCells();
     for (auto polygon : polygons_) {
         if (polygon->cells_.size() == 2) {
-            polygon->dumpVolumeRatio = (polygon->cells_[0]->volume_+polygon->cells_[1]->volume_)/2.0;
+            polygon->dumpVolumeRatio_ = (polygon->cells_[0]->volume_+polygon->cells_[1]->volume_)/2.0;
         } else {
             printf("polygon %ld has %ld neighboring cells\n", polygon->id_, polygon->cells_.size());
             exit(1);
@@ -371,7 +371,7 @@ int Run::dumpConfigurationVtk() {
     out << "LOOKUP_TABLE default" << endl;
     for (long int i = 0; i < polygons_.size(); i++) {
         if (!polygons_[i]->crossBoundary()) {
-            out << left << setw(6) << polygons_[i]->dumpVolumeRatio << endl;
+            out << left << setw(6) << polygons_[i]->dumpVolumeRatio_ << endl;
         }
     }
     out << endl;

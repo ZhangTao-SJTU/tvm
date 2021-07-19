@@ -10,13 +10,14 @@ class Interface;
 
 class Interface {
 public:
-    double epsilon_cc_;
+    double s0_;
     double energy_;
 
     explicit Interface(Run *);
 
     int updateForces();
     int updatePolygonForces(Polygon *);
+    int updateTension();
     int updateEnergy();
 private:
     Run * run_;

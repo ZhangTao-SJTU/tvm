@@ -15,9 +15,10 @@ public:
     long int id_;
     double center_[3];
     double area_;
+    double tension_;
     double volumeForce_[3];
     double interfaceForce_[3];
-    double dumpVolumeRatio;
+    double dumpVolumeRatio_;
     std::vector<Edge *> edges_;
     std::vector<Vertex *> vertices_;
     std::vector<Cell *> cells_;
@@ -25,6 +26,7 @@ public:
 
     int updateVertices();
     int updateCenter();
+    int updateArea();
     bool crossBoundary();
     bool checkH();
     int shrink(Edge *);

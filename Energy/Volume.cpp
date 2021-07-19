@@ -20,7 +20,7 @@ using namespace std;
 
 Volume::Volume(Run * run) {
     run_ = run;
-    kv_ = 10.;
+    kv_ = 10.;  // 0.1, 1, 10, 100, 1000
     totalVolume_ = 0.;
     energy_ = 0.;
 }

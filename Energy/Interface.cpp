@@ -20,7 +20,7 @@ using namespace std;
 
 Interface::Interface(Run * run) {
     run_ = run;
-    epsilon_cc_ = 1.;
+    s0_ = 5.40; // 0~5.82
     energy_ = 0.;
 }
 
@@ -31,6 +31,14 @@ int     Interface::updateForces() {
             run_->vertices_[i]->interfaceForce_[j] = 0.;
         }
     }
+
+    // update area of each polygon
+    for (auto polygon : run_->polygons_) {
+        polygon->updateArea();
+    }
+
+    // update tension in each polygon
+    updateTension();
 
     // update interfaceForce values
     for (long int i = 0; i < run_->polygons_.size(); i++) {
@@ -45,12 +53,7 @@ int Interface::updatePolygonForces(Polygon *polygon) {
     for (int m = 0; m < 3; m++) {
         polygon->interfaceForce_[m] = 0.;
     }
-
-    double epsilon;
-    epsilon = epsilon_cc_;
-
-    // reset polygon area
-    polygon->area_ = 0.;
+    double tension = polygon->tension_;
 
     // the polygon center is the reference point
     for (int i = 0; i < polygon->edges_.size(); i++) {
@@ -93,7 +96,6 @@ int Interface::updatePolygonForces(Polygon *polygon) {
         nv[1] = cv[1][0]*cv[0][2] - cv[0][0]*cv[1][2];
         nv[2] = cv[0][0]*cv[1][1] - cv[1][0]*cv[0][1];
         double norm_nv = sqrt(nv[0]*nv[0] + nv[1]*nv[1] + nv[2]*nv[2]);
-        polygon->area_ = polygon->area_ + 0.5*norm_nv;
         nv[0] = nv[0] / norm_nv;
         nv[1] = nv[1] / norm_nv;
         nv[2] = nv[2] / norm_nv;
@@ -101,15 +103,15 @@ int Interface::updatePolygonForces(Polygon *polygon) {
         double Fcv0[3];
         double Fcv1[3];
         double Fvv[3];
-        Fvv[0] = epsilon*(nv[1]*vv[2] - vv[1]*nv[2]);
-        Fvv[1] = epsilon*(vv[0]*nv[2] - nv[0]*vv[2]);
-        Fvv[2] = epsilon*(nv[0]*vv[1] - vv[0]*nv[1]);
-        Fcv0[0] = epsilon*(nv[1]*cv[0][2] - cv[0][1]*nv[2]);
-        Fcv0[1] = epsilon*(cv[0][0]*nv[2] - nv[0]*cv[0][2]);
-        Fcv0[2] = epsilon*(nv[0]*cv[0][1] - cv[0][0]*nv[1]);
-        Fcv1[0] = epsilon*(cv[1][1]*nv[2] - nv[1]*cv[1][2]);
-        Fcv1[1] = epsilon*(nv[0]*cv[1][2] - cv[1][0]*nv[2]);
-        Fcv1[2] = epsilon*(cv[1][0]*nv[1] - nv[0]*cv[1][1]);
+        Fvv[0] = tension*(nv[1]*vv[2] - vv[1]*nv[2]);
+        Fvv[1] = tension*(vv[0]*nv[2] - nv[0]*vv[2]);
+        Fvv[2] = tension*(nv[0]*vv[1] - vv[0]*nv[1]);
+        Fcv0[0] = tension*(nv[1]*cv[0][2] - cv[0][1]*nv[2]);
+        Fcv0[1] = tension*(cv[0][0]*nv[2] - nv[0]*cv[0][2]);
+        Fcv0[2] = tension*(nv[0]*cv[0][1] - cv[0][0]*nv[1]);
+        Fcv1[0] = tension*(cv[1][1]*nv[2] - nv[1]*cv[1][2]);
+        Fcv1[1] = tension*(nv[0]*cv[1][2] - cv[1][0]*nv[2]);
+        Fcv1[2] = tension*(cv[1][0]*nv[1] - nv[0]*cv[1][1]);
         // update interfaceForces
         for (int m = 0; m < 3; m++) {
             edge->vertices_[0]->interfaceForce_[m] = edge->vertices_[0]->interfaceForce_[m] + 0.5*(Fcv0[m]+Fvv[m]);
@@ -136,12 +138,31 @@ int Interface::updatePolygonForces(Polygon *polygon) {
     return 0;
 }
 
+int Interface::updateTension() {
+    for (auto polygon : run_->polygons_) {
+        polygon->tension_ = 0.;
+    }
+    for (auto cell : run_->cells_) {
+        double s = 0.;
+        for (auto polygon : cell->polygons_) {
+            s += polygon->area_;
+        }
+        for (auto polygon : cell->polygons_) {
+            polygon->tension_ += 2.0*(s - s0_);
+        }
+    }
+
+    return 0;
+}
+
 int Interface::updateEnergy() {
     energy_ = 0.;
-    for (long int i = 0; i < run_->polygons_.size(); i++) {
-        double epsilon;
-        epsilon = epsilon_cc_;
-        energy_ += epsilon*run_->polygons_[i]->area_;
+    for (auto cell : run_->cells_) {
+        double s = 0.;
+        for (auto polygon : cell->polygons_) {
+            s += polygon->area_;
+        }
+        energy_ += pow(s - s0_, 2.0);
     }
 
     return 0;
