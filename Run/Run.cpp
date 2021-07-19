@@ -18,8 +18,12 @@
 using namespace std;
 
 Run::Run() {
-    dt_ = 1.0e-4;
-    dtr_ = 1.0e-3;
+    dt_ = 0.001;
+    dtr_ = 10*dt_;
+    dump_period_ = 10000*dt_;
+    log_period_ = 100*dt_;
+    t_start_ = 0.;
+    t_end_ = 10000.;
     mu_ = 1.0;
     kB_ = 1.0;
     temperature_ = 1.0e-5;
@@ -27,10 +31,6 @@ Run::Run() {
     Ly_ = 8.;
     Lz_ = 8.;
     NCell_ = 512;
-    t_start_ = 0.;
-    t_end_ = 4000.;
-    dump_period_ = 1.;
-    log_period_ = 0.01;
 }
 
 int Run::start() {
@@ -297,7 +297,7 @@ Edge *  Run::addEdge(Vertex * v0, Vertex * v1) {
 int Run::dumpConfigurationVtk() {
     //////////////////////////////////////////////////////////////////////////////////////
     stringstream filename;
-    filename << setw(6) << setfill('0') << (long int)(floor(simulation_time_+0.01*dt_)) << ".sample.vtk";
+    filename << setw(7) << setfill('0') << (long int)(floor(simulation_time_+0.01*dt_)) << ".sample.vtk";
     ofstream out(filename.str().c_str());
     if (!out.is_open()) {
         cout << "Error opening output file " << filename.str().c_str() << endl;

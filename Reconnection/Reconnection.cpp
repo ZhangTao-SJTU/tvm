@@ -864,15 +864,15 @@ int Reconnection::dumpVtk(std::vector<Polygon *> tmp_polygons, bool IH, bool bef
     stringstream filename;
     if (IH) {
         if (before) {
-            filename << setw(6) << setfill('0') << (long int) (floor(run_->simulation_time_)) << setw(8) << setfill('0') << run_->count_reconnect_ << ".IH.before.vtk";
+            filename << setw(7) << setfill('0') << (long int) (floor(run_->simulation_time_)) << setw(8) << setfill('0') << run_->count_reconnect_ << ".IH.before.vtk";
         } else {
-            filename << setw(6) << setfill('0') << (long int) (floor(run_->simulation_time_)) << setw(8) << setfill('0') << run_->count_reconnect_ << ".IH.after.vtk";
+            filename << setw(7) << setfill('0') << (long int) (floor(run_->simulation_time_)) << setw(8) << setfill('0') << run_->count_reconnect_ << ".IH.after.vtk";
         }
     } else {
         if (before) {
-            filename << setw(6) << setfill('0') << (long int) (floor(run_->simulation_time_)) << setw(8) << setfill('0') << run_->count_reconnect_ << ".HI.before.vtk";
+            filename << setw(7) << setfill('0') << (long int) (floor(run_->simulation_time_)) << setw(8) << setfill('0') << run_->count_reconnect_ << ".HI.before.vtk";
         } else {
-            filename << setw(6) << setfill('0') << (long int) (floor(run_->simulation_time_)) << setw(8) << setfill('0') << run_->count_reconnect_ << ".HI.after.vtk";
+            filename << setw(7) << setfill('0') << (long int) (floor(run_->simulation_time_)) << setw(8) << setfill('0') << run_->count_reconnect_ << ".HI.after.vtk";
         }
     }
     ofstream out(filename.str().c_str());
