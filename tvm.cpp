@@ -19,7 +19,7 @@
 using namespace std;
 
 int     InitializeAll(Run *);
-//int     LoadConf(string filename, Run *);
+int     LoadConf(string filename, Run *);
 
 int main(int argc, char *argv[]) {
     Run * run = new Run();
@@ -44,7 +44,6 @@ int main(int argc, char *argv[]) {
 }
 
 int InitializeAll(Run * run) {
-//    LoadConf("conf", run);
     printf("Initialization start ...\n");
 
     // load initial configuration
@@ -135,6 +134,8 @@ int InitializeAll(Run * run) {
     // initialize reconnection object
     run->reconnection_ = new Reconnection(run);
 
+    LoadConf("conf", run);
+
     // update geometry and topology information
     run->updateGeoinfo();
     run->updateVertexCells();
@@ -170,202 +171,142 @@ int InitializeAll(Run * run) {
 //    return 0;
 //}
 
-//int LoadConf(string filename, Run * run) {
-//    ifstream conf(filename.c_str());
-//
-//    if (!conf.is_open()) {
-//        cout << "Error opening conf file" << endl;
-//        exit(1);
-//    }
-//
-//    string buffer;
-//    string delimiter = " ";
-//    size_t pos = 0;
-//    vector<string> tokens;
-//    vector<vector<string>> lines;
-//
-//    int time_written = 0;
-//    int dx_written = 0;
-//    int rc_written = 0;
-//    int dump_written = 0;
-//    int log_screen_written = 0;
-//    int temperature_written = 0;
-//    int fiber_written = 0;
-//
-//    while (getline(conf, buffer))
-//    {
-//        pos = buffer.find((char)13);
-//        if (pos != string::npos) {
-//            buffer = buffer.substr(0, pos);
-//        }
-//        if ((buffer.length() == 0) || (buffer[0] == '#')) continue;
-//
-//        tokens.clear();
-//        while ((pos = buffer.find(delimiter)) != string::npos) {
-//            string token = buffer.substr(0, pos);
-//            if (token.length() > 0) {
-//                tokens.push_back(token);
-//            }
-//            buffer.erase(0, pos + delimiter.length());
-//        }
-//        if (buffer.length() > 0) {
-//            tokens.push_back(buffer);
-//        }
-//        lines.push_back(tokens);
-//    }
-//
-//    for (int i = 0; i < lines.size(); i++) {
-//        tokens = lines[i];
-//        if (tokens[0] == "time") {
-//            if (tokens.size() != 3) {
-//                cerr << "conf file error: ";
-//                for (int j = 0; j < tokens.size(); j++) {
-//                    cerr << tokens[j] << " ";
-//                }
-//                cerr << endl;
-//                exit(1);
-//            }
-//            run->t_start_ = atof(tokens[1].c_str());
-//            run->t_end_ = atof(tokens[2].c_str());
-//            time_written = 1;
-//            cout << "time: " << run->t_start_ << " ~ " << run->t_end_ << endl;
-//        }
-//        else if (tokens[0] == "dx") {
-//            if (tokens.size() != 2) {
-//                cerr << "conf file error: ";
-//                for (int j = 0; j < tokens.size(); j++) {
-//                    cerr << tokens[j] << " ";
-//                }
-//                cerr << endl;
-//                exit(1);
-//            }
-//            run->dx_ = atof(tokens[1].c_str());
-//            run->updatePairsOnSurfaceClose_period_ = 1.0;
-//            dx_written = 1;
-//            cout << "dx: " << run->dx_ << endl;
-//        }
-//        else if (tokens[0] == "rc") {
-//            if (tokens.size() != 5) {
-//                cerr << "conf file error: ";
-//                for (int j = 0; j < tokens.size(); j++) {
-//                    cerr << tokens[j] << " ";
-//                }
-//                cerr << endl;
-//                exit(1);
-//            }
-//            run->contact_->Rc_ = atof(tokens[1].c_str());
-//            run->contact_->rc_ = atof(tokens[2].c_str());
-//            run->contact_->D_ = atof(tokens[3].c_str());
-//            run->contact_->a_ = atof(tokens[4].c_str());
-//            rc_written = 1;
-//            cout << "rc: " << run->contact_->Rc_ << " " << run->contact_->rc_ << endl;
-//        }
-//        else if (tokens[0] == "dump") {
-//            if (tokens.size() != 3) {
-//                cerr << "conf file error: ";
-//                for (int j = 0; j < tokens.size(); j++) {
-//                    cerr << tokens[j] << " ";
-//                }
-//                cerr << endl;
-//                exit(1);
-//            }
-//            run->dump_period_ = atof(tokens[2].c_str());
-//            dump_written = 1;
-//            cout << "dump: " << tokens[1] << " " << run->dump_period_ << endl;
-//        }
-//        else if (tokens[0] == "log") {
-//            if (tokens.size() != 3) {
-//                cerr << "conf file error: ";
-//                for (int j = 0; j < tokens.size(); j++) {
-//                    cerr << tokens[j] << " ";
-//                }
-//                cerr << endl;
-//                exit(1);
-//            }
-//            run->log_period_ = atof(tokens[2].c_str());
-//            log_screen_written = 1;
-//            cout << "log: " << tokens[1] << " " << run->log_period_ << endl;
-//        }
-//        else if (tokens[0] == "temperature") {
-//            if (tokens.size() != 2) {
-//                cerr << "conf file error: ";
-//                for (int j = 0; j < tokens.size(); j++) {
-//                    cerr << tokens[j] << " ";
-//                }
-//                cerr << endl;
-//                exit(1);
-//            }
-//            run->temperature_ = atof(tokens[1].c_str());
-//            temperature_written = 1;
-//            cout << "temperature: " << run->temperature_ << endl;
-//        }
-//        else if (tokens[0] == "fiber") {
-//            if (tokens.size() != 4) {
-//                cerr << "conf file error: ";
-//                for (int j = 0; j < tokens.size(); j++) {
-//                    cerr << tokens[j] << " ";
-//                }
-//                cerr << endl;
-//                exit(1);
-//            }
-//            run->Bcilia_ = atof(tokens[1].c_str());
-//            run->Kbend_ = atof(tokens[2].c_str());
-//            run->fiber_equi_temperature_ = atof(tokens[3].c_str());
-//            fiber_written = 1;
-//            cout << "fiber: " << run->Bcilia_ << " " << run->Kbend_ << " " << run->fiber_equi_temperature_ << endl;
-//        }
-//        else
-//        {
-//            cerr << "conf file error: ";
-//            for (int j = 0; j < tokens.size(); j++) {
-//                cerr << tokens[j] << " ";
-//            }
-//            cerr << endl;
-//            exit(1);
-//        }
-//    }
-//
-//    if (conf.bad() || !conf.eof()) {
-//        cout << "Error reading file [" << filename << "]" << endl;
-//        exit(1);
-//    }
-//
-//    if (time_written == 0) {
-//        cout << "conf file error: missing time" << endl;
-//        exit(1);
-//    }
-//
-//    if (dx_written == 0) {
-//        cout << "conf file error: dx" << endl;
-//        exit(1);
-//    }
-//
-//    if (rc_written == 0) {
-//        cout << "conf file error: rc" << endl;
-//        exit(1);
-//    }
-//
-//    if (dump_written == 0) {
-//        cout << "conf file error: missing dump" << endl;
-//        exit(1);
-//    }
-//
-//    if (log_screen_written == 0) {
-//        cout << "conf file error: missing log screen" << endl;
-//        exit(1);
-//    }
-//
-//    if (temperature_written == 0) {
-//        cout << "conf file error: missing temperature" << endl;
-//        exit(1);
-//    }
-//
-//    if (fiber_written == 0) {
-//        cout << "conf file error: missing fiber" << endl;
-//        exit(1);
-//    }
-//
-//    conf.close();
-//
-//    return 0;
-//}
+int LoadConf(string filename, Run * run) {
+    ifstream conf(filename.c_str());
+
+    if (!conf.is_open()) {
+        cout << "Error opening conf file" << endl;
+        exit(1);
+    }
+
+    string buffer;
+    string delimiter = " ";
+    size_t pos = 0;
+    vector<string> tokens;
+    vector<vector<string>> lines;
+
+    int time_written = 0;
+    int dump_written = 0;
+    int log_screen_written = 0;
+    int s0_written = 0;
+
+    while (getline(conf, buffer))
+    {
+        pos = buffer.find((char)13);
+        if (pos != string::npos) {
+            buffer = buffer.substr(0, pos);
+        }
+        if ((buffer.length() == 0) || (buffer[0] == '#')) continue;
+
+        tokens.clear();
+        while ((pos = buffer.find(delimiter)) != string::npos) {
+            string token = buffer.substr(0, pos);
+            if (token.length() > 0) {
+                tokens.push_back(token);
+            }
+            buffer.erase(0, pos + delimiter.length());
+        }
+        if (buffer.length() > 0) {
+            tokens.push_back(buffer);
+        }
+        lines.push_back(tokens);
+    }
+
+    for (int i = 0; i < lines.size(); i++) {
+        tokens = lines[i];
+        if (tokens[0] == "time") {
+            if (tokens.size() != 4) {
+                cerr << "conf file error: ";
+                for (int j = 0; j < tokens.size(); j++) {
+                    cerr << tokens[j] << " ";
+                }
+                cerr << endl;
+                exit(1);
+            }
+            run->t_start_ = atof(tokens[1].c_str());
+            run->t_end_ = atof(tokens[2].c_str());
+            run->dt_ = atof(tokens[3].c_str());
+            run->dtr_ = 10*run->dt_;
+            time_written = 1;
+            cout << "time: " << run->t_start_ << " ~ " << run->t_end_ << " ~ " << run->dt_ << " ~ " << run->dtr_ << endl;
+        }
+        else if (tokens[0] == "dump") {
+            if (tokens.size() != 3) {
+                cerr << "conf file error: ";
+                for (int j = 0; j < tokens.size(); j++) {
+                    cerr << tokens[j] << " ";
+                }
+                cerr << endl;
+                exit(1);
+            }
+            if (tokens[1] == "vtk") {
+                run->dump_period_ = atof(tokens[2].c_str());
+                dump_written = 1;
+                cout << "dump: " << tokens[1] << " " << run->dump_period_ << endl;
+            }
+        }
+        else if (tokens[0] == "log") {
+            if (tokens.size() != 2) {
+                cerr << "conf file error: ";
+                for (int j = 0; j < tokens.size(); j++) {
+                    cerr << tokens[j] << " ";
+                }
+                cerr << endl;
+                exit(1);
+            }
+            run->log_period_ = atof(tokens[1].c_str());
+            log_screen_written = 1;
+            cout << "log: " << run->log_period_ << endl;
+        }
+        else if (tokens[0] == "s0") {
+            if (tokens.size() != 2) {
+                cerr << "conf file error: ";
+                for (int j = 0; j < tokens.size(); j++) {
+                    cerr << tokens[j] << " ";
+                }
+                cerr << endl;
+                exit(1);
+            }
+            run->interface_->s0_ = atof(tokens[1].c_str());
+            s0_written = 1;
+            cout << "s0: " << run->interface_->s0_ << endl;
+        }
+        else {
+            cerr << "conf file error: ";
+            for (int j = 0; j < tokens.size(); j++) {
+                cerr << tokens[j] << " ";
+            }
+            cerr << endl;
+            exit(1);
+        }
+    }
+
+    if (conf.bad() || !conf.eof()) {
+        cout << "Error reading file [" << filename << "]" << endl;
+        exit(1);
+    }
+
+    if (time_written == 0) {
+        cout << "conf file error: missing time" << endl;
+        exit(1);
+    }
+
+    if (dump_written == 0) {
+        cout << "conf file error: missing dump" << endl;
+        exit(1);
+    }
+
+    if (log_screen_written == 0) {
+        cout << "conf file error: missing log screen" << endl;
+        exit(1);
+    }
+
+    if (s0_written == 0) {
+        cout << "conf file error: s0" << endl;
+        exit(1);
+    }
+
+    conf.close();
+
+    return 0;
+}

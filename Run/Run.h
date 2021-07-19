@@ -63,6 +63,7 @@ class Run {
     int     resetPosition(double *);
     Edge *  addEdge(Vertex *, Vertex *);
     int     dumpConfigurationVtk();
+    int     dumpCellCenter();
 };
 
 #endif
