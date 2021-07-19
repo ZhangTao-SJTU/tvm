@@ -12,6 +12,7 @@
 #include <cmath>
 #include <chrono>
 #include <unordered_map>
+#include <random>
 #include "Run.h"
 
 using namespace std;
@@ -19,7 +20,9 @@ using namespace std;
 Run::Run() {
     dt_ = 1.0e-4;
     dtr_ = 1.0e-3;
-    eta_ = 1.0;
+    mu_ = 1.0;
+    kB_ = 1.0;
+    temperature_ = 1.0e-5;
     Lx_ = 8.;
     Ly_ = 8.;
     Lz_ = 8.;
@@ -104,7 +107,7 @@ int Run::start() {
 int     Run::updateVerticesVelocity() {
     for (long int i = 0; i < vertices_.size(); i++) {
         for (int m = 0; m < 3; m++) {
-            vertices_[i]->velocity_[m] = 1.0/eta_ * (vertices_[i]->volumeForce_[m] + vertices_[i]->interfaceForce_[m]);
+            vertices_[i]->velocity_[m] = mu_ * (vertices_[i]->volumeForce_[m] + vertices_[i]->interfaceForce_[m]);
         }
     }
 
@@ -112,9 +115,12 @@ int     Run::updateVerticesVelocity() {
 }
 
 int     Run::updateVerticesPosition() {
+    std::default_random_engine generator(std::random_device{}());
+    std::normal_distribution<double> ndist(0., 1.);
+    double cR = sqrt(2.0*mu_*kB_*temperature_*dt_);
     for (long int i = 0; i < vertices_.size(); i++) {
         for (int m = 0; m < 3; m++) {
-            vertices_[i]->position_[m] = vertices_[i]->position_[m] + vertices_[i]->velocity_[m] * dt_;
+            vertices_[i]->position_[m] = vertices_[i]->position_[m] + vertices_[i]->velocity_[m] * dt_ + cR*ndist(generator);
         }
         resetPosition(vertices_[i]->position_);
     }

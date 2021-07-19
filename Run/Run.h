@@ -19,7 +19,9 @@ class Run {
   public:
     double  dt_;    // integration time step
     double  dtr_;   // time interval of network reconnection
-    double  eta_;   // friction coefficient of vertex
+    double  mu_;   // inverse damping coefficient of vertex
+    double  kB_;
+    double  temperature_;
     double  Lx_;
     double  Ly_;
     double  Lz_;

@@ -123,9 +123,6 @@ int InitializeAll(Run * run) {
         run->cells_.push_back(cell);
     }
 
-//    std::default_random_engine generator(std::random_device{}());
-//    std::uniform_real_distribution<double> urdist(0., 1.);
-
     run->count_vertices_ = run->vertices_.size();
     run->count_edges_ = run->edges_.size();
     run->count_polygons_ = run->polygons_.size();
