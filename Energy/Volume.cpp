@@ -20,8 +20,7 @@ using namespace std;
 
 Volume::Volume(Run * run) {
     run_ = run;
-    kcv_ = 14.;
-    vu0_ = 1.;
+    kv_ = 10.;
     totalVolume_ = 0.;
     energy_ = 0.;
 }
@@ -75,7 +74,7 @@ int Volume::updateVolume() {
 
 int Volume::updatePressure() {
     for (auto cell : run_->cells_) {
-        cell->pressure_ = (-1.0)*kcv_/vu0_*(cell->volume_/vu0_-1.0);
+        cell->pressure_ = (-1.0)*2.0*kv_*(cell->volume_-1.0);
     }
 
     return 0;
@@ -158,7 +157,7 @@ int Volume::updatePolygonForces(Cell *cell, Polygon *polygon) {
 int Volume::updateEnergy() {
     energy_ = 0.;
     for (auto cell : run_->cells_) {
-        energy_ += 0.5*kcv_*pow(cell->volume_/vu0_-1.0, 2.0);
+        energy_ += kv_*pow(cell->volume_-1.0, 2.0);
     }
 
     return 0;

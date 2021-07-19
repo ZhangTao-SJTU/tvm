@@ -10,8 +10,7 @@ class Volume;
 
 class Volume {
 public:
-    double kcv_;
-    double vu0_;
+    double kv_;
     double totalVolume_;
     double energy_;
 
