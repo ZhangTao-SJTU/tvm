@@ -20,8 +20,8 @@ using namespace std;
 
 Reconnection::Reconnection(Run * run) {
     run_ = run;
-    Lth_ = 1.0e-3;
-//    Lth_ = 0.1;
+//    Lth_ = 1.0e-3;
+    Lth_ = 0.01;
     count_IH_ = 0;
     count_HI_ = 0;
 }
