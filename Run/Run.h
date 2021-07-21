@@ -64,6 +64,7 @@ class Run {
     Edge *  addEdge(Vertex *, Vertex *);
     int     dumpConfigurationVtk();
     int     dumpCellCenter();
+    int     dumpTopo();
 };
 
 #endif

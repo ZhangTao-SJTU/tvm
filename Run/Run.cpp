@@ -82,9 +82,10 @@ int Run::start() {
         // dump
         if (simulation_time_ - t_start_ + t_roundError > count_dump_ * dump_period_) {
             if (simulation_time_ > (-0.01)*dt_) {
-                dumpConfigurationVtk();
+//                dumpConfigurationVtk();
                 dumpCellCenter();
             }
+            dumpTopo();
             count_dump_++;
         }
 
@@ -441,6 +442,69 @@ int     Run::dumpCellCenter() {
     }
     out << endl;
 
+    out.close();
+
+    return 0;
+}
+
+int     Run::dumpTopo() {
+    stringstream filename;
+    filename << "topo.txt";
+//    ofstream out(filename.str().c_str(), std::ios::binary | std::ios_base::app);
+    ofstream out(filename.str().c_str(), std::ios_base::app);
+    if (!out.is_open()) {
+        cout << "Error opening output file " << filename.str().c_str() << endl;
+        exit(1);
+    }
+    out << "time ";
+    out << left << setw(12) << simulation_time_;
+    out << endl;
+
+    out << "vertices ";
+    out << left << setw(12) << vertices_.size();
+    out << endl;
+    for (auto vertex : vertices_) {
+        out << left << setw(6) << vertex->id_;
+        out << " " << right << setw(12) << scientific << setprecision(5) << vertex->position_[0];
+        out << " " << right << setw(12) << scientific << setprecision(5) << vertex->position_[1];
+        out << " " << right << setw(12) << scientific << setprecision(5) << vertex->position_[2];
+        out << endl;
+    }
+
+    out << "edges ";
+    out << left << setw(12) << edges_.size();
+    out << endl;
+    for (auto edge : edges_) {
+        out << left << setw(6) << edge->vertices_.size();
+        for (auto vertex : edge->vertices_) {
+            out << " " << right << setw(12) << scientific << setprecision(5) << vertex->id_;
+        }
+        out << endl;
+    }
+
+    out << "polygons ";
+    out << left << setw(12) << polygons_.size();
+    out << endl;
+    for (auto polygon : polygons_) {
+        out << left << setw(6) << polygon->edges_.size();
+        for (auto edge : polygon->edges_) {
+            out << " " << right << setw(12) << scientific << setprecision(5) << edge->id_;
+        }
+        out << endl;
+    }
+
+    out << "cells ";
+    out << left << setw(12) << cells_.size();
+    out << endl;
+    for (auto cell : cells_) {
+        out << left << setw(6) << cell->polygons_.size();
+        for (auto polygon : cell->polygons_) {
+            out << " " << right << setw(12) << scientific << setprecision(5) << polygon->id_;
+        }
+        out << endl;
+    }
+
+    out << endl;
     out.close();
 
     return 0;
