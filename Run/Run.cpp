@@ -12,23 +12,25 @@
 #include <cmath>
 #include <chrono>
 #include <unordered_map>
+#include <random>
 #include "Run.h"
 
 using namespace std;
 
 Run::Run() {
-    dt_ = 1.0e-4;
-    dtr_ = 1.0e-3;
-    eta_ = 1.0;
-    Lx_ = 13.2;
-    Ly_ = 200.0/13.2;
-    NCell_ = 400;
-    Aic_ = 0.5;
-    rho_growth_ = 0.75;
-    t_start_ = 0.;
-    t_end_ = 4000.;
-    dump_period_ = 1.;
-    log_period_ = 0.01;
+//    dt_ = 0.001;
+//    dtr_ = 10*dt_;
+//    dump_period_ = 10000*dt_;
+//    log_period_ = 100*dt_;
+//    t_start_ = 0.;
+//    t_end_ = 10000.;
+    mu_ = 1.0;
+    kB_ = 1.0;
+    temperature_ = 1.0e-5;
+    Lx_ = 8.;
+    Ly_ = 8.;
+    Lz_ = 8.;
+    NCell_ = 512;
 }
 
 int Run::start() {
@@ -79,7 +81,10 @@ int Run::start() {
         }
         // dump
         if (simulation_time_ - t_start_ + t_roundError > count_dump_ * dump_period_) {
-            dumpConfigurationVtk();
+            if (simulation_time_ > (-0.01)*dt_) {
+                dumpConfigurationVtk();
+                dumpCellCenter();
+            }
             count_dump_++;
         }
 
@@ -105,7 +110,7 @@ int Run::start() {
 int     Run::updateVerticesVelocity() {
     for (long int i = 0; i < vertices_.size(); i++) {
         for (int m = 0; m < 3; m++) {
-            vertices_[i]->velocity_[m] = 1.0/eta_ * (vertices_[i]->volumeForce_[m] + vertices_[i]->interfaceForce_[m]);
+            vertices_[i]->velocity_[m] = mu_ * (vertices_[i]->volumeForce_[m] + vertices_[i]->interfaceForce_[m]);
         }
     }
 
@@ -113,40 +118,17 @@ int     Run::updateVerticesVelocity() {
 }
 
 int     Run::updateVerticesPosition() {
+    std::default_random_engine generator(std::random_device{}());
+    std::normal_distribution<double> ndist(0., 1.);
+    double cR = sqrt(2.0*mu_*kB_*temperature_*dt_);
     for (long int i = 0; i < vertices_.size(); i++) {
         for (int m = 0; m < 3; m++) {
-            vertices_[i]->position_[m] = vertices_[i]->position_[m] + vertices_[i]->velocity_[m] * dt_;
+            vertices_[i]->position_[m] = vertices_[i]->position_[m] + vertices_[i]->velocity_[m] * dt_ + cR*ndist(generator);
         }
         resetPosition(vertices_[i]->position_);
     }
 
     return 0;
-}
-
-double Run::computeD(double* v1, double* v2) {
-    double dx = fabs(v2[0] - v1[0]);
-    double dy = fabs(v2[1] - v1[1]);
-    while (dx > Lx_/2.0) {
-        dx -= Lx_;
-    }
-    while (dy > Ly_/2.0) {
-        dy -= Ly_;
-    }
-
-    return sqrt(dx*dx + dy*dy);
-}
-
-double Run::computeD(double cx, double cy, double* v) {
-    double dx = fabs(v[0] - cx);
-    double dy = fabs(v[1] - cy);
-    while (dx > Lx_/2.0) {
-        dx -= Lx_;
-    }
-    while (dy > Ly_/2.0) {
-        dy -= Ly_;
-    }
-
-    return sqrt(dx*dx + dy*dy);
 }
 
 int     Run::updatePolygonVertices() {
@@ -175,8 +157,6 @@ int     Run::updateVertexCells() {
         vertex->cells_.clear();
     }
     std::vector<Cell *> tmp_cells = cells_;
-    tmp_cells.push_back(cellBottom_);
-    tmp_cells.push_back(cellTop_);
     for (auto cell : tmp_cells) {
         for (auto polygon : cell->polygons_) {
             for (auto edge : polygon->edges_) {
@@ -210,41 +190,14 @@ int     Run::updatePolygonCells() {
     return 0;
 }
 
-int     Run::updatePolygonType() {
-    updatePolygonCells();
-    for (long int i = 0; i < polygons_.size(); i++) {
-        if (polygons_[i]->cells_.size() > 1) {
-            polygons_[i]->cell_cell = true;
-        } else {
-            polygons_[i]->cell_cell = false;
-        }
-    }
-
-    return 0;
-}
-
-int     Run::updatePolygonDumpTypeVolumeRatio() {
+int     Run::updatePolygonVolumeRatio() {
     // 0: red
     // 1: grey
     // 2: blue
     updatePolygonCells();
     for (auto polygon : polygons_) {
-        if (polygon->cells_.size() == 1) {
-            if (polygon->cells_[0]->growing_) {
-                polygon->dumpType = 0;
-            } else {
-                polygon->dumpType = 1;
-            }
-            polygon->dumpVolumeRatio = polygon->cells_[0]->volume_/polygon->cells_[0]->vu0_;
-        } else if (polygon->cells_.size() == 2) {
-            if (polygon->cells_[0]->growing_ != polygon->cells_[1]->growing_) {
-                polygon->dumpType = 2;
-            } else if (polygon->cells_[0]->growing_) {
-                polygon->dumpType = 0;
-            } else {
-                polygon->dumpType = 1;
-            }
-            polygon->dumpVolumeRatio = 1.0;
+        if (polygon->cells_.size() == 2) {
+            polygon->dumpVolumeRatio_ = (polygon->cells_[0]->volume_+polygon->cells_[1]->volume_)/2.0;
         } else {
             printf("polygon %ld has %ld neighboring cells\n", polygon->id_, polygon->cells_.size());
             exit(1);
@@ -264,8 +217,6 @@ int     Run::updateGeoinfo() {
     for (long int i = 0; i < polygons_.size(); i++) {
         polygons_[i]->updateCenter();
     }
-    // update polygon type
-    updatePolygonType();
 
     return 0;
 }
@@ -319,8 +270,12 @@ int     Run::resetPosition(double * r) {
     if (fabs(r[1]) > 1e6) {
         printf("%e\n",r[1]);
     }
+    if (fabs(r[2]) > 1e6) {
+        printf("%e\n",r[2]);
+    }
     r[0] = r[0] - Lx_ * floor(r[0] / Lx_);
     r[1] = r[1] - Ly_ * floor(r[1] / Ly_);
+    r[2] = r[2] - Lz_ * floor(r[2] / Lz_);
 
     return 0;
 }
@@ -345,7 +300,7 @@ Edge *  Run::addEdge(Vertex * v0, Vertex * v1) {
 int Run::dumpConfigurationVtk() {
     //////////////////////////////////////////////////////////////////////////////////////
     stringstream filename;
-    filename << setw(6) << setfill('0') << (long int)(floor(simulation_time_+0.01*dt_)) << ".sample.vtk";
+    filename << setw(7) << setfill('0') << (long int)(floor(simulation_time_+0.01*dt_)) << ".sample.vtk";
     ofstream out(filename.str().c_str());
     if (!out.is_open()) {
         cout << "Error opening output file " << filename.str().c_str() << endl;
@@ -405,22 +360,84 @@ int Run::dumpConfigurationVtk() {
     }
     out << endl;
 
-    updatePolygonDumpTypeVolumeRatio();
+    updatePolygonVolumeRatio();
     out << "CELL_DATA " << Npolygons << endl;
-    out << "SCALARS type int 1" << endl;
-    out << "LOOKUP_TABLE default" << endl;
-    for (long int i = 0; i < polygons_.size(); i++) {
-        if (!polygons_[i]->crossBoundary()) {
-            out << left << setw(6) << polygons_[i]->dumpType << endl;
-        }
-    }
-    out << endl;
+//    out << "SCALARS type int 1" << endl;
+//    out << "LOOKUP_TABLE default" << endl;
+//    for (long int i = 0; i < polygons_.size(); i++) {
+//        if (!polygons_[i]->crossBoundary()) {
+//            out << left << setw(6) << polygons_[i]->dumpType << endl;
+//        }
+//    }
+//    out << endl;
     out << "SCALARS volumeRatio double 1" << endl;
     out << "LOOKUP_TABLE default" << endl;
     for (long int i = 0; i < polygons_.size(); i++) {
         if (!polygons_[i]->crossBoundary()) {
-            out << left << setw(6) << polygons_[i]->dumpVolumeRatio << endl;
+            out << left << setw(6) << polygons_[i]->dumpVolumeRatio_ << endl;
         }
+    }
+    out << endl;
+
+    out.close();
+
+    return 0;
+}
+
+int     Run::dumpCellCenter() {
+    stringstream filename;
+    filename << "cellCenter.txt";
+    ofstream out(filename.str().c_str(), std::ios_base::app);
+    if (!out.is_open()) {
+        cout << "Error opening output file " << filename.str().c_str() << endl;
+        exit(1);
+    }
+    out << "time ";
+    out << left << setw(12) << simulation_time_;
+    out << endl;
+
+    for (auto cell : cells_) {
+        double center[3] = {0., 0., 0.};
+        double reference[3];
+        for (int m = 0; m < 3; m++) {
+            reference[m] = cell->polygons_[0]->center_[m];
+        }
+        for (auto polygon : cell->polygons_) {
+            double dx[3];
+            for (int m = 0; m < 3; m++) {
+                dx[m] = (polygon->center_[m] - reference[m]);
+            }
+            while (dx[0] > Lx_/2.0) {
+                dx[0] = dx[0] - Lx_;
+            }
+            while (dx[0] < (-1.0)*Lx_/2.0) {
+                dx[0] = dx[0] + Lx_;
+            }
+            while (dx[1] > Ly_/2.0) {
+                dx[1] = dx[1] - Ly_;
+            }
+            while (dx[1] < (-1.0)*Ly_/2.0) {
+                dx[1] = dx[1] + Ly_;
+            }
+            while (dx[2] > Lz_/2.0) {
+                dx[2] = dx[2] - Lz_;
+            }
+            while (dx[2] < (-1.0)*Lz_/2.0) {
+                dx[2] = dx[2] + Lz_;
+            }
+            for (int m = 0; m < 3; m++) {
+                center[m] = center[m] + dx[m];
+            }
+        }
+        for (int m = 0; m < 3; m++) {
+            center[m] = center[m]/cell->polygons_.size() + reference[m];
+        }
+        resetPosition(center);
+        out << left << setw(6) << cell->id_;
+        out << " " << right << setw(12) << scientific << setprecision(5) << center[0];
+        out << " " << right << setw(12) << scientific << setprecision(5) << center[1];
+        out << " " << right << setw(12) << scientific << setprecision(5) << center[2];
+        out << endl;
     }
     out << endl;
 

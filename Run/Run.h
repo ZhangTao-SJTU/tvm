@@ -19,12 +19,13 @@ class Run {
   public:
     double  dt_;    // integration time step
     double  dtr_;   // time interval of network reconnection
-    double  eta_;   // friction coefficient of vertex
+    double  mu_;   // inverse damping coefficient of vertex
+    double  kB_;
+    double  temperature_;
     double  Lx_;
     double  Ly_;
+    double  Lz_;
     int     NCell_;
-    double  Aic_;
-    double  rho_growth_;
     double  simulation_time_;
     double   t_start_;
     double   t_end_;
@@ -37,8 +38,6 @@ class Run {
     long int count_edges_;
     long int count_polygons_;
     long int count_cells_;
-    Cell * cellTop_;    // virtual cell on the top to set the boundary
-    Cell * cellBottom_; // virtual cell on the bottom to set the boundary
     Volume * volume_;
     Interface * interface_;
     Reconnection * reconnection_;
@@ -50,12 +49,9 @@ class Run {
 
     Run();
     int     start();
-    double  computeD(double *, double *);
-    double  computeD(double , double, double *);
     int     updatePolygonVertices();
     int     updatePolygonCells();
-    int     updatePolygonType();
-    int     updatePolygonDumpTypeVolumeRatio();
+    int     updatePolygonVolumeRatio();
     int     updateVertexEdges();
     int     updateVertexCells();
     int     updateGeoinfo();
@@ -67,6 +63,7 @@ class Run {
     int     resetPosition(double *);
     Edge *  addEdge(Vertex *, Vertex *);
     int     dumpConfigurationVtk();
+    int     dumpCellCenter();
 };
 
 #endif

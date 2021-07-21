@@ -27,9 +27,8 @@ Polygon::Polygon(Run * run, long int id) {
         interfaceForce_[i]  = 0.;
     }
     area_ = 0.;
-    cell_cell = false;
-    dumpType = 0;
-    dumpVolumeRatio = 1.;
+    tension_ = 0.;
+    dumpVolumeRatio_ = 1.;
 }
 
 int Polygon::updateVertices() {
@@ -97,6 +96,12 @@ int Polygon::updateCenter() {
         while (dy < (-1.0)*run_->Ly_/2.0) {
             dy += run_->Ly_;
         }
+        while (dz > run_->Lz_/2.0) {
+            dz -= run_->Lz_;
+        }
+        while (dz < (-1.0)*run_->Lz_/2.0) {
+            dz += run_->Lz_;
+        }
         sum_lx += length*dx;
         sum_ly += length*dy;
         sum_lz += length*dz;
@@ -105,6 +110,50 @@ int Polygon::updateCenter() {
     center_[0] = sum_lx/sum_l + tmp_origin[0];
     center_[1] = sum_ly/sum_l + tmp_origin[1];
     center_[2] = sum_lz/sum_l + tmp_origin[2];
+
+    return 0;
+}
+
+int Polygon::updateArea() {
+    // reset polygon area
+    area_ = 0.;
+
+    // the polygon center is the reference point
+    for (auto edge : edges_) {
+        // the vectors pointing from polygon center to edge vertices
+        double cv[2][3];
+        for (int k = 0; k < 2; k++) {
+            Vertex *vertex = edge->vertices_[k];
+            for (int m = 0; m < 3; m++) {
+                cv[k][m] = vertex->position_[m] - center_[m];
+            }
+            while (cv[k][0] > run_->Lx_ / 2.0) {
+                cv[k][0] = cv[k][0] - run_->Lx_;
+            }
+            while (cv[k][0] < (-1.0) * run_->Lx_ / 2.0) {
+                cv[k][0] = cv[k][0] + run_->Lx_;
+            }
+            while (cv[k][1] > run_->Ly_ / 2.0) {
+                cv[k][1] = cv[k][1] - run_->Ly_;
+            }
+            while (cv[k][1] < (-1.0) * run_->Ly_ / 2.0) {
+                cv[k][1] = cv[k][1] + run_->Ly_;
+            }
+            while (cv[k][2] > run_->Lz_ / 2.0) {
+                cv[k][2] = cv[k][2] - run_->Lz_;
+            }
+            while (cv[k][2] < (-1.0) * run_->Lz_ / 2.0) {
+                cv[k][2] = cv[k][2] + run_->Lz_;
+            }
+        }
+        // compute the normal vector of the triangle interface formed by polygon center, and edge vertices
+        double nv[3];
+        nv[0] = cv[0][1] * cv[1][2] - cv[1][1] * cv[0][2];
+        nv[1] = cv[1][0] * cv[0][2] - cv[0][0] * cv[1][2];
+        nv[2] = cv[0][0] * cv[1][1] - cv[1][0] * cv[0][1];
+        double norm_nv = sqrt(nv[0] * nv[0] + nv[1] * nv[1] + nv[2] * nv[2]);
+        area_ += 0.5 * norm_nv;
+    }
 
     return 0;
 }
