@@ -83,7 +83,7 @@ int Run::start() {
         if (simulation_time_ - t_start_ + t_roundError > count_dump_ * dump_period_) {
             if (simulation_time_ > (-0.01)*dt_) {
                 dumpTopo();
-                dumpCellCenter();
+//                dumpCellCenter();
 //                dumpConfigurationVtk();
             }
             count_dump_++;
