@@ -189,6 +189,7 @@ int LoadConf(string filename, Run * run) {
     int dump_written = 0;
     int log_screen_written = 0;
     int s0_written = 0;
+    int Lth_written = 0;
 
     while (getline(conf, buffer))
     {
@@ -271,6 +272,19 @@ int LoadConf(string filename, Run * run) {
             s0_written = 1;
             cout << "s0: " << run->interface_->s0_ << endl;
         }
+        else if (tokens[0] == "Lth") {
+            if (tokens.size() != 2) {
+                cerr << "conf file error: ";
+                for (int j = 0; j < tokens.size(); j++) {
+                    cerr << tokens[j] << " ";
+                }
+                cerr << endl;
+                exit(1);
+            }
+            run->reconnection_->Lth_ = atof(tokens[1].c_str());
+            Lth_written = 1;
+            cout << "Lth: " << run->reconnection_->Lth_ << endl;
+        }
         else {
             cerr << "conf file error: ";
             for (int j = 0; j < tokens.size(); j++) {
@@ -303,6 +317,11 @@ int LoadConf(string filename, Run * run) {
 
     if (s0_written == 0) {
         cout << "conf file error: s0" << endl;
+        exit(1);
+    }
+
+    if (Lth_written == 0) {
+        cout << "conf file error: Lth" << endl;
         exit(1);
     }
 
