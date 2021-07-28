@@ -26,7 +26,7 @@ Run::Run() {
 //    t_end_ = 10000.;
     mu_ = 1.0;
     kB_ = 1.0;
-    temperature_ = 1.0e-5;
+//    temperature_ = 1.0e-5;
     Lx_ = 8.;
     Ly_ = 8.;
     Lz_ = 8.;

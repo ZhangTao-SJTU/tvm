@@ -190,6 +190,7 @@ int LoadConf(string filename, Run * run) {
     int log_screen_written = 0;
     int s0_written = 0;
     int Lth_written = 0;
+    int temperature_written = 0;
 
     while (getline(conf, buffer))
     {
@@ -285,6 +286,19 @@ int LoadConf(string filename, Run * run) {
             Lth_written = 1;
             cout << "Lth: " << run->reconnection_->Lth_ << endl;
         }
+        else if (tokens[0] == "T") {
+            if (tokens.size() != 2) {
+                cerr << "conf file error: ";
+                for (int j = 0; j < tokens.size(); j++) {
+                    cerr << tokens[j] << " ";
+                }
+                cerr << endl;
+                exit(1);
+            }
+            run->temperature_ = atof(tokens[1].c_str());
+            temperature_written = 1;
+            cout << "temperature: " << run->temperature_ << endl;
+        }
         else {
             cerr << "conf file error: ";
             for (int j = 0; j < tokens.size(); j++) {
@@ -322,6 +336,11 @@ int LoadConf(string filename, Run * run) {
 
     if (Lth_written == 0) {
         cout << "conf file error: Lth" << endl;
+        exit(1);
+    }
+
+    if (temperature_written == 0) {
+        cout << "conf file error: temperature" << endl;
         exit(1);
     }
 
