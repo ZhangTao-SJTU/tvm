@@ -1,2 +1,4 @@
 build-windows
+cmake-build-debug
+.gitignore
 .DS_Store
