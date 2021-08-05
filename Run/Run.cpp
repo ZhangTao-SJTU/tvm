@@ -486,7 +486,7 @@ int     Run::dumpTopo() {
     out << left << setw(12) << polygons_.size();
     out << endl;
     for (auto polygon : polygons_) {
-        out << left << setw(6) << polygon->edges_.size();
+        out << left << setw(6) << polygon->id_;
         for (auto edge : polygon->edges_) {
             out << " " << right << setw(12) << scientific << setprecision(5) << edge->id_;
         }
@@ -497,7 +497,7 @@ int     Run::dumpTopo() {
     out << left << setw(12) << cells_.size();
     out << endl;
     for (auto cell : cells_) {
-        out << left << setw(6) << cell->polygons_.size();
+        out << left << setw(6) << cell->id_;
         for (auto polygon : cell->polygons_) {
             out << " " << right << setw(12) << scientific << setprecision(5) << polygon->id_;
         }
