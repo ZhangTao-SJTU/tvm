@@ -475,7 +475,7 @@ int     Run::dumpTopo() {
     out << left << setw(12) << edges_.size();
     out << endl;
     for (auto edge : edges_) {
-        out << left << setw(6) << edge->vertices_.size();
+        out << left << setw(6) << edge->id_;
         for (auto vertex : edge->vertices_) {
             out << " " << right << setw(12) << scientific << setprecision(5) << vertex->id_;
         }
