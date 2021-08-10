@@ -109,9 +109,24 @@ int Run::start() {
 }
 
 int     Run::updateVerticesVelocity() {
-    for (long int i = 0; i < vertices_.size(); i++) {
+    for (auto vertex : vertices_) {
         for (int m = 0; m < 3; m++) {
-            vertices_[i]->velocity_[m] = mu_ * (vertices_[i]->volumeForce_[m] + vertices_[i]->interfaceForce_[m]);
+            vertex->velocity_[m] = mu_ * (vertex->volumeForce_[m] + vertex->interfaceForce_[m]);
+        }
+    }
+    // remove drift velocity
+    double averageVelocity[3] = {0., 0., 0.};
+    for (auto vertex : vertices_) {
+        for (int m = 0; m < 3; m++) {
+            averageVelocity[m] = averageVelocity[m] + vertex->velocity_[m];
+        }
+    }
+    for (int m = 0; m < 3; m++) {
+        averageVelocity[m] = averageVelocity[m] / vertices_.size();
+    }
+    for (auto vertex : vertices_) {
+        for (int m = 0; m < 3; m++) {
+            vertex->velocity_[m] = vertex->velocity_[m] - averageVelocity[m];
         }
     }
 
