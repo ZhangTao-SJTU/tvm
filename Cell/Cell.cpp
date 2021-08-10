@@ -23,6 +23,7 @@ Cell::Cell(Run * run, long int id) {
     id_ = id;
     volume_ = 0.;
     pressure_ = 0.;
+    shapeIndex_ = 0.;
 }
 
 int Cell::updatePolygonDirections() {

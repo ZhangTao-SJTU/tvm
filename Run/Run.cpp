@@ -86,6 +86,7 @@ int Run::start() {
                 dumpCellCenter();
 //                dumpConfigurationVtk();
             }
+            dumpCellShapeIndex();
             count_dump_++;
         }
 
@@ -206,18 +207,13 @@ int     Run::updatePolygonCells() {
     return 0;
 }
 
-int     Run::updatePolygonVolumeRatio() {
-    // 0: red
-    // 1: grey
-    // 2: blue
-    updatePolygonCells();
-    for (auto polygon : polygons_) {
-        if (polygon->cells_.size() == 2) {
-            polygon->dumpVolumeRatio_ = (polygon->cells_[0]->volume_+polygon->cells_[1]->volume_)/2.0;
-        } else {
-            printf("polygon %ld has %ld neighboring cells\n", polygon->id_, polygon->cells_.size());
-            exit(1);
+int     Run::updateCellShapeIndex() {
+    for (auto cell : cells_) {
+        double area = 0.;
+        for (auto polygon : cell->polygons_) {
+            area += polygon->area_;
         }
+        cell->shapeIndex_ = area * pow(cell->volume_, (-1.0)*2.0/3.0);
     }
 
     return 0;
@@ -376,24 +372,16 @@ int Run::dumpConfigurationVtk() {
     }
     out << endl;
 
-    updatePolygonVolumeRatio();
-    out << "CELL_DATA " << Npolygons << endl;
-//    out << "SCALARS type int 1" << endl;
+//    updatePolygonVolumeRatio();
+//    out << "CELL_DATA " << Npolygons << endl;
+//    out << "SCALARS volumeRatio double 1" << endl;
 //    out << "LOOKUP_TABLE default" << endl;
 //    for (long int i = 0; i < polygons_.size(); i++) {
 //        if (!polygons_[i]->crossBoundary()) {
-//            out << left << setw(6) << polygons_[i]->dumpType << endl;
+//            out << left << setw(6) << polygons_[i]->dumpVolumeRatio_ << endl;
 //        }
 //    }
 //    out << endl;
-    out << "SCALARS volumeRatio double 1" << endl;
-    out << "LOOKUP_TABLE default" << endl;
-    for (long int i = 0; i < polygons_.size(); i++) {
-        if (!polygons_[i]->crossBoundary()) {
-            out << left << setw(6) << polygons_[i]->dumpVolumeRatio_ << endl;
-        }
-    }
-    out << endl;
 
     out.close();
 
@@ -453,6 +441,31 @@ int     Run::dumpCellCenter() {
         out << " " << right << setw(12) << scientific << setprecision(5) << center[0];
         out << " " << right << setw(12) << scientific << setprecision(5) << center[1];
         out << " " << right << setw(12) << scientific << setprecision(5) << center[2];
+        out << endl;
+    }
+    out << endl;
+
+    out.close();
+
+    return 0;
+}
+
+int     Run::dumpCellShapeIndex() {
+    updateCellShapeIndex();
+    stringstream filename;
+    filename << "cellShapeIndex.txt";
+    ofstream out(filename.str().c_str(), std::ios_base::app);
+    if (!out.is_open()) {
+        cout << "Error opening output file " << filename.str().c_str() << endl;
+        exit(1);
+    }
+    out << "time ";
+    out << left << setw(12) << simulation_time_;
+    out << endl;
+
+    for (auto cell : cells_) {
+        out << left << setw(6) << cell->id_;
+        out << " " << cell->shapeIndex_;
         out << endl;
     }
     out << endl;

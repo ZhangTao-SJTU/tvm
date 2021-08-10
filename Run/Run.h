@@ -51,7 +51,7 @@ class Run {
     int     start();
     int     updatePolygonVertices();
     int     updatePolygonCells();
-    int     updatePolygonVolumeRatio();
+    int     updateCellShapeIndex();
     int     updateVertexEdges();
     int     updateVertexCells();
     int     updateGeoinfo();
@@ -64,6 +64,7 @@ class Run {
     Edge *  addEdge(Vertex *, Vertex *);
     int     dumpConfigurationVtk();
     int     dumpCellCenter();
+    int     dumpCellShapeIndex();
     int     dumpTopo();
 };
 
