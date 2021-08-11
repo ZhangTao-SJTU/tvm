@@ -90,12 +90,12 @@ def topologyVoro(voroDict, Lxyz):
         rvertices = rcell['vertices']
         radjacency = rcell['adjacency']
         rfaces = rcell['faces']
-        print("original:", roriginal)
-        print("volume:", rvolume)
-        print("vertices:", rvertices)
-        print("adjacency:", radjacency)
-        print("faces:", rfaces)
-        print("")
+        # print("original:", roriginal)
+        # print("volume:", rvolume)
+        # print("vertices:", rvertices)
+        # print("adjacency:", radjacency)
+        # print("faces:", rfaces)
+        # print("")
 
         # generate cell
         cell = Cell(len(cells))
@@ -256,7 +256,7 @@ def dumpTopo(vertices, edges, polygons, cells, points, Lxyz):
         count = 0
         for key in edges:
             edge = edges[key]
-            file.write("{:d}".format(len(edge.vertices_)))
+            file.write("{:d}".format(edge.id_))
             for vertex in edge.vertices_:
                 file.write(" {:6d}".format(vertex.id_))
             file.write("\n")
@@ -271,7 +271,7 @@ def dumpTopo(vertices, edges, polygons, cells, points, Lxyz):
         count = 0
         for key in polygons:
             polygon = polygons[key]
-            file.write("{:d}".format(len(polygon.edges_)))
+            file.write("{:d}".format(polygon.id_))
             for edge in polygon.edges_:
                 file.write(" {:6d}".format(edge.id_))
             file.write("\n")
@@ -286,7 +286,7 @@ def dumpTopo(vertices, edges, polygons, cells, points, Lxyz):
         count = 0
         for key in cells:
             cell = cells[key]
-            file.write("{:d}".format(len(cell.polygons_)))
+            file.write("{:d}".format(cell.id_))
             for polygon in cell.polygons_:
                 file.write(" {:6d}".format(polygon.id_))
             file.write("\n")
