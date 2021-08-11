@@ -16,6 +16,7 @@ public:
     double pressure_;
     double shapeIndex_;
     std::vector<Polygon *> polygons_;
+    std::vector<Vertex *> vertices_;
     std::unordered_map<long int, bool> polygonDirections_;
     explicit Cell(Run *, long int);
 

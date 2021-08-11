@@ -51,6 +51,7 @@ class Run {
     int     start();
     int     updatePolygonVertices();
     int     updatePolygonCells();
+    int     updateCellVertices();
     int     updateCellShapeIndex();
     int     updateVertexEdges();
     int     updateVertexCells();

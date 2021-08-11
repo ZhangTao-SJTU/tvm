@@ -84,9 +84,11 @@ int Run::start() {
             if (simulation_time_ > (-0.01)*dt_) {
                 dumpTopo();
                 dumpCellCenter();
+                dumpCellShapeIndex();
 //                dumpConfigurationVtk();
             }
-            dumpCellShapeIndex();
+//            dumpCellCenter();
+//            dumpCellShapeIndex();
             count_dump_++;
         }
 
@@ -152,6 +154,24 @@ int     Run::updatePolygonVertices() {
     // update vertices in polygon
     for (long int i = 0; i < polygons_.size(); i++) {
         polygons_[i]->updateVertices();
+    }
+
+    return 0;
+}
+
+int     Run::updateCellVertices() {
+    // update vertices in cell
+    updatePolygonVertices();
+    for (auto cell : cells_) {
+        cell->vertices_.clear();
+        for (auto polygon : cell->polygons_) {
+            for (auto vertex : polygon->vertices_) {
+                if (std::find(cell->vertices_.begin(), cell->vertices_.end(), vertex) == cell->vertices_.end()) {
+                    // new vertex to be added
+                    cell->vertices_.push_back(vertex);
+                }
+            }
+        }
     }
 
     return 0;
@@ -389,6 +409,7 @@ int Run::dumpConfigurationVtk() {
 }
 
 int     Run::dumpCellCenter() {
+    updateCellVertices();
     stringstream filename;
     filename << "cellCenter.txt";
     ofstream out(filename.str().c_str(), std::ios_base::app);
@@ -404,12 +425,12 @@ int     Run::dumpCellCenter() {
         double center[3] = {0., 0., 0.};
         double reference[3];
         for (int m = 0; m < 3; m++) {
-            reference[m] = cell->polygons_[0]->center_[m];
+            reference[m] = cell->vertices_[0]->position_[m];
         }
-        for (auto polygon : cell->polygons_) {
+        for (auto vertex : cell->vertices_) {
             double dx[3];
             for (int m = 0; m < 3; m++) {
-                dx[m] = (polygon->center_[m] - reference[m]);
+                dx[m] = (vertex->position_[m] - reference[m]);
             }
             while (dx[0] > Lx_/2.0) {
                 dx[0] = dx[0] - Lx_;
@@ -434,7 +455,7 @@ int     Run::dumpCellCenter() {
             }
         }
         for (int m = 0; m < 3; m++) {
-            center[m] = center[m]/cell->polygons_.size() + reference[m];
+            center[m] = center[m]/cell->vertices_.size() + reference[m];
         }
         resetPosition(center);
         out << left << setw(6) << cell->id_;
@@ -461,6 +482,12 @@ int     Run::dumpCellShapeIndex() {
     }
     out << "time ";
     out << left << setw(12) << simulation_time_;
+    double averageShapeIndex = 0.;
+    for (auto cell : cells_) {
+        averageShapeIndex += cell->shapeIndex_;
+    }
+    averageShapeIndex /= cells_.size();
+    out << " " << left << setw(12) << averageShapeIndex;
     out << endl;
 
     for (auto cell : cells_) {
