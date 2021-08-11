@@ -53,79 +53,114 @@ int InitializeAll(Run * run) {
         exit(1);
     }
 
-    char buffer[256];
-    long int tmp_long;
+    string buffer;
+    string delimiter = " ";
+    size_t pos = 0;
     long int tmp_id;
-    int tmp_int;
+    vector<string> tokens;
+    vector<vector<string>> lines;
 
-//    topofile.getline(buffer, 100);
-
-    // initialize vertices_ objects
-    topofile >> buffer;
-    cout << "Reading " << buffer << endl;
-    topofile >> tmp_long;
-    cout << "Number of vertices: " << tmp_long << endl;
-    for (long int i = 0; i < tmp_long; i++) {
-        Vertex * vertex = new Vertex(run, i);
-        topofile >> tmp_id;
-        for (int j = 0; j < 3; j++) {
-            topofile >> vertex->position_[j];
+    while (getline(topofile, buffer))
+    {
+        pos = buffer.find((char)13);
+        if (pos != string::npos) {
+            buffer = buffer.substr(0, pos);
         }
-        run->vertices_.push_back(vertex);
+        if (buffer.length() == 0) continue;
+
+        tokens.clear();
+        while ((pos = buffer.find(delimiter)) != string::npos) {
+            string token = buffer.substr(0, pos);
+            if (token.length() > 0) {
+                tokens.push_back(token);
+            }
+            buffer.erase(0, pos + delimiter.length());
+        }
+        if (buffer.length() > 0) {
+            tokens.push_back(buffer);
+        }
+        lines.push_back(tokens);
     }
 
-    // initialize edges_ objects
-    topofile.getline(buffer, 100);
-    topofile >> buffer;
-    cout << "Reading " << buffer << endl;
-    topofile >> tmp_long;
-    cout << "Number of edges: " << tmp_long << endl;
-    for (long int i = 0; i < tmp_long; i++) {
-        Edge * edge = new Edge(run, i);
-        topofile >> tmp_int;
-        for (int j = 0; j < tmp_int; j++) {
-            topofile >> tmp_id;
-            edge->vertices_.push_back(run->vertices_[tmp_id]);
+    bool verticesFlag = false;
+    bool edgesFlag = false;
+    bool polygonsFlag = false;
+    bool cellsFlag = false;
+    for (int i = 0; i < lines.size(); i++) {
+        tokens = lines[i];
+        if (tokens[0] == "vertices") {
+            verticesFlag = true;
+        } else if (tokens[0] == "edges") {
+            verticesFlag = false;
+            edgesFlag = true;
+        } else if (tokens[0] == "polygons") {
+            edgesFlag = false;
+            polygonsFlag = true;
+        } else if (tokens[0] == "cells") {
+            polygonsFlag = false;
+            cellsFlag = true;
+        } else {
+            if (verticesFlag) {
+                tmp_id = atol(tokens[0].c_str());
+                Vertex * vertex = new Vertex(run, tmp_id);
+                for (int j = 1; j < tokens.size(); j++) {
+                    vertex->position_[j - 1] = atof(tokens[j].c_str());
+                }
+                run->vertices_.push_back(vertex);
+            }
+            if (edgesFlag) {
+                tmp_id = atol(tokens[0].c_str());
+                Edge * edge = new Edge(run, tmp_id);
+                for (int j = 1; j < tokens.size(); j++) {
+                    tmp_id = atol(tokens[j].c_str());
+                    for (auto vertex : run->vertices_) {
+                        if (vertex->id_ == tmp_id) {
+                            edge->vertices_.push_back(vertex);
+                            break;
+                        }
+                    }
+                }
+                run->edges_.push_back(edge);
+            }
+            if (polygonsFlag) {
+                tmp_id = atol(tokens[0].c_str());
+                Polygon * polygon = new Polygon(run, tmp_id);
+                for (int j = 1; j < tokens.size(); j++) {
+                    tmp_id = atol(tokens[j].c_str());
+                    for (auto edge : run->edges_) {
+                        if (edge->id_ == tmp_id) {
+                            polygon->edges_.push_back(edge);
+                            break;
+                        }
+                    }
+                }
+                run->polygons_.push_back(polygon);
+            }
+            if (cellsFlag) {
+                tmp_id = atol(tokens[0].c_str());
+                Cell * cell = new Cell(run, tmp_id);
+                for (int j = 1; j < tokens.size(); j++) {
+                    tmp_id = atol(tokens[j].c_str());
+                    for (auto polygon : run->polygons_) {
+                        if (polygon->id_ == tmp_id) {
+                            cell->polygons_.push_back(polygon);
+                            break;
+                        }
+                    }
+                }
+                run->cells_.push_back(cell);
+            }
         }
-        run->edges_.push_back(edge);
-    }
-
-    // initialize polygons_ objects
-    topofile.getline(buffer, 100);
-    topofile >> buffer;
-    cout << "Reading " << buffer << endl;
-    topofile >> tmp_long;
-    cout << "Number of polygons: " << tmp_long << endl;
-    for (long int i = 0; i < tmp_long; i++) {
-        Polygon * polygon = new Polygon(run, i);
-        topofile >> tmp_int;
-        for (int j = 0; j < tmp_int; j++) {
-            topofile >> tmp_id;
-            polygon->edges_.push_back(run->edges_[tmp_id]);
-        }
-        run->polygons_.push_back(polygon);
-    }
-
-    // initialize cells_ objects
-    topofile.getline(buffer, 100);
-    topofile >> buffer;
-    cout << "Reading " << buffer << endl;
-    topofile >> tmp_long;
-    cout << "Number of cells: " << tmp_long << endl;
-    for (long int i = 0; i < tmp_long; i++) {
-        Cell * cell = new Cell(run, i);
-        topofile >> tmp_int;
-        for (int j = 0; j < tmp_int; j++) {
-            topofile >> tmp_id;
-            cell->polygons_.push_back(run->polygons_[tmp_id]);
-        }
-        run->cells_.push_back(cell);
     }
 
     run->count_vertices_ = run->vertices_.size();
     run->count_edges_ = run->edges_.size();
     run->count_polygons_ = run->polygons_.size();
     run->count_cells_ = run->cells_.size();
+    cout << "Number of vertices: " << run->count_vertices_ << endl;
+    cout << "Number of edges: " << run->count_edges_ << endl;
+    cout << "Number of polygons: " << run->count_polygons_ << endl;
+    cout << "Number of cells: " << run->count_cells_ << endl;
 
     // initialize volume object
     run->volume_ = new Volume(run);
@@ -143,33 +178,6 @@ int InitializeAll(Run * run) {
 
     return 0;
 }
-
-//int DumpCentersVtk(double simulation_time, Run * run) {
-//    //////////////////////////////////////////////////////////////////////////////////////
-//    stringstream filename;
-//    filename << setw(10) << setfill('0') << (long int)(floor(simulation_time)) << ".centers.vtk";
-//    ofstream out(filename.str().c_str());
-//    if (!out.is_open()) {
-//        cout << "Error opening output file " << filename.str().c_str() << endl;
-//        exit(1);
-//    }
-//    out << "# vtk DataFile Version 2.0" << endl;
-//    out << "polydata" << endl;
-//    out << "ASCII" << endl;
-//    out << "DATASET POLYDATA" << endl;
-//    out << "POINTS " << run->cells_.size() << " double" << endl;
-//    for (long int i = 0; i < run->cells_.size(); i++) {
-//        out << right << setw(12) << scientific << setprecision(5) << run->cells_[i]->center_[0];
-//        out << " " << right << setw(12) << scientific << setprecision(5) << run->cells_[i]->center_[1];
-//        out << " " << right << setw(12) << scientific << setprecision(5) << run->cells_[i]->center_[2];
-//        out << endl;
-//    }
-//    out << endl;
-//
-//    out.close();
-//
-//    return 0;
-//}
 
 int LoadConf(string filename, Run * run) {
     ifstream conf(filename.c_str());
