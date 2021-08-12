@@ -41,13 +41,14 @@ Lth 0.020
 T 1.0e-05
 ```
 Here `time` specifies start time, end time, timestep;
-`dump` specifies dump file format, dumping time period;
-`s0` specifies target cell area;
-`Lth` specifies threshold edge length to trigger reconnection;
-`T` specifies temperature. 
+`dump` specifies the dumped file format (the `.vtk` file format is for visualization using `paraview`), the dumping time period;
+`log` specifies the time period logging simulation information to screen;
+`s0` specifies the target cell area;
+`Lth` specifies the threshold edge length to trigger reconnection;
+`T` specifies the temperature. 
 
 Use python script `scripts/tvm/main.py` to generate the initial configuration, 
-which contains the information of vertices coordinates and topology. 
+which contains the information of vertices' coordinates and the system topology. 
 ```bash
 python ../scripts/tvm/main.py
 ```
