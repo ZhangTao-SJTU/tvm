@@ -1,4 +1,9 @@
-# TVM [![Build Status](https://travis-ci.com/ZhangTao-SJTU/tvm.svg?token=YPqm5yHsQT7PD3VM6WG5&branch=main)](https://travis-ci.com/ZhangTao-SJTU/tvm)
+# TVM [![Build Status][1]][2] [![MIT licensed][3]][4]
+
+[1]: https://travis-ci.com/ZhangTao-SJTU/tvm.svg?token=YPqm5yHsQT7PD3VM6WG5&branch=main
+[2]: https://travis-ci.com/ZhangTao-SJTU/tvm
+[3]: https://img.shields.io/badge/license-MIT-blue.svg
+[4]: LICENSE
 
 A 3D vertex model code 
 
