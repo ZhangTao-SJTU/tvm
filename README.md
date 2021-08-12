@@ -17,7 +17,7 @@ This code is based on Okuda 2013 paper: https://link.springer.com/article/10.100
 - The network topology satisfies the following conditions:
   1. Two edges never share two vertices simultaneously. 
   2. Two polygonal faces never share two or more edges simultaneously. 
-  3. **EXTRA RULE**: Two polyhedral cells never share two or more polygonal faces simultaneously
+  3. **EXTRA RULE** Two polyhedral cells never share two or more polygonal faces simultaneously
 
 The scripts are in the folder "scripts" on the main branch.
 
