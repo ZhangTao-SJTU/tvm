@@ -19,17 +19,17 @@ The scripts are in the folder "scripts" on the main branch.
 ## Quick Start
 #### Compiling
 ```bash
-    mkdir build
-    cd build
-    cmake ../
-    make
+mkdir build
+cd build
+cmake ../
+make
 ```
 
 #### Usage
 Assuming the working directory is `build`, first create a configuration file `conf`
 ```bash
-    touch conf
-    vim conf
+touch conf
+vim conf
 ```
 The `conf` file defines values of simulation parameters. See an example as below: 
 ```
@@ -49,10 +49,10 @@ Here `time` specifies start time, end time, timestep;
 Use python script `scripts/tvm/main.py` to generate the initial configuration, 
 which contains the information of vertices coordinates and topology. 
 ```bash
-    python ../scripts/tvm/main.py
+python ../scripts/tvm/main.py
 ```
 
 Run `tvm`
 ```bash
-    ./tvm
+./tvm
 ```
