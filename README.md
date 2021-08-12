@@ -47,7 +47,7 @@ Here `time` specifies start time, end time, timestep;
 `Lth` specifies the threshold edge length to trigger reconnection;
 `T` specifies the temperature. 
 
-Use python script `scripts/tvm/main.py` to generate the initial configuration, 
+Use python script `scripts/tvm/main.py` to generate the initial configuration file `sample.topo`, 
 which contains the information of vertices' coordinates and the system topology. 
 ```bash
 python ../scripts/tvm/main.py
