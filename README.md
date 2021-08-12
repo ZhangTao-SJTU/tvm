@@ -56,3 +56,6 @@ Run `tvm`
 ```bash
 ./tvm
 ```
+
+## License
+[MIT License](./LICENSE)
