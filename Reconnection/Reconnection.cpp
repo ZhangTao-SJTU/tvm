@@ -24,6 +24,7 @@ Reconnection::Reconnection(Run * run) {
 //    Lth_ = 0.04;
     count_IH_ = 0;
     count_HI_ = 0;
+    verbose_ = false;
 }
 
 int     Reconnection::start() {
@@ -62,7 +63,7 @@ int     Reconnection::start() {
         if (!edge->checkI()) {
             continue;
         }
-        I_H(edge, false);
+        I_H(edge);
     }
 
     // H -> I reconnection
@@ -70,7 +71,7 @@ int     Reconnection::start() {
         if (!polygon->checkH()) {
             continue;
         }
-        H_I(polygon, false);
+        H_I(polygon);
     }
 
     // delete marked edges
@@ -95,7 +96,7 @@ int     Reconnection::start() {
     return 0;
 }
 
-int Reconnection::I_H(Edge * edge, bool verbose) {
+int Reconnection::I_H(Edge * edge) {
     // locate two vertices: 10 and 11
     Vertex * v10 = edge->vertices_[0];
     Vertex * v11 = edge->vertices_[1];
@@ -147,6 +148,11 @@ int Reconnection::I_H(Edge * edge, bool verbose) {
 //        c456->logPolygons("c456");
 //        printf("Topology Error: polygon %ld and %ld already have common edge before I->H reconnection\n", c123->id_, c456->id_);
         return 1;
+    }
+
+    if (verbose_) {
+        std::vector<Cell *> tmpCells = {c123, c456, c1245, c2356, c1346};
+        dumpCells(true, true, tmpCells);
     }
 
     // locate three side polygons: 1-1011-4, 2-1011-5, 3-1011-6
@@ -223,8 +229,6 @@ int Reconnection::I_H(Edge * edge, bool verbose) {
         p56->logEdges("p56");
         p46->logEdges("p46");
         run_->updatePolygonVertices();
-        std::vector<Polygon *> tmp_polygons = {p14,p25,p36,p12,p23,p13,p45,p46,p56};
-        dumpVtk(tmp_polygons, true, true);
         exit(1);
     }
     // locate six vertices: 1, 2, 3, 4, 5, 6
@@ -238,12 +242,6 @@ int Reconnection::I_H(Edge * edge, bool verbose) {
         v4 == NULL || v5 == NULL || v6 == NULL) {
         printf("Topology Error: no common vertex\n");
         exit(1);
-    }
-
-    if (verbose) {
-        run_->updatePolygonVertices();
-        std::vector<Polygon *> tmp_polygons = {p14,p25,p36,p12,p23,p13,p45,p46,p56};
-        dumpVtk(tmp_polygons, true, true);
     }
 
     // create vertices 7, 8, 9
@@ -325,6 +323,10 @@ int Reconnection::I_H(Edge * edge, bool verbose) {
     run_->resetPosition(v8->position_);
     run_->resetPosition(v9->position_);
     ////////// compute positions of vertices 7, 8, 9 done  /////////
+    if (verbose_) {
+        std::vector<Vertex *> tmpVertices = {v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11};
+        dumpVertices(tmpVertices);
+    }
     // associate cells to vertices 7,8,9
     v7->cells_.push_back(c1245);
     v7->cells_.push_back(c1346);
@@ -434,10 +436,9 @@ int Reconnection::I_H(Edge * edge, bool verbose) {
 //        }
 //    }
 
-    if (verbose) {
-        run_->updatePolygonVertices();
-        std::vector<Polygon *> tmp_polygons = {p14,p25,p36,p12,p23,p13,p45,p46,p56};
-        dumpVtk(tmp_polygons, true, false);
+    if (verbose_) {
+        std::vector<Cell *> tmpCells = {c123, c456, c1245, c2356, c1346};
+        dumpCells(false, true, tmpCells);
     }
 
     count_IH_ += 1;
@@ -445,7 +446,7 @@ int Reconnection::I_H(Edge * edge, bool verbose) {
     return 0;
 }
 
-int Reconnection::H_I(Polygon * polygon, bool verbose) {
+int Reconnection::H_I(Polygon * polygon) {
     // locate two vertices: 7, 8, 9
     polygon->updateVertices();
     Vertex * v7 = polygon->vertices_[0];
@@ -522,6 +523,11 @@ int Reconnection::H_I(Polygon * polygon, bool verbose) {
         exit(1);
     }
 
+    if (verbose_) {
+        std::vector<Cell *> tmpCells = {c123, c456, c1245, c2356, c1346};
+        dumpCells(true, false, tmpCells);
+    }
+
     // locate three side polygons: 1-1011-4, 2-1011-5, 3-1011-6
     Polygon * p14 = commonPolygon(c1245, c1346);
     Polygon * p25 = commonPolygon(c2356, c1245);
@@ -582,12 +588,6 @@ int Reconnection::H_I(Polygon * polygon, bool verbose) {
         exit(1);
     }
 
-    if (verbose) {
-        run_->updatePolygonVertices();
-        std::vector<Polygon *> tmp_polygons = {p14,p25,p36,p12,p23,p13,p45,p46,p56};
-        dumpVtk(tmp_polygons, false, true);
-    }
-
     // create vertices 10, 11
     Vertex * v10 = new Vertex(run_, run_->count_vertices_);
     run_->count_vertices_ = run_->count_vertices_ + 1;
@@ -646,6 +646,10 @@ int Reconnection::H_I(Polygon * polygon, bool verbose) {
     run_->resetPosition(v10->position_);
     run_->resetPosition(v11->position_);
     ////////// compute positions of vertices 10, 11 done      /////////
+    if (verbose_) {
+        std::vector<Vertex *> tmpVertices = {v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11};
+        dumpVertices(tmpVertices);
+    }
     // associate cells to vertices 10, 11
     v10->cells_.push_back(c1245);
     v10->cells_.push_back(c1346);
@@ -754,10 +758,9 @@ int Reconnection::H_I(Polygon * polygon, bool verbose) {
 //        }
 //    }
 
-    if (verbose) {
-        run_->updatePolygonVertices();
-        std::vector<Polygon *> tmp_polygons = {p14,p25,p36,p12,p23,p13,p45,p46,p56};
-        dumpVtk(tmp_polygons, false, false);
+    if (verbose_) {
+        std::vector<Cell *> tmpCells = {c123, c456, c1245, c2356, c1346};
+        dumpCells(false, false, tmpCells);
     }
 
     count_HI_ += 1;
@@ -859,67 +862,63 @@ int Reconnection::computeDistance(double * r0, double * r1, double * w) {
     return 0;
 }
 
-int Reconnection::dumpVtk(std::vector<Polygon *> tmp_polygons, bool IH, bool before) {
+int Reconnection::dumpVertices(std::vector<Vertex *> tmpVertices) {
     //////////////////////////////////////////////////////////////////////////////////////
     stringstream filename;
-    if (IH) {
-        if (before) {
-            filename << setw(7) << setfill('0') << (long int) (floor(run_->simulation_time_)) << setw(8) << setfill('0') << run_->count_reconnect_ << ".IH.before.vtk";
-        } else {
-            filename << setw(7) << setfill('0') << (long int) (floor(run_->simulation_time_)) << setw(8) << setfill('0') << run_->count_reconnect_ << ".IH.after.vtk";
-        }
-    } else {
-        if (before) {
-            filename << setw(7) << setfill('0') << (long int) (floor(run_->simulation_time_)) << setw(8) << setfill('0') << run_->count_reconnect_ << ".HI.before.vtk";
-        } else {
-            filename << setw(7) << setfill('0') << (long int) (floor(run_->simulation_time_)) << setw(8) << setfill('0') << run_->count_reconnect_ << ".HI.after.vtk";
-        }
-    }
-    ofstream out(filename.str().c_str());
+    filename << "reconnections.txt";
+    ofstream out(filename.str().c_str(), std::ios_base::app);
     if (!out.is_open()) {
         cout << "Error opening output file " << filename.str().c_str() << endl;
         exit(1);
     }
-    out << "# vtk DataFile Version 2.0" << endl;
-    out << "polydata" << endl;
-    out << "ASCII" << endl;
-    out << "DATASET POLYDATA" << endl;
-    out << "POINTS " << run_->vertices_.size() << " double" << endl;
-    for (long int i = 0; i < run_->vertices_.size(); i++) {
-        // reset vertex id for dumping polygons
-        run_->vertices_[i]->dumpID_ = i;
-        out << right << setw(12) << scientific << setprecision(5) << run_->vertices_[i]->position_[0];
-        out << " " << right << setw(12) << scientific << setprecision(5) << run_->vertices_[i]->position_[1];
-        out << " " << right << setw(12) << scientific << setprecision(5) << run_->vertices_[i]->position_[2];
+    for (auto vertex : tmpVertices) {
+        out << vertex->id_ << " ";
+    }
+    out << endl;
+    for (auto vertex : tmpVertices) {
+        out << right << setw(12) << scientific << setprecision(5) << vertex->position_[0];
+        out << " " << right << setw(12) << scientific << setprecision(5) << vertex->position_[1];
+        out << " " << right << setw(12) << scientific << setprecision(5) << vertex->position_[2];
         out << endl;
     }
-    out << endl;
 
-    long int Npolygons = 0;
-    long int NpolygonVertices = 0;
-    for (long int i = 0; i < tmp_polygons.size(); i++) {
-        if (!tmp_polygons[i]->crossBoundary()) {
-            Npolygons++;
-            NpolygonVertices += tmp_polygons[i]->vertices_.size();
-        }
-    }
-    out << "POLYGONS " << Npolygons << " " << Npolygons + NpolygonVertices << endl;
-    for (long int i = 0; i < tmp_polygons.size(); i++) {
-        if (!tmp_polygons[i]->crossBoundary()) {
-            out << left << setw(6) << tmp_polygons[i]->vertices_.size();
-            for (int j = 0; j < tmp_polygons[i]->vertices_.size(); j++) {
-                out << " " << left << setw(6) << tmp_polygons[i]->vertices_[j]->dumpID_;
-            }
-            out << endl;
-        }
-    }
-    out << endl;
+    out.close();
 
-    out << "CELL_DATA 9" << endl;
-    out << "SCALARS type int 1" << endl;
-    out << "LOOKUP_TABLE default" << endl;
-    out << "0\n0\n0\n1\n1\n1\n2\n2\n2\n" << endl;
-    out << endl;
+    return 0;
+}
+
+int Reconnection::dumpCells(bool printTime, bool IH, std::vector<Cell *> tmpCells) {
+    //////////////////////////////////////////////////////////////////////////////////////
+    stringstream filename;
+    filename << "reconnections.txt";
+    ofstream out(filename.str().c_str(), std::ios_base::app);
+    if (!out.is_open()) {
+        cout << "Error opening output file " << filename.str().c_str() << endl;
+        exit(1);
+    }
+    if (printTime) {
+        if (IH) {
+            out << "I->H";
+        } else {
+            out << "H->I";
+        }
+        out << " time " << run_->simulation_time_ << " " << run_->count_reconnect_ << endl;
+        for (auto cell : tmpCells) {
+            out << cell->id_ << " ";
+        }
+        out << endl;
+    }
+    for (auto cell : tmpCells) {
+        out << cell->polygons_.size();
+        for (auto polygon : cell->polygons_) {
+            out << " " << polygon->edges_.size();
+        }
+        out << endl;
+    }
+    if (!printTime) {
+        out << endl;
+    }
+
     out.close();
 
     return 0;

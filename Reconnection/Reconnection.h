@@ -13,17 +13,19 @@ public:
     double  Lth_;   // threshold length of network reconnection
     long int count_IH_;
     long int count_HI_;
+    bool verbose_;
 
     explicit Reconnection(Run *);
 
     int start();
-    int I_H(Edge *, bool verbose);
-    int H_I(Polygon *, bool verbose);
+    int I_H(Edge *);
+    int H_I(Polygon *);
     Polygon * commonPolygon(Cell *, Cell *);
     Edge * commonEdge(Polygon *, Polygon *);
     int computeDirection(double *, double *, double *);
     int computeDistance(double *, double *, double *);
-    int dumpVtk(std::vector<Polygon *>, bool, bool);
+    int dumpVertices(std::vector<Vertex *>);
+    int dumpCells(bool, bool, std::vector<Cell *>);
 private:
     Run * run_;
 };

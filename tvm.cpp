@@ -282,7 +282,7 @@ int LoadConf(string filename, Run * run) {
             cout << "s0: " << run->interface_->s0_ << endl;
         }
         else if (tokens[0] == "Lth") {
-            if (tokens.size() != 2) {
+            if (tokens.size() != 2 && tokens.size() != 3) {
                 cerr << "conf file error: ";
                 for (int j = 0; j < tokens.size(); j++) {
                     cerr << tokens[j] << " ";
@@ -291,8 +291,20 @@ int LoadConf(string filename, Run * run) {
                 exit(1);
             }
             run->reconnection_->Lth_ = atof(tokens[1].c_str());
+            if (tokens.size() == 3) {
+                if (tokens[2] == "verbose") {
+                    run->reconnection_->verbose_ = true;
+                } else {
+                    cerr << "conf file error: ";
+                    for (int j = 0; j < tokens.size(); j++) {
+                        cerr << tokens[j] << " ";
+                    }
+                    cerr << endl;
+                    exit(1);
+                }
+            }
             Lth_written = 1;
-            cout << "Lth: " << run->reconnection_->Lth_ << endl;
+            cout << "Lth: " << run->reconnection_->Lth_ << " verbose: " << run->reconnection_->verbose_ << endl;
         }
         else if (tokens[0] == "T") {
             if (tokens.size() != 2) {
