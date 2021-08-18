@@ -85,6 +85,7 @@ int Run::start() {
                 dumpTopo();
                 dumpCellCenter();
                 dumpCellShapeIndex();
+                dumpReconnection();
 //                dumpConfigurationVtk();
             }
 //            dumpCellCenter();
@@ -560,6 +561,23 @@ int     Run::dumpTopo() {
     }
 
     out << endl;
+    out.close();
+
+    return 0;
+}
+
+int     Run::dumpReconnection() {
+    stringstream filename;
+    filename << "reconnections.txt";
+    ofstream out(filename.str().c_str(), std::ios_base::app);
+    if (!out.is_open()) {
+        cout << "Error opening output file " << filename.str().c_str() << endl;
+        exit(1);
+    }
+
+    out << verboseReconnection_.str();
+    verboseReconnection_.str("");
+
     out.close();
 
     return 0;

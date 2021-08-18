@@ -41,6 +41,7 @@ class Run {
     Volume * volume_;
     Interface * interface_;
     Reconnection * reconnection_;
+    std::stringstream verboseReconnection_;
 
     std::vector<Vertex *> vertices_;
     std::vector<Edge *> edges_;
@@ -67,6 +68,7 @@ class Run {
     int     dumpCellCenter();
     int     dumpCellShapeIndex();
     int     dumpTopo();
+    int     dumpReconnection();
 };
 
 #endif

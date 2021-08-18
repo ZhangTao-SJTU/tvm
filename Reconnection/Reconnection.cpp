@@ -864,62 +864,44 @@ int Reconnection::computeDistance(double * r0, double * r1, double * w) {
 
 int Reconnection::dumpVertices(std::vector<Vertex *> tmpVertices) {
     //////////////////////////////////////////////////////////////////////////////////////
-    stringstream filename;
-    filename << "reconnections.txt";
-    ofstream out(filename.str().c_str(), std::ios_base::app);
-    if (!out.is_open()) {
-        cout << "Error opening output file " << filename.str().c_str() << endl;
-        exit(1);
-    }
     for (auto vertex : tmpVertices) {
-        out << vertex->id_ << " ";
+        run_->verboseReconnection_ << vertex->id_ << " ";
     }
-    out << endl;
+    run_->verboseReconnection_ << endl;
     for (auto vertex : tmpVertices) {
-        out << right << setw(12) << scientific << setprecision(5) << vertex->position_[0];
-        out << " " << right << setw(12) << scientific << setprecision(5) << vertex->position_[1];
-        out << " " << right << setw(12) << scientific << setprecision(5) << vertex->position_[2];
-        out << endl;
+        run_->verboseReconnection_ << right << setw(12) << scientific << setprecision(5) << vertex->position_[0];
+        run_->verboseReconnection_ << " " << right << setw(12) << scientific << setprecision(5) << vertex->position_[1];
+        run_->verboseReconnection_ << " " << right << setw(12) << scientific << setprecision(5) << vertex->position_[2];
+        run_->verboseReconnection_ << endl;
     }
-
-    out.close();
 
     return 0;
 }
 
 int Reconnection::dumpCells(bool printTime, bool IH, std::vector<Cell *> tmpCells) {
     //////////////////////////////////////////////////////////////////////////////////////
-    stringstream filename;
-    filename << "reconnections.txt";
-    ofstream out(filename.str().c_str(), std::ios_base::app);
-    if (!out.is_open()) {
-        cout << "Error opening output file " << filename.str().c_str() << endl;
-        exit(1);
-    }
     if (printTime) {
         if (IH) {
-            out << "I->H";
+            run_->verboseReconnection_ << "I->H";
         } else {
-            out << "H->I";
+            run_->verboseReconnection_ << "H->I";
         }
-        out << " time " << run_->simulation_time_ << " " << run_->count_reconnect_ << endl;
+        run_->verboseReconnection_ << " time " << run_->simulation_time_ << " " << run_->count_reconnect_ << endl;
         for (auto cell : tmpCells) {
-            out << cell->id_ << " ";
+            run_->verboseReconnection_ << cell->id_ << " ";
         }
-        out << endl;
+        run_->verboseReconnection_ << endl;
     }
     for (auto cell : tmpCells) {
-        out << cell->polygons_.size();
+        run_->verboseReconnection_ << cell->polygons_.size();
         for (auto polygon : cell->polygons_) {
-            out << " " << polygon->edges_.size();
+            run_->verboseReconnection_ << " " << polygon->edges_.size();
         }
-        out << endl;
+        run_->verboseReconnection_ << endl;
     }
     if (!printTime) {
-        out << endl;
+        run_->verboseReconnection_ << endl;
     }
-
-    out.close();
 
     return 0;
 }
