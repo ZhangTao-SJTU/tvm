@@ -614,30 +614,20 @@ int Reconnection::H_I(Polygon * polygon) {
     for (int m = 0; m < 3; m++) {
         uT[m] = uT[m]/uTL;
     }
-    // compute position of center of triangle 123
-    double r01[3];
-    double r02[3];
-    double r03[3];
-    double r0TopCenter[3];
-    computeDistance(r0, v1->position_, r01);
-    computeDistance(r0, v2->position_, r02);
-    computeDistance(r0, v3->position_, r03);
-    for (int m = 0; m < 3; m++) {
-        r0TopCenter[m] = 1.0/3.0*(r01[m] + r02[m] + r03[m]);
-    }
+
     // compute positions of vertices 10, 11
-    double dPuTr0TopCenter = 0.;
-    for (int m = 0; m < 3; m++) {
-        dPuTr0TopCenter += uT[m]*r0TopCenter[m];
+    if (c123->polygonDirections_[polygon->id_] == c456->polygonDirections_[polygon->id_]) {
+        printf("Reconnection Error: c123 and c456 have the same direction on polygon 789");
+        exit(1);
     }
-    if (dPuTr0TopCenter > 0) {
-        // uT points to the top triangle 123
+    if (!c123->polygonDirections_[polygon->id_]) {
+        // uT points to the top cell c123
         for (int m = 0; m < 3; m++) {
             v10->position_[m] = r0[m] + 0.5*Lth_*uT[m];
             v11->position_[m] = r0[m] - 0.5*Lth_*uT[m];
         }
     } else {
-        // uT points to the bottom triangle 456
+        // uT points to the bottom cell c456
         for (int m = 0; m < 3; m++) {
             v10->position_[m] = r0[m] - 0.5*Lth_*uT[m];
             v11->position_[m] = r0[m] + 0.5*Lth_*uT[m];
