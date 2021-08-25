@@ -177,67 +177,67 @@ def checkVertexCells(vertices, edges, polygons, cells):
             print("the number of neighboring cells of vertex "+key+" is not 4")
             exit(1)
 
-def dumpVTK(vertices, edges, polygons, cells, points, Lxyz):
-    Lx, Ly, Lz = Lxyz
-    with open("sample.vtk", "w") as file:
-        file.write("# vtk DataFile Version 2.0\npolydata\nASCII\nDATASET POLYDATA\n")
-        file.write("POINTS {:d} double\n".format(len(vertices)))
-        vertices = dict(sorted(vertices.items(), key=lambda item: item[1].id_))
-        for key in vertices:
-            vertex = vertices[key]
-            x = vertex.position_[0]
-            y = vertex.position_[1]
-            z = vertex.position_[2]
-            file.write("{:12.5e} {:12.5e} {:12.5e}\n".format(x, y, z))
-
-        Npolygons = 0
-        NpolygonVertices = 0
-        for key in edges:
-            v0 = edges[key].vertices_[0]
-            v1 = edges[key].vertices_[1]
-            dx = v1.position_[0] - v0.position_[0]
-            dy = v1.position_[1] - v0.position_[1]
-            dz = v1.position_[2] - v0.position_[2]
-            if abs(dx) > 0.5 * Lx or abs(dy) > 0.5 * Ly or abs(dz) > 0.5 * Lz:
-                edges[key].dumpOn_ = False
-            else:
-                edges[key].dumpOn_ = True
-        for key in polygons:
-            polygon = polygons[key]
-            polygon.dumpOn_ = True
-            for edge in polygon.edges_:
-                if not edge.dumpOn_:
-                    polygon.dumpOn_ = False
-                    break
-            if polygon.dumpOn_:
-                Npolygons += 1
-                NpolygonVertices += len(polygon.vertices_)
-
-        file.write("\nPOLYGONS {:d} {:d}\n".format(Npolygons, Npolygons + NpolygonVertices))
-        for key in polygons:
-            polygon = polygons[key]
-            if polygons[key].dumpOn_:
-                file.write("{:d}".format(len(polygon.vertices_)))
-                for vertex in polygon.vertices_:
-                    file.write(" {:6d}".format(vertex.id_))
-                file.write("\n")
-        file.write("\n")
-
-    with open("points.sample.vtk", "w") as file:
-        file.write("# vtk DataFile Version 2.0\npolydata\nASCII\nDATASET POLYDATA\n")
-        file.write("POINTS {:d} double\n".format(len(points)))
-        for point in points:
-            x = point[0]
-            y = point[1]
-            z = point[2]
-            file.write("{:12.5e} {:12.5e} {:12.5e}\n".format(x, y, z))
+# def dumpVTK(vertices, edges, polygons, cells, points, Lxyz):
+#     Lx, Ly, Lz = Lxyz
+#     with open("sample.vtk", "w") as file:
+#         file.write("# vtk DataFile Version 2.0\npolydata\nASCII\nDATASET POLYDATA\n")
+#         file.write("POINTS {:d} double\n".format(len(vertices)))
+#         vertices = dict(sorted(vertices.items(), key=lambda item: item[1].id_))
+#         for key in vertices:
+#             vertex = vertices[key]
+#             x = vertex.position_[0]
+#             y = vertex.position_[1]
+#             z = vertex.position_[2]
+#             file.write("{:12.5e} {:12.5e} {:12.5e}\n".format(x, y, z))
+#
+#         Npolygons = 0
+#         NpolygonVertices = 0
+#         for key in edges:
+#             v0 = edges[key].vertices_[0]
+#             v1 = edges[key].vertices_[1]
+#             dx = v1.position_[0] - v0.position_[0]
+#             dy = v1.position_[1] - v0.position_[1]
+#             dz = v1.position_[2] - v0.position_[2]
+#             if abs(dx) > 0.5 * Lx or abs(dy) > 0.5 * Ly or abs(dz) > 0.5 * Lz:
+#                 edges[key].dumpOn_ = False
+#             else:
+#                 edges[key].dumpOn_ = True
+#         for key in polygons:
+#             polygon = polygons[key]
+#             polygon.dumpOn_ = True
+#             for edge in polygon.edges_:
+#                 if not edge.dumpOn_:
+#                     polygon.dumpOn_ = False
+#                     break
+#             if polygon.dumpOn_:
+#                 Npolygons += 1
+#                 NpolygonVertices += len(polygon.vertices_)
+#
+#         file.write("\nPOLYGONS {:d} {:d}\n".format(Npolygons, Npolygons + NpolygonVertices))
+#         for key in polygons:
+#             polygon = polygons[key]
+#             if polygons[key].dumpOn_:
+#                 file.write("{:d}".format(len(polygon.vertices_)))
+#                 for vertex in polygon.vertices_:
+#                     file.write(" {:6d}".format(vertex.id_))
+#                 file.write("\n")
+#         file.write("\n")
+#
+#     with open("points.sample.vtk", "w") as file:
+#         file.write("# vtk DataFile Version 2.0\npolydata\nASCII\nDATASET POLYDATA\n")
+#         file.write("POINTS {:d} double\n".format(len(points)))
+#         for point in points:
+#             x = point[0]
+#             y = point[1]
+#             z = point[2]
+#             file.write("{:12.5e} {:12.5e} {:12.5e}\n".format(x, y, z))
 
 def dumpTopo(vertices, edges, polygons, cells, points, Lxyz):
     Lx, Ly, Lz = Lxyz
     with open("sample.topo", "w") as file:
         file.write("vertices {:d}\n".format(len(vertices)))
-        vertices = dict(sorted(vertices.items(), key=lambda item: item[1].id_))
-        count = 0
+        # vertices = dict(sorted(vertices.items(), key=lambda item: item[1].id_))
+        # count = 0
         for key in vertices:
             vertex = vertices[key]
             id = vertex.id_
@@ -245,56 +245,56 @@ def dumpTopo(vertices, edges, polygons, cells, points, Lxyz):
             y = vertex.position_[1]
             z = vertex.position_[2]
             file.write("{:6d} {:12.5e} {:12.5e} {:12.5e}\n".format(id, x, y, z))
-            if count != id:
-                print("vertices dict disordered {:d} {:d}\n".format(count, id))
-                exit(1)
-            count += 1
-        file.write("\n")
+            # if count != id:
+            #     print("vertices dict disordered {:d} {:d}\n".format(count, id))
+            #     exit(1)
+            # count += 1
+        # file.write("\n")
 
-        edges = dict(sorted(edges.items(), key=lambda item: item[1].id_))
+        # edges = dict(sorted(edges.items(), key=lambda item: item[1].id_))
         file.write("edges {:d}\n".format(len(edges)))
-        count = 0
+        # count = 0
         for key in edges:
             edge = edges[key]
             file.write("{:d}".format(edge.id_))
             for vertex in edge.vertices_:
                 file.write(" {:6d}".format(vertex.id_))
             file.write("\n")
-            if count != edge.id_:
-                print("edges dict disordered {:d} {:d}\n".format(count, edge.id_))
-                exit(1)
-            count += 1
-        file.write("\n")
+            # if count != edge.id_:
+            #     print("edges dict disordered {:d} {:d}\n".format(count, edge.id_))
+            #     exit(1)
+            # count += 1
+        # file.write("\n")
 
-        polygons = dict(sorted(polygons.items(), key=lambda item: item[1].id_))
+        # polygons = dict(sorted(polygons.items(), key=lambda item: item[1].id_))
         file.write("polygons {:d}\n".format(len(polygons)))
-        count = 0
+        # count = 0
         for key in polygons:
             polygon = polygons[key]
             file.write("{:d}".format(polygon.id_))
             for edge in polygon.edges_:
                 file.write(" {:6d}".format(edge.id_))
             file.write("\n")
-            if count != polygon.id_:
-                print("polygons dict disordered {:d} {:d}\n".format(count, polygon.id_))
-                exit(1)
-            count += 1
-        file.write("\n")
+            # if count != polygon.id_:
+            #     print("polygons dict disordered {:d} {:d}\n".format(count, polygon.id_))
+            #     exit(1)
+            # count += 1
+        # file.write("\n")
 
-        cells = dict(sorted(cells.items(), key=lambda item: item[1].id_))
+        # cells = dict(sorted(cells.items(), key=lambda item: item[1].id_))
         file.write("cells {:d}\n".format(len(cells)))
-        count = 0
+        # count = 0
         for key in cells:
             cell = cells[key]
             file.write("{:d}".format(cell.id_))
             for polygon in cell.polygons_:
                 file.write(" {:6d}".format(polygon.id_))
             file.write("\n")
-            if count != cell.id_:
-                print("cells dict disordered {:d} {:d}\n".format(count, cell.id_))
-                exit(1)
-            count += 1
-        file.write("\n")
+            # if count != cell.id_:
+            #     print("cells dict disordered {:d} {:d}\n".format(count, cell.id_))
+            #     exit(1)
+            # count += 1
+        # file.write("\n")
 
 if __name__ == '__main__':
     main()
