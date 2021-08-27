@@ -38,7 +38,7 @@ int Cell::updatePolygonDirections() {
 //    }
 
     // update direction of each polygon
-    std::unordered_map<long int, bool> edgeDirections;
+    std::unordered_map<long long, bool> edgeDirections;
     std::vector<Polygon *> tmp_polygons;
     while (tmp_polygons.size() < polygons_.size()) {
         bool foundNextPolygon = false;
@@ -55,11 +55,11 @@ int Cell::updatePolygonDirections() {
                     Vertex * v0 = polygon->vertices_[i];
                     Vertex * v1 = polygon->vertices_[(i + 1)%polygon->vertices_.size()];
                     if (v0->id_ < v1->id_) {
-                        long int edgeID = v0->id_*run_->count_vertices_ + v1->id_;
+                        long long edgeID = v0->id_*run_->count_vertices_ + v1->id_;
                         edgeDirections[edgeID] = true;
                         // true: v0->v1 is from lower vertex id to larger vertex id
                     } else {
-                        long int edgeID = v1->id_*run_->count_vertices_ + v0->id_;
+                        long long edgeID = v1->id_*run_->count_vertices_ + v0->id_;
                         edgeDirections[edgeID] = false;
                         // false: v0->v1 is from larger vertex id to lower vertex id
                     }
@@ -73,7 +73,7 @@ int Cell::updatePolygonDirections() {
             for (int i = 0; i < polygon->vertices_.size(); i++) {
                 Vertex * v0 = polygon->vertices_[i];
                 Vertex * v1 = polygon->vertices_[(i + 1)%polygon->vertices_.size()];
-                long int edgeID;
+                long long edgeID;
                 bool edgeDirection;
                 if (v0->id_ < v1->id_) {
                     edgeID = v0->id_*run_->count_vertices_ + v1->id_;
@@ -102,7 +102,7 @@ int Cell::updatePolygonDirections() {
             for (int i = 0; i < polygon->vertices_.size(); i++) {
                 Vertex * v0 = polygon->vertices_[i];
                 Vertex * v1 = polygon->vertices_[(i + 1)%polygon->vertices_.size()];
-                long int edgeID;
+                long long edgeID;
                 bool edgeDirection;
                 if (v0->id_ < v1->id_) {
                     edgeID = v0->id_*run_->count_vertices_ + v1->id_;

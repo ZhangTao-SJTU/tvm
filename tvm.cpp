@@ -153,14 +153,34 @@ int InitializeAll(Run * run) {
         }
     }
 
-    run->count_vertices_ = run->vertices_.size();
-    run->count_edges_ = run->edges_.size();
-    run->count_polygons_ = run->polygons_.size();
-    run->count_cells_ = run->cells_.size();
-    cout << "Number of vertices: " << run->count_vertices_ << endl;
-    cout << "Number of edges: " << run->count_edges_ << endl;
-    cout << "Number of polygons: " << run->count_polygons_ << endl;
-    cout << "Number of cells: " << run->count_cells_ << endl;
+    for (auto vertex : run->vertices_) {
+        if (run->count_vertices_ < vertex->id_ + 1) {
+            run->count_vertices_ = vertex->id_ + 1;
+        }
+    }
+    for (auto edge : run->edges_) {
+        if (run->count_edges_ < edge->id_ + 1) {
+            run->count_edges_ = edge->id_ + 1;
+        }
+    }
+    for (auto polygon : run->polygons_) {
+        if (run->count_polygons_ < polygon->id_ + 1) {
+            run->count_polygons_ = polygon->id_ + 1;
+        }
+    }
+    for (auto cell : run->cells_) {
+        if (run->count_cells_ < cell->id_ + 1) {
+            run->count_cells_ = cell->id_ + 1;
+        }
+    }
+    cout << "Number of vertices: " << run->vertices_.size() << endl;
+    cout << "Maximum vertex ID: " << run->count_vertices_ - 1 << endl;
+    cout << "Number of edges: " << run->edges_.size() << endl;
+    cout << "Maximum edge ID: " << run->count_edges_ - 1 << endl;
+    cout << "Number of polygons: " << run->polygons_.size() << endl;
+    cout << "Maximum polygon ID: " << run->count_polygons_ - 1 << endl;
+    cout << "Number of cells: " << run->cells_.size() << endl;
+    cout << "Maximum cell ID: " << run->count_cells_ - 1 << endl;
 
     // initialize volume object
     run->volume_ = new Volume(run);
