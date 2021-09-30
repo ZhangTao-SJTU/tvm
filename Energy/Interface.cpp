@@ -65,24 +65,7 @@ int Interface::updatePolygonForces(Polygon *polygon) {
             for (int m = 0; m < 3; m++) {
                 cv[k][m] = vertex->position_[m] - polygon->center_[m];
             }
-            while (cv[k][0] > run_->Lx_/2.0) {
-                cv[k][0] = cv[k][0] - run_->Lx_;
-            }
-            while (cv[k][0] < (-1.0)*run_->Lx_/2.0) {
-                cv[k][0] = cv[k][0] + run_->Lx_;
-            }
-            while (cv[k][1] > run_->Ly_/2.0) {
-                cv[k][1] = cv[k][1] - run_->Ly_;
-            }
-            while (cv[k][1] < (-1.0)*run_->Ly_/2.0) {
-                cv[k][1] = cv[k][1] + run_->Ly_;
-            }
-            while (cv[k][2] > run_->Lz_/2.0) {
-                cv[k][2] = cv[k][2] - run_->Lz_;
-            }
-            while (cv[k][2] < (-1.0)*run_->Lz_/2.0) {
-                cv[k][2] = cv[k][2] + run_->Lz_;
-            }
+            run_->box_->resetDistance(cv[k]);
         }
         // the edge vector
         double vv[3];

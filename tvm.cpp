@@ -219,6 +219,7 @@ int LoadConf(string filename, Run * run) {
     int s0_written = 0;
     int Lth_written = 0;
     int temperature_written = 0;
+    int box_written = 0;
 
     while (getline(conf, buffer))
     {
@@ -339,6 +340,43 @@ int LoadConf(string filename, Run * run) {
             temperature_written = 1;
             cout << "temperature: " << run->temperature_ << endl;
         }
+        else if (tokens[0] == "box") {
+            if (tokens.size() != 7) {
+                cerr << "conf file error: ";
+                for (int j = 0; j < tokens.size(); j++) {
+                    cerr << tokens[j] << " ";
+                }
+                cerr << endl;
+                exit(1);
+            }
+            run->box_ = new Box(run);
+            for (int k = 0; k < 3; k++) {
+                run->box_->size_[k] = atof(tokens[k + 1].c_str());
+                if (run->box_->size_[k] < (-1.0e-6)) {
+                    cerr << "conf file error: ";
+                    for (int j = 0; j < tokens.size(); j++) {
+                        cerr << tokens[j] << " ";
+                    }
+                    cerr << endl;
+                    exit(1);
+                }
+                if (tokens[k + 4] == "p") {
+                    run->box_->boundaryCondition_[k] = true;
+                } else if (tokens[k + 4] == "f"){
+                    run->box_->boundaryCondition_[k] = false;
+                } else {
+                    cerr << "conf file error: ";
+                    for (int j = 0; j < tokens.size(); j++) {
+                        cerr << tokens[j] << " ";
+                    }
+                    cerr << endl;
+                    exit(1);
+                }
+            }
+            box_written = 1;
+            cout << "box: " << run->box_->size_[0] << " " << run->box_->size_[1] << " " << run->box_->size_[2] << " ";
+            cout << "periodic boundary condition: " << run->box_->boundaryCondition_[0] << " " << run->box_->boundaryCondition_[1] << " " << run->box_->boundaryCondition_[2] << endl;
+        }
         else {
             cerr << "conf file error: ";
             for (int j = 0; j < tokens.size(); j++) {
@@ -381,6 +419,11 @@ int LoadConf(string filename, Run * run) {
 
     if (temperature_written == 0) {
         cout << "conf file error: temperature" << endl;
+        exit(1);
+    }
+
+    if (box_written == 0) {
+        cout << "conf file error: box" << endl;
         exit(1);
     }
 

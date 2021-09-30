@@ -14,6 +14,7 @@ class Run;
 #include "../Energy/Volume.h"
 #include "../Energy/Interface.h"
 #include "../Reconnection/Reconnection.h"
+#include "Box.h"
 
 class Run {
   public:
@@ -22,9 +23,6 @@ class Run {
     double  mu_;   // inverse damping coefficient of vertex
     double  kB_;
     double  temperature_;
-    double  Lx_;
-    double  Ly_;
-    double  Lz_;
     int     NCell_;
     double  simulation_time_;
     double   t_start_;
@@ -41,6 +39,7 @@ class Run {
     Volume * volume_;
     Interface * interface_;
     Reconnection * reconnection_;
+    Box * box_;
     std::stringstream verboseReconnection_;
 
     std::vector<Vertex *> vertices_;
@@ -62,7 +61,6 @@ class Run {
     int     deleteVertex(Vertex *);
     int     deleteEdge(Edge *);
     int     deletePolygon(Polygon *);
-    int     resetPosition(double *);
     Edge *  addEdge(Vertex *, Vertex *);
     int     dumpConfigurationVtk();
     int     dumpCellCenter();

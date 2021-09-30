@@ -319,9 +319,9 @@ int Reconnection::I_H(Edge * edge) {
         v8->position_[m] = r0[m] + Lth_/Lmax*wv8[m];
         v9->position_[m] = r0[m] + Lth_/Lmax*wv9[m];
     }
-    run_->resetPosition(v7->position_);
-    run_->resetPosition(v8->position_);
-    run_->resetPosition(v9->position_);
+    run_->box_->resetPosition(v7->position_);
+    run_->box_->resetPosition(v8->position_);
+    run_->box_->resetPosition(v9->position_);
     ////////// compute positions of vertices 7, 8, 9 done  /////////
     if (verbose_) {
         std::vector<Vertex *> tmpVertices = {v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11};
@@ -633,8 +633,8 @@ int Reconnection::H_I(Polygon * polygon) {
             v11->position_[m] = r0[m] + 0.5*Lth_*uT[m];
         }
     }
-    run_->resetPosition(v10->position_);
-    run_->resetPosition(v11->position_);
+    run_->box_->resetPosition(v10->position_);
+    run_->box_->resetPosition(v11->position_);
     ////////// compute positions of vertices 10, 11 done      /////////
     if (verbose_) {
         std::vector<Vertex *> tmpVertices = {v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11};
@@ -800,24 +800,7 @@ int Reconnection::computeDirection(double * r0, double * r1, double * w) {
     for (int m = 0; m < 3; m++) {
         w[m] = r1[m] - r0[m];
     }
-    while (w[0] > run_->Lx_/2.0) {
-        w[0] = w[0] - run_->Lx_;
-    }
-    while (w[0] < (-1.0)*run_->Lx_/2.0) {
-        w[0] = w[0] + run_->Lx_;
-    }
-    while (w[1] > run_->Ly_/2.0) {
-        w[1] = w[1] - run_->Ly_;
-    }
-    while (w[1] < (-1.0)*run_->Ly_/2.0) {
-        w[1] = w[1] + run_->Ly_;
-    }
-    while (w[2] > run_->Lz_/2.0) {
-        w[2] = w[2] - run_->Lz_;
-    }
-    while (w[2] < (-1.0)*run_->Lz_/2.0) {
-        w[2] = w[2] + run_->Lz_;
-    }
+    run_->box_->resetDistance(w);
     double wL = sqrt(w[0]*w[0] + w[1]*w[1] + w[2]*w[2]);
     for (int m = 0; m < 3; m++) {
         w[m] = w[m]/wL;
@@ -830,24 +813,7 @@ int Reconnection::computeDistance(double * r0, double * r1, double * w) {
     for (int m = 0; m < 3; m++) {
         w[m] = r1[m] - r0[m];
     }
-    while (w[0] > run_->Lx_/2.0) {
-        w[0] = w[0] - run_->Lx_;
-    }
-    while (w[0] < (-1.0)*run_->Lx_/2.0) {
-        w[0] = w[0] + run_->Lx_;
-    }
-    while (w[1] > run_->Ly_/2.0) {
-        w[1] = w[1] - run_->Ly_;
-    }
-    while (w[1] < (-1.0)*run_->Ly_/2.0) {
-        w[1] = w[1] + run_->Ly_;
-    }
-    while (w[2] > run_->Lz_/2.0) {
-        w[2] = w[2] - run_->Lz_;
-    }
-    while (w[2] < (-1.0)*run_->Lz_/2.0) {
-        w[2] = w[2] + run_->Lz_;
-    }
+    run_->box_->resetDistance(w);
 
     return 0;
 }

@@ -80,30 +80,14 @@ int Polygon::updateCenter() {
     double sum_l = 0.;
     for (int i = 0; i < edges_.size(); i++) {
         double length = edges_[i]->length_;
-        double dx = edges_[i]->center_[0] - tmp_origin[0];
-        double dy = edges_[i]->center_[1] - tmp_origin[1];
-        double dz = edges_[i]->center_[2] - tmp_origin[2];
-        while (dx > run_->Lx_/2.0) {
-            dx -= run_->Lx_;
-        }
-        while (dx < (-1.0)*run_->Lx_/2.0) {
-            dx += run_->Lx_;
-        }
-        while (dy > run_->Ly_/2.0) {
-            dy -= run_->Ly_;
-        }
-        while (dy < (-1.0)*run_->Ly_/2.0) {
-            dy += run_->Ly_;
-        }
-        while (dz > run_->Lz_/2.0) {
-            dz -= run_->Lz_;
-        }
-        while (dz < (-1.0)*run_->Lz_/2.0) {
-            dz += run_->Lz_;
-        }
-        sum_lx += length*dx;
-        sum_ly += length*dy;
-        sum_lz += length*dz;
+        double dx[3];
+        dx[0] = edges_[i]->center_[0] - tmp_origin[0];
+        dx[1] = edges_[i]->center_[1] - tmp_origin[1];
+        dx[2] = edges_[i]->center_[2] - tmp_origin[2];
+        run_->box_->resetDistance(dx);
+        sum_lx += length*dx[0];
+        sum_ly += length*dx[1];
+        sum_lz += length*dx[2];
         sum_l += length;
     }
     center_[0] = sum_lx/sum_l + tmp_origin[0];
@@ -126,24 +110,7 @@ int Polygon::updateArea() {
             for (int m = 0; m < 3; m++) {
                 cv[k][m] = vertex->position_[m] - center_[m];
             }
-            while (cv[k][0] > run_->Lx_ / 2.0) {
-                cv[k][0] = cv[k][0] - run_->Lx_;
-            }
-            while (cv[k][0] < (-1.0) * run_->Lx_ / 2.0) {
-                cv[k][0] = cv[k][0] + run_->Lx_;
-            }
-            while (cv[k][1] > run_->Ly_ / 2.0) {
-                cv[k][1] = cv[k][1] - run_->Ly_;
-            }
-            while (cv[k][1] < (-1.0) * run_->Ly_ / 2.0) {
-                cv[k][1] = cv[k][1] + run_->Ly_;
-            }
-            while (cv[k][2] > run_->Lz_ / 2.0) {
-                cv[k][2] = cv[k][2] - run_->Lz_;
-            }
-            while (cv[k][2] < (-1.0) * run_->Lz_ / 2.0) {
-                cv[k][2] = cv[k][2] + run_->Lz_;
-            }
+            run_->box_->resetDistance(cv[k]);
         }
         // compute the normal vector of the triangle interface formed by polygon center, and edge vertices
         double nv[3];

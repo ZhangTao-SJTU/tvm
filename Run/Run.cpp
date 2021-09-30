@@ -27,9 +27,6 @@ Run::Run() {
     mu_ = 1.0;
     kB_ = 1.0;
 //    temperature_ = 1.0e-5;
-    Lx_ = 8.;
-    Ly_ = 8.;
-    Lz_ = 8.;
     NCell_ = 512;
 }
 
@@ -145,7 +142,7 @@ int     Run::updateVerticesPosition() {
         for (int m = 0; m < 3; m++) {
             vertices_[i]->position_[m] = vertices_[i]->position_[m] + vertices_[i]->velocity_[m] * dt_ + cR*ndist(generator);
         }
-        resetPosition(vertices_[i]->position_);
+        box_->resetPosition(vertices_[i]->position_);
     }
 
     return 0;
@@ -296,23 +293,6 @@ int     Run::deletePolygon(Polygon * polygon) {
     return 0;
 }
 
-int     Run::resetPosition(double * r) {
-    if (fabs(r[0]) > 1e6) {
-        printf("%e\n",r[0]);
-    }
-    if (fabs(r[1]) > 1e6) {
-        printf("%e\n",r[1]);
-    }
-    if (fabs(r[2]) > 1e6) {
-        printf("%e\n",r[2]);
-    }
-    r[0] = r[0] - Lx_ * floor(r[0] / Lx_);
-    r[1] = r[1] - Ly_ * floor(r[1] / Ly_);
-    r[2] = r[2] - Lz_ * floor(r[2] / Lz_);
-
-    return 0;
-}
-
 Edge *  Run::addEdge(Vertex * v0, Vertex * v1) {
     Edge * edge = new Edge(this, count_edges_);
     count_edges_ += 1;
@@ -433,24 +413,7 @@ int     Run::dumpCellCenter() {
             for (int m = 0; m < 3; m++) {
                 dx[m] = (vertex->position_[m] - reference[m]);
             }
-            while (dx[0] > Lx_/2.0) {
-                dx[0] = dx[0] - Lx_;
-            }
-            while (dx[0] < (-1.0)*Lx_/2.0) {
-                dx[0] = dx[0] + Lx_;
-            }
-            while (dx[1] > Ly_/2.0) {
-                dx[1] = dx[1] - Ly_;
-            }
-            while (dx[1] < (-1.0)*Ly_/2.0) {
-                dx[1] = dx[1] + Ly_;
-            }
-            while (dx[2] > Lz_/2.0) {
-                dx[2] = dx[2] - Lz_;
-            }
-            while (dx[2] < (-1.0)*Lz_/2.0) {
-                dx[2] = dx[2] + Lz_;
-            }
+            box_->resetDistance(dx);
             for (int m = 0; m < 3; m++) {
                 center[m] = center[m] + dx[m];
             }
@@ -458,7 +421,7 @@ int     Run::dumpCellCenter() {
         for (int m = 0; m < 3; m++) {
             center[m] = center[m]/cell->vertices_.size() + reference[m];
         }
-        resetPosition(center);
+        box_->resetPosition(center);
         out << left << setw(6) << cell->id_;
         out << " " << right << setw(12) << scientific << setprecision(5) << center[0];
         out << " " << right << setw(12) << scientific << setprecision(5) << center[1];

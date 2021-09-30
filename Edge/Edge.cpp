@@ -32,13 +32,13 @@ Edge::Edge(Run * run, long int id) {
 }
 
 bool Edge::crossBoundary() {
-    if (fabs(vertices_[1]->position_[0] - vertices_[0]->position_[0]) > run_->Lx_/2.0) {
+    if (fabs(vertices_[1]->position_[0] - vertices_[0]->position_[0]) > run_->box_->size_[0]/2.0) {
         return true;
     }
-    if (fabs(vertices_[1]->position_[1] - vertices_[0]->position_[1]) > run_->Ly_/2.0) {
+    if (fabs(vertices_[1]->position_[1] - vertices_[0]->position_[1]) > run_->box_->size_[1]/2.0) {
         return true;
     }
-    if (fabs(vertices_[1]->position_[2] - vertices_[0]->position_[2]) > run_->Lz_/2.0) {
+    if (fabs(vertices_[1]->position_[2] - vertices_[0]->position_[2]) > run_->box_->size_[2]/2.0) {
         return true;
     }
 
@@ -46,36 +46,15 @@ bool Edge::crossBoundary() {
 }
 
 int Edge::update() {
-    double dx = vertices_[1]->position_[0] - vertices_[0]->position_[0];
-    double dy = vertices_[1]->position_[1] - vertices_[0]->position_[1];
-    double dz = vertices_[1]->position_[2] - vertices_[0]->position_[2];
-    while (dx > run_->Lx_/2.0) {
-        dx -= run_->Lx_;
-    }
-    while (dx < (-1.0)*run_->Lx_/2.0) {
-        dx += run_->Lx_;
-    }
-    while (dy > run_->Ly_/2.0) {
-        dy -= run_->Ly_;
-    }
-    while (dy < (-1.0)*run_->Ly_/2.0) {
-        dy += run_->Ly_;
-    }
-    while (dz > run_->Lz_/2.0) {
-        dz -= run_->Lz_;
-    }
-    while (dz < (-1.0)*run_->Lz_/2.0) {
-        dz += run_->Lz_;
-    }
-//    dx = dx - run_->Lx_ * floor((dx + run_->Lx_/2.0) / run_->Lx_);
-//    dy = dy - run_->Ly_ * floor((dy + run_->Ly_/2.0) / run_->Ly_);
-    vv_[0] = dx;
-    vv_[1] = dy;
-    vv_[2] = dz;
-    length_ = sqrt(dx*dx + dy*dy + dz*dz);
-    center_[0] = vertices_[0]->position_[0] + dx/2.0;
-    center_[1] = vertices_[0]->position_[1] + dy/2.0;
-    center_[2] = vertices_[0]->position_[2] + dz/2.0;
+    vv_[0] = vertices_[1]->position_[0] - vertices_[0]->position_[0];
+    vv_[1] = vertices_[1]->position_[1] - vertices_[0]->position_[1];
+    vv_[2] = vertices_[1]->position_[2] - vertices_[0]->position_[2];
+    run_->box_->resetDistance(vv_);
+
+    length_ = sqrt(vv_[0]*vv_[0] + vv_[1]*vv_[1] + vv_[2]*vv_[2]);
+    center_[0] = vertices_[0]->position_[0] + vv_[0]/2.0;
+    center_[1] = vertices_[0]->position_[1] + vv_[1]/2.0;
+    center_[2] = vertices_[0]->position_[2] + vv_[2]/2.0;
 
     return 0;
 }
