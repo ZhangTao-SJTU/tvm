@@ -180,6 +180,19 @@ int InitializeAll(Run * run) {
     cout << "Number of polygons: " << run->polygons_.size() << endl;
     cout << "Maximum polygon ID: " << run->count_polygons_ - 1 << endl;
     cout << "Number of cells: " << run->cells_.size() << endl;
+
+    // add the first empty cell
+    Cell * emptyCell = new Cell(run, run->count_cells_);
+    run->count_cells_ += 1;
+    run->updatePolygonCells();
+    for (auto polygon : run->polygons_) {
+        if (polygon->cells_.size() < 2) {
+            emptyCell->polygons_.push_back(polygon);
+            break;
+        }
+    }
+    run->emptyCells_.push_back(emptyCell);
+    cout << "Number of empty cells: " << run->emptyCells_.size() << endl;
     cout << "Maximum cell ID: " << run->count_cells_ - 1 << endl;
 
     // initialize volume object

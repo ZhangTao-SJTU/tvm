@@ -82,8 +82,8 @@ int Run::start() {
                 dumpTopo();
                 dumpCellCenter();
                 dumpCellShapeIndex();
-                dumpReconnection();
-//                dumpConfigurationVtk();
+//                dumpReconnection();
+                dumpConfigurationVtk();
             }
 //            dumpCellCenter();
 //            dumpCellShapeIndex();

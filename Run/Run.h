@@ -46,6 +46,7 @@ class Run {
     std::vector<Edge *> edges_;
     std::vector<Polygon *> polygons_;
     std::vector<Cell *> cells_;
+    std::vector<Cell *> emptyCells_;
 
     Run();
     int     start();
