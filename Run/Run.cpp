@@ -56,6 +56,8 @@ int Run::start() {
         volume_->updateForces();
         // update interfaceForces
         interface_->updateForces();
+        // update radialForces
+        updateRadialForces();
         // update velocities
         updateVerticesVelocity();
 
@@ -112,7 +114,7 @@ int Run::start() {
 int     Run::updateVerticesVelocity() {
     for (auto vertex : vertices_) {
         for (int m = 0; m < 3; m++) {
-            vertex->velocity_[m] = mu_ * (vertex->volumeForce_[m] + vertex->interfaceForce_[m]);
+            vertex->velocity_[m] = mu_ * (vertex->volumeForce_[m] + vertex->interfaceForce_[m] + vertex->radialForce_[m]);
         }
     }
     // remove drift velocity
@@ -308,6 +310,42 @@ Edge *  Run::addEdge(Vertex * v0, Vertex * v1) {
     edge->candidate_ = false;
 
     return edge;
+}
+
+int     Run::updateRadialForces() {
+    double radialForce = 5.0;
+    double equiDistance = 10.;
+    // reset all volumeForce values in vertices
+    for (auto vertex : vertices_) {
+        for (int m = 0; m < 3; m++) {
+            vertex->radialForce_[m] = 0.;
+        }
+    }
+
+    // update vertices on surface
+    emptyCells_[0]->vertices_.clear();
+    for (auto polygon : emptyCells_[0]->polygons_) {
+        for (auto vertex : polygon->vertices_) {
+            if (std::find(emptyCells_[0]->vertices_.begin(), emptyCells_[0]->vertices_.end(), vertex) == emptyCells_[0]->vertices_.end()) {
+                // new vertex to be added
+                emptyCells_[0]->vertices_.push_back(vertex);
+            }
+        }
+    }
+
+    // update radialForces for each vertex on surface
+    for (auto vertex : emptyCells_[0]->vertices_) {
+        double dx[2];
+        dx[0] = vertex->position_[0] - box_->size_[0]/2.0;
+        dx[1] = vertex->position_[1] - box_->size_[1]/2.0;
+        double dd = sqrt(dx[0]*dx[0] + dx[1]*dx[1]);
+        dx[0] = dx[0] / dd;
+        dx[1] = dx[1] / dd;
+        vertex->radialForce_[0] = radialForce * pow((equiDistance - dd) / equiDistance, 4) * dx[0];
+        vertex->radialForce_[1] = radialForce * pow((equiDistance - dd) / equiDistance, 4) * dx[1];
+    }
+
+    return 0;
 }
 
 int Run::dumpConfigurationVtk() {

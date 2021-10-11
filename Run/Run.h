@@ -68,6 +68,7 @@ class Run {
     int     dumpCellShapeIndex();
     int     dumpTopo();
     int     dumpReconnection();
+    int     updateRadialForces();
 };
 
 #endif

@@ -188,12 +188,12 @@ int InitializeAll(Run * run) {
     for (auto polygon : run->polygons_) {
         if (polygon->cells_.size() < 2) {
             emptyCell->polygons_.push_back(polygon);
-            break;
         }
     }
     run->emptyCells_.push_back(emptyCell);
     cout << "Number of empty cells: " << run->emptyCells_.size() << endl;
     cout << "Maximum cell ID: " << run->count_cells_ - 1 << endl;
+    cout << "Number of polygons in the first empty cell: " << emptyCell->polygons_.size() << endl;
 
     // initialize volume object
     run->volume_ = new Volume(run);
