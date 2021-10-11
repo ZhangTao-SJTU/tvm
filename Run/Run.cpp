@@ -95,7 +95,7 @@ int Run::start() {
 
         // reconnect
         if (simulation_time_ - t_start_ + t_roundError > count_reconnect_ * dtr_) {
-            reconnection_->start();
+//            reconnection_->start();
             count_reconnect_++;
         }
 
