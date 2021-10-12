@@ -105,12 +105,20 @@ int Reconnection::I_H(Edge * edge) {
     // if using finite boundary condition, cellTop_ and cellBottom_ will be the same,
     // and this part should be modified
     if (v10->cells_.size() != 4) {
-        printf("Topology Error: vertex %ld has %ld neighboring cells\n", v10->id_, v10->cells_.size());
-        exit(1);
+        printf("Topology Warning: vertex %ld has %ld neighboring cells", v10->id_, v10->cells_.size());
+        for (auto cell : v10->cells_) {
+            printf(" %ld", cell->id_);
+        }
+        printf("\n");
+        return 1;
     }
     if (v11->cells_.size() != 4) {
-        printf("Topology Error: vertex %ld has %ld neighboring cells\n", v11->id_, v11->cells_.size());
-        exit(1);
+        printf("Topology Warning: vertex %ld has %ld neighboring cells", v11->id_, v11->cells_.size());
+        for (auto cell : v11->cells_) {
+            printf(" %ld", cell->id_);
+        }
+        printf("\n");
+        return 1;
     }
     Cell * c123 = NULL;
     Cell * c456 = NULL;
@@ -170,8 +178,8 @@ int Reconnection::I_H(Edge * edge) {
     if (p14 == NULL || p25 == NULL || p36 == NULL ||
         p12 == NULL || p23 == NULL || p13 == NULL ||
         p45 == NULL || p56 == NULL || p46 == NULL) {
-        printf("Topology Error: no common polygon\n");
-        exit(1);
+        printf("Topology Error: no common polygon or more than one common polygon\n");
+        return 1;
     }
     // check if top/bottom pair of polygons already have common edge
     if (commonEdge(p12, p45) != NULL) {
@@ -457,16 +465,28 @@ int Reconnection::H_I(Polygon * polygon) {
     // if using finite boundary condition, cellTop_ and cellBottom_ will be the same,
     // and this part should be modified
     if (v7->cells_.size() != 4) {
-        printf("Topology Error: vertex %ld has %ld neighboring cells\n", v7->id_, v7->cells_.size());
-        exit(1);
+        printf("Topology Warning: vertex %ld has %ld neighboring cells", v7->id_, v7->cells_.size());
+        for (auto cell : v7->cells_) {
+            printf(" %ld", cell->id_);
+        }
+        printf("\n");
+        return 1;
     }
     if (v8->cells_.size() != 4) {
-        printf("Topology Error: vertex %ld has %ld neighboring cells\n", v8->id_, v8->cells_.size());
-        exit(1);
+        printf("Topology Warning: vertex %ld has %ld neighboring cells", v8->id_, v8->cells_.size());
+        for (auto cell : v8->cells_) {
+            printf(" %ld", cell->id_);
+        }
+        printf("\n");
+        return 1;
     }
     if (v9->cells_.size() != 4) {
-        printf("Topology Error: vertex %ld has %ld neighboring cells\n", v9->id_, v9->cells_.size());
-        exit(1);
+        printf("Topology Warning: vertex %ld has %ld neighboring cells", v9->id_, v9->cells_.size());
+        for (auto cell : v9->cells_) {
+            printf(" %ld", cell->id_);
+        }
+        printf("\n");
+        return 1;
     }
     Cell * c123 = NULL;
     Cell * c456 = NULL;
@@ -543,8 +563,8 @@ int Reconnection::H_I(Polygon * polygon) {
     if (p14 == NULL || p25 == NULL || p36 == NULL ||
         p12 == NULL || p23 == NULL || p13 == NULL ||
         p45 == NULL || p56 == NULL || p46 == NULL) {
-        printf("Topology Error: no common polygon\n");
-        exit(1);
+        printf("Topology Error: no common polygon or more than one common polygon\n");
+        return 1;
     }
     // check if side pair of polygons already have common edge
     if (commonEdge(p14, p25) != NULL) {
@@ -617,7 +637,7 @@ int Reconnection::H_I(Polygon * polygon) {
 
     // compute positions of vertices 10, 11
     if (c123->polygonDirections_[polygon->id_] == c456->polygonDirections_[polygon->id_]) {
-        printf("Reconnection Error: c123 and c456 have the same direction on polygon 789");
+        printf("Reconnection Error: c123 %ld and c456 %ld have the same direction on polygon 789\n", c123->id_, c456->id_);
         exit(1);
     }
     if (!c123->polygonDirections_[polygon->id_]) {
@@ -772,8 +792,8 @@ Polygon * Reconnection::commonPolygon(Cell * c1, Cell * c2) {
     } else {
         c1->logPolygons("c1");
         c2->logPolygons("c2");
-        printf("Topology Error: cell %ld and %ld have more than two common polygons\n", c1->id_, c2->id_);
-        exit(1);
+        printf("Topology Warning: cell %ld and %ld have more than two common polygons\n", c1->id_, c2->id_);
+        return NULL;
     }
 }
 

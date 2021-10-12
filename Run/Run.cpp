@@ -97,7 +97,7 @@ int Run::start() {
 
         // reconnect
         if (simulation_time_ - t_start_ + t_roundError > count_reconnect_ * dtr_) {
-//            reconnection_->start();
+            reconnection_->start();
             count_reconnect_++;
         }
 
@@ -194,6 +194,9 @@ int     Run::updateVertexCells() {
         vertex->cells_.clear();
     }
     std::vector<Cell *> tmp_cells = cells_;
+    for (auto cell : emptyCells_) {
+        tmp_cells.push_back(cell);
+    }
     for (auto cell : tmp_cells) {
         for (auto polygon : cell->polygons_) {
             for (auto edge : polygon->edges_) {
