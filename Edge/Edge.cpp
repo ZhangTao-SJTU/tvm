@@ -46,11 +46,11 @@ bool Edge::crossBoundary() {
 }
 
 int Edge::update() {
+//    cout << vertices_.size() << endl;
     vv_[0] = vertices_[1]->position_[0] - vertices_[0]->position_[0];
     vv_[1] = vertices_[1]->position_[1] - vertices_[0]->position_[1];
     vv_[2] = vertices_[1]->position_[2] - vertices_[0]->position_[2];
     run_->box_->resetDistance(vv_);
-
     length_ = sqrt(vv_[0]*vv_[0] + vv_[1]*vv_[1] + vv_[2]*vv_[2]);
     center_[0] = vertices_[0]->position_[0] + vv_[0]/2.0;
     center_[1] = vertices_[0]->position_[1] + vv_[1]/2.0;
