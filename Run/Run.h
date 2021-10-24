@@ -24,6 +24,8 @@ class Run {
     double  kB_;
     double  temperature_;
     int     NCell_;
+    double pullForce;
+    double pullRadius;
     double  simulation_time_;
     double   t_start_;
     double   t_end_;

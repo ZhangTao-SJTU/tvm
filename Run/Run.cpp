@@ -57,7 +57,9 @@ int Run::start() {
         // update interfaceForces
         interface_->updateForces();
         // update radialForces
-//        updateRadialForces();
+        if (simulation_time_ - t_start_ + t_roundError > 100.) {
+            updateRadialForces();
+        }
         // update velocities
         updateVerticesVelocity();
 
@@ -316,8 +318,8 @@ Edge *  Run::addEdge(Vertex * v0, Vertex * v1) {
 }
 
 int     Run::updateRadialForces() {
-    double radialForce = 5.0;
-    double equiDistance = 10.;
+    double radialForce = pullForce;
+    double equiDistance = pullRadius;
     // reset all volumeForce values in vertices
     for (auto vertex : vertices_) {
         for (int m = 0; m < 3; m++) {
