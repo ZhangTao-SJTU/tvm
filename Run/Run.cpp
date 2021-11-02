@@ -57,9 +57,9 @@ int Run::start() {
         // update interfaceForces
         interface_->updateForces();
         // update radialForces
-        if (simulation_time_ - t_start_ + t_roundError > 100.) {
-            updateRadialForces();
-        }
+//        if (simulation_time_ - t_start_ + t_roundError > 100.) {
+//            updateRadialForces();
+//        }
         // update velocities
         updateVerticesVelocity();
 
