@@ -21,6 +21,7 @@ public:
     explicit Cell(Run *, long int);
 
     int updatePolygonDirections();
+    int updateSurfacePolygonDirections();
     int updateVolume();
     int logPolygons(std::string);
 private:

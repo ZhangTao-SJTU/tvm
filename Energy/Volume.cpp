@@ -51,6 +51,7 @@ int     Volume::updateForces() {
 
 int Volume::updatePolygonDirections() {
     run_->updatePolygonVertices();
+    run_->updatePolygonCells();
     for (auto cell : run_->cells_) {
         cell->updatePolygonDirections();
     }
