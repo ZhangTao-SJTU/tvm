@@ -56,11 +56,7 @@ int Volume::updatePolygonDirections() {
         cell->updatePolygonDirections();
     }
     for (auto cell : run_->emptyCells_) {
-        cell->updatePolygonDirections();
-    }
-    // reverse the polygon directions on the surrounding big empty cell
-    for (auto polygon : run_->emptyCells_[0]->polygons_) {
-        run_->emptyCells_[0]->polygonDirections_[polygon->id_] = (!run_->emptyCells_[0]->polygonDirections_[polygon->id_]);
+        cell->updateSurfacePolygonDirections();
     }
 
     return 0;
