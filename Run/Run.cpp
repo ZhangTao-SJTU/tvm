@@ -228,6 +228,11 @@ int     Run::updatePolygonCells() {
             cells_[i]->polygons_[j]->cells_.push_back(cells_[i]);
         }
     }
+    for (long int i = 0; i < emptyCells_.size(); i++) {
+        for (int j = 0; j < emptyCells_[i]->polygons_.size(); j++) {
+            emptyCells_[i]->polygons_[j]->cells_.push_back(emptyCells_[i]);
+        }
+    }
 
     return 0;
 }
