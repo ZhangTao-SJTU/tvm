@@ -57,9 +57,9 @@ int Run::start() {
         // update interfaceForces
         interface_->updateForces();
         // update radialForces
-//        if (simulation_time_ - t_start_ + t_roundError > 100.) {
-//            updateRadialForces();
-//        }
+        if (simulation_time_ - t_start_ + t_roundError > 100.) {
+            updateRadialForces();
+        }
         // update velocities
         updateVerticesVelocity();
 
@@ -333,26 +333,34 @@ int     Run::updateRadialForces() {
     }
 
     // update vertices on surface
-    emptyCells_[0]->vertices_.clear();
-    for (auto polygon : emptyCells_[0]->polygons_) {
-        for (auto vertex : polygon->vertices_) {
-            if (std::find(emptyCells_[0]->vertices_.begin(), emptyCells_[0]->vertices_.end(), vertex) == emptyCells_[0]->vertices_.end()) {
-                // new vertex to be added
-                emptyCells_[0]->vertices_.push_back(vertex);
+    std::vector<Vertex *> verticesSurface;
+    for (auto cell : emptyCells_) {
+        for (auto polygon: cell->polygons_) {
+            for (auto vertex: polygon->vertices_) {
+                if (std::find(verticesSurface.begin(), verticesSurface.end(), vertex) == verticesSurface.end()) {
+                    // new vertex to be added
+                    verticesSurface.push_back(vertex);
+                }
             }
         }
     }
 
     // update radialForces for each vertex on surface
-    for (auto vertex : emptyCells_[0]->vertices_) {
+    for (auto vertex : verticesSurface) {
         double dx[2];
-        dx[0] = vertex->position_[0] - box_->size_[0]/2.0;
-        dx[1] = vertex->position_[1] - box_->size_[1]/2.0;
+        dx[0] = vertex->position_[0];
+        dx[1] = vertex->position_[1];
         double dd = sqrt(dx[0]*dx[0] + dx[1]*dx[1]);
         dx[0] = dx[0] / dd;
         dx[1] = dx[1] / dd;
         vertex->radialForce_[0] = radialForce * pow((equiDistance - dd) / equiDistance, 4) * dx[0];
         vertex->radialForce_[1] = radialForce * pow((equiDistance - dd) / equiDistance, 4) * dx[1];
+        vertex->volumeForce_[0] = 0.;
+        vertex->volumeForce_[1] = 0.;
+        vertex->volumeForce_[2] = 0.;
+        vertex->interfaceForce_[0] = 0.;
+        vertex->interfaceForce_[1] = 0.;
+        vertex->interfaceForce_[2] = 0.;
     }
 
     return 0;
