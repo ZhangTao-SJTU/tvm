@@ -106,23 +106,23 @@ int Reconnection::I_H(Edge * edge) {
     // and this part should be modified
     if (v10->cells_.size() != 4) {
         if (verbose_) {
-            printf("Topology Warning: vertex %ld has %ld neighboring cells", v10->id_, v10->cells_.size());
+            printf("Topology Error: vertex %ld has %ld neighboring cells", v10->id_, v10->cells_.size());
         }
 //        for (auto cell : v10->cells_) {
 //            printf(" %ld", cell->id_);
 //        }
 //        printf("\n");
-        return 1;
+        exit(1);
     }
     if (v11->cells_.size() != 4) {
         if (verbose_) {
-            printf("Topology Warning: vertex %ld has %ld neighboring cells", v11->id_, v11->cells_.size());
+            printf("Topology Error: vertex %ld has %ld neighboring cells", v11->id_, v11->cells_.size());
         }
 //        for (auto cell : v11->cells_) {
 //            printf(" %ld", cell->id_);
 //        }
 //        printf("\n");
-        return 1;
+        exit(1);
     }
     Cell * c123 = NULL;
     Cell * c456 = NULL;
@@ -141,7 +141,7 @@ int Reconnection::I_H(Edge * edge) {
         if (verbose_) {
             printf("Topology Warning: edge %ld has %ld neighboring side cells\n", edge->id_, sideCells.size());
         }
-        return 1;
+        exit(1);
     }
     c1245 = sideCells[0];
     c2356 = sideCells[1];
@@ -156,19 +156,34 @@ int Reconnection::I_H(Edge * edge) {
         printf("Topology Error: edge %ld has 0 neighboring bottom cells\n", edge->id_);
         exit(1);
     }
+
+    std::vector<Cell *> tmpCells = {c123, c456, c1245, c2356, c1346};
+    int countEmptyCells = 0;
+    for (auto tmpCell : tmpCells) {
+        if (std::find(run_->emptyCells_.begin(), run_->emptyCells_.end(), tmpCell) != run_->emptyCells_.end()) {
+            countEmptyCells++;
+        }
+    }
+    if (countEmptyCells > 1) {
+        if (verbose_) {
+            printf("Topology warning: more than one empty cells involved before I->H reconnection\n");
+        }
+        return 1;
+    }
+
     // check if top/bottom pair of cells already have common polygon
     if (commonPolygon(c123, c456) != NULL) {
 //        c123->logPolygons("c123");
 //        c456->logPolygons("c456");
         if (verbose_) {
-            printf("Topology Error: polygon %ld and %ld already have common edge before I->H reconnection\n", c123->id_,
-                   c456->id_);
+            printf("Topology warning: cell %ld %d and %ld %d already have common polygon before I->H reconnection\n",
+                   c123->id_, std::find(run_->emptyCells_.begin(), run_->emptyCells_.end(), c123) != run_->emptyCells_.end(),
+                   c456->id_, std::find(run_->emptyCells_.begin(), run_->emptyCells_.end(), c456) != run_->emptyCells_.end());
         }
         return 1;
     }
 
     if (verbose_) {
-        std::vector<Cell *> tmpCells = {c123, c456, c1245, c2356, c1346};
         dumpCells(true, true, tmpCells);
     }
 
@@ -488,33 +503,33 @@ int Reconnection::H_I(Polygon * polygon) {
     // and this part should be modified
     if (v7->cells_.size() != 4) {
         if (verbose_) {
-            printf("Topology Warning: vertex %ld has %ld neighboring cells", v7->id_, v7->cells_.size());
+            printf("Topology Error: vertex %ld has %ld neighboring cells", v7->id_, v7->cells_.size());
         }
 //        for (auto cell : v7->cells_) {
 //            printf(" %ld", cell->id_);
 //        }
 //        printf("\n");
-        return 1;
+        exit(1);
     }
     if (v8->cells_.size() != 4) {
         if (verbose_) {
-            printf("Topology Warning: vertex %ld has %ld neighboring cells", v8->id_, v8->cells_.size());
+            printf("Topology Error: vertex %ld has %ld neighboring cells", v8->id_, v8->cells_.size());
         }
 //        for (auto cell : v8->cells_) {
 //            printf(" %ld", cell->id_);
 //        }
 //        printf("\n");
-        return 1;
+        exit(1);
     }
     if (v9->cells_.size() != 4) {
         if (verbose_) {
-            printf("Topology Warning: vertex %ld has %ld neighboring cells", v9->id_, v9->cells_.size());
+            printf("Topology Error: vertex %ld has %ld neighboring cells", v9->id_, v9->cells_.size());
         }
 //        for (auto cell : v9->cells_) {
 //            printf(" %ld", cell->id_);
 //        }
 //        printf("\n");
-        return 1;
+        exit(1);
     }
     Cell * c123 = NULL;
     Cell * c456 = NULL;
@@ -529,9 +544,9 @@ int Reconnection::H_I(Polygon * polygon) {
     }
     if (topBottomCells.size() != 2) {
         if (verbose_) {
-            printf("Topology Warning: vertex %ld has %ld neighboring side cells\n", v7->id_, topBottomCells.size());
+            printf("Topology Error: vertex %ld has %ld neighboring side cells\n", v7->id_, topBottomCells.size());
         }
-        return 1;
+        exit(1);
     }
     c123 = topBottomCells[0];
     c456 = topBottomCells[1];
@@ -573,8 +588,21 @@ int Reconnection::H_I(Polygon * polygon) {
         exit(1);
     }
 
+    int countEmptyCells = 0;
+    std::vector<Cell *> tmpCells = {c123, c456, c1245, c2356, c1346};
+    for (auto tmpCell : tmpCells) {
+        if (std::find(run_->emptyCells_.begin(), run_->emptyCells_.end(), tmpCell) != run_->emptyCells_.end()) {
+            countEmptyCells++;
+        }
+    }
+    if (countEmptyCells > 1) {
+        if (verbose_) {
+            printf("Topology warning: more than one empty cells involved before H->I reconnection\n");
+        }
+        return 1;
+    }
+
     if (verbose_) {
-        std::vector<Cell *> tmpCells = {c123, c456, c1245, c2356, c1346};
         dumpCells(true, false, tmpCells);
     }
 
