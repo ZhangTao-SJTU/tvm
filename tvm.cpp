@@ -325,7 +325,7 @@ int LoadConf(string filename, Run * run) {
             cout << "log: " << run->log_period_ << endl;
         }
         else if (tokens[0] == "s0") {
-            if (tokens.size() != 2) {
+            if (tokens.size() != 3) {
                 cerr << "conf file error: ";
                 for (int j = 0; j < tokens.size(); j++) {
                     cerr << tokens[j] << " ";
@@ -334,8 +334,9 @@ int LoadConf(string filename, Run * run) {
                 exit(1);
             }
             run->interface_->s0_ = atof(tokens[1].c_str());
+            run->interface_->kL_ = atof(tokens[2].c_str());
             s0_written = 1;
-            cout << "s0: " << run->interface_->s0_ << endl;
+            cout << "s0: " << run->interface_->s0_ << "kL: " << run->interface_->kL_ << endl;
         }
         else if (tokens[0] == "Lth") {
             if (tokens.size() != 2 && tokens.size() != 3) {

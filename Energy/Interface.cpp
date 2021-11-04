@@ -21,6 +21,7 @@ using namespace std;
 Interface::Interface(Run * run) {
     run_ = run;
     s0_ = 5.40; // 0~5.82
+    kL_ = 1.0;
     energy_ = 0.;
 }
 
@@ -132,6 +133,12 @@ int Interface::updateTension() {
         }
         for (auto polygon : cell->polygons_) {
             polygon->tension_ += 2.0*(s - s0_);
+        }
+    }
+    // set interface tension with empty cells
+    for (auto cell : run_->emptyCells_) {
+        for (auto polygon : cell->polygons_) {
+            polygon->tension_ += kL_;
         }
     }
 
