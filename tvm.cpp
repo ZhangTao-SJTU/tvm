@@ -253,6 +253,7 @@ int LoadConf(string filename, Run * run) {
     int s0_written = 0;
     int Lth_written = 0;
     int temperature_written = 0;
+    int kv_written = 0;
     int box_written = 0;
     int pull_written = 0;
 
@@ -376,6 +377,19 @@ int LoadConf(string filename, Run * run) {
             temperature_written = 1;
             cout << "temperature: " << run->temperature_ << endl;
         }
+        else if (tokens[0] == "kv") {
+            if (tokens.size() != 2) {
+                cerr << "conf file error: ";
+                for (int j = 0; j < tokens.size(); j++) {
+                    cerr << tokens[j] << " ";
+                }
+                cerr << endl;
+                exit(1);
+            }
+            run->volume_->kv_ = atof(tokens[1].c_str());
+            kv_written = 1;
+            cout << "kv: " << run->volume_->kv_ << endl;
+        }
         else if (tokens[0] == "box") {
             if (tokens.size() != 7) {
                 cerr << "conf file error: ";
@@ -470,6 +484,11 @@ int LoadConf(string filename, Run * run) {
 
     if (temperature_written == 0) {
         cout << "conf file error: temperature" << endl;
+        exit(1);
+    }
+
+    if (kv_written == 0) {
+        cout << "conf file error: kv" << endl;
         exit(1);
     }
 
