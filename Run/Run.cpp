@@ -56,6 +56,10 @@ int Run::start() {
         volume_->updateForces();
         // update interfaceForces
         interface_->updateForces();
+        // update radialForces
+        if (simulation_time_ - t_start_ + t_roundError > 100.) {
+            updateRadialForces();
+        }
         // update velocities
         updateVerticesVelocity();
 
@@ -92,8 +96,6 @@ int Run::start() {
 
         // Euler dynamics
         updateVerticesPosition();
-        // update radialPositions
-        updateRadialPositions();
 
         // reconnect
         if (simulation_time_ - t_start_ + t_roundError > count_reconnect_ * dtr_) {
@@ -114,24 +116,24 @@ int Run::start() {
 int     Run::updateVerticesVelocity() {
     for (auto vertex : vertices_) {
         for (int m = 0; m < 3; m++) {
-            vertex->velocity_[m] = mu_ * (vertex->volumeForce_[m] + vertex->interfaceForce_[m]);
+            vertex->velocity_[m] = mu_ * (vertex->volumeForce_[m] + vertex->interfaceForce_[m] + vertex->radialForce_[m]);
         }
     }
-//    // remove drift velocity
-//    double averageVelocity[3] = {0., 0., 0.};
-//    for (auto vertex : vertices_) {
-//        for (int m = 0; m < 3; m++) {
-//            averageVelocity[m] = averageVelocity[m] + vertex->velocity_[m];
-//        }
-//    }
-//    for (int m = 0; m < 3; m++) {
-//        averageVelocity[m] = averageVelocity[m] / vertices_.size();
-//    }
-//    for (auto vertex : vertices_) {
-//        for (int m = 0; m < 3; m++) {
-//            vertex->velocity_[m] = vertex->velocity_[m] - averageVelocity[m];
-//        }
-//    }
+    // remove drift velocity
+    double averageVelocity[3] = {0., 0., 0.};
+    for (auto vertex : vertices_) {
+        for (int m = 0; m < 3; m++) {
+            averageVelocity[m] = averageVelocity[m] + vertex->velocity_[m];
+        }
+    }
+    for (int m = 0; m < 3; m++) {
+        averageVelocity[m] = averageVelocity[m] / vertices_.size();
+    }
+    for (auto vertex : vertices_) {
+        for (int m = 0; m < 3; m++) {
+            vertex->velocity_[m] = vertex->velocity_[m] - averageVelocity[m];
+        }
+    }
 
     return 0;
 }
@@ -140,51 +142,11 @@ int     Run::updateVerticesPosition() {
     std::default_random_engine generator(std::random_device{}());
     std::normal_distribution<double> ndist(0., 1.);
     double cR = sqrt(2.0*mu_*kB_*temperature_*dt_);
-    for (auto vertex: vertices_) {
+    for (long int i = 0; i < vertices_.size(); i++) {
         for (int m = 0; m < 3; m++) {
-            vertex->position_[m] = vertex->position_[m] + vertex->velocity_[m] * dt_ + cR * ndist(generator);
+            vertices_[i]->position_[m] = vertices_[i]->position_[m] + vertices_[i]->velocity_[m] * dt_ + cR*ndist(generator);
         }
-        box_->resetPosition(vertex->position_);
-    }
-
-    return 0;
-}
-
-int     Run::updateRadialPositions() {
-    double t_roundError = 0.01*dt_;
-    if (simulation_time_ - t_start_ + t_roundError < 50.) {
-        return 0;
-    }
-    if (simulation_time_ - t_start_ + t_roundError < 100.) {
-        radius_ = pullRadiusMin;
-    } else {
-        radius_ += pullRate*dt_;
-    }
-    if (radius_ > pullRadiusMax) {
-        radius_ = pullRadiusMax;
-    }
-
-    // update vertices on surface
-    std::vector<Vertex *> verticesSurface;
-    for (auto cell : emptyCells_) {
-        for (auto polygon: cell->polygons_) {
-            for (auto vertex: polygon->vertices_) {
-                if (std::find(verticesSurface.begin(), verticesSurface.end(), vertex) == verticesSurface.end()) {
-                    // new vertex to be added
-                    verticesSurface.push_back(vertex);
-                }
-            }
-        }
-    }
-
-    // update radialForces for each vertex on surface
-    for (auto vertex : verticesSurface) {
-        double dx[2];
-        dx[0] = vertex->position_[0];
-        dx[1] = vertex->position_[1];
-        double dd = sqrt(dx[0]*dx[0] + dx[1]*dx[1]);
-        vertex->position_[0] = vertex->position_[0]/dd*radius_;
-        vertex->position_[1] = vertex->position_[1]/dd*radius_;
+        box_->resetPosition(vertices_[i]->position_);
     }
 
     return 0;
@@ -358,6 +320,50 @@ Edge *  Run::addEdge(Vertex * v0, Vertex * v1) {
     edge->candidate_ = false;
 
     return edge;
+}
+
+int     Run::updateRadialForces() {
+    double radialForce = pullForce;
+    double equiDistance = pullRadius;
+    // reset all volumeForce values in vertices
+    for (auto vertex : vertices_) {
+        for (int m = 0; m < 3; m++) {
+            vertex->radialForce_[m] = 0.;
+        }
+    }
+
+    // update vertices on surface
+    std::vector<Vertex *> verticesSurface;
+    for (auto cell : emptyCells_) {
+        for (auto polygon: cell->polygons_) {
+            for (auto vertex: polygon->vertices_) {
+                if (std::find(verticesSurface.begin(), verticesSurface.end(), vertex) == verticesSurface.end()) {
+                    // new vertex to be added
+                    verticesSurface.push_back(vertex);
+                }
+            }
+        }
+    }
+
+    // update radialForces for each vertex on surface
+    for (auto vertex : verticesSurface) {
+        double dx[2];
+        dx[0] = vertex->position_[0];
+        dx[1] = vertex->position_[1];
+        double dd = sqrt(dx[0]*dx[0] + dx[1]*dx[1]);
+        dx[0] = dx[0] / dd;
+        dx[1] = dx[1] / dd;
+        vertex->radialForce_[0] = radialForce * pow((equiDistance - dd) / equiDistance, 4) * dx[0];
+        vertex->radialForce_[1] = radialForce * pow((equiDistance - dd) / equiDistance, 4) * dx[1];
+        vertex->volumeForce_[0] = 0.;
+        vertex->volumeForce_[1] = 0.;
+        vertex->volumeForce_[2] = 0.;
+        vertex->interfaceForce_[0] = 0.;
+        vertex->interfaceForce_[1] = 0.;
+        vertex->interfaceForce_[2] = 0.;
+    }
+
+    return 0;
 }
 
 int Run::dumpConfigurationVtk() {

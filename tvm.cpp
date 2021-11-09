@@ -428,7 +428,7 @@ int LoadConf(string filename, Run * run) {
             cout << "periodic boundary condition: " << run->box_->boundaryCondition_[0] << " " << run->box_->boundaryCondition_[1] << " " << run->box_->boundaryCondition_[2] << endl;
         }
         else if (tokens[0] == "pull") {
-            if (tokens.size() != 4) {
+            if (tokens.size() != 3) {
                 cerr << "conf file error: ";
                 for (int j = 0; j < tokens.size(); j++) {
                     cerr << tokens[j] << " ";
@@ -436,11 +436,10 @@ int LoadConf(string filename, Run * run) {
                 cerr << endl;
                 exit(1);
             }
-            run->pullRate = atof(tokens[1].c_str());
-            run->pullRadiusMin = atof(tokens[2].c_str());
-            run->pullRadiusMax = atof(tokens[3].c_str());
+            run->pullForce = atof(tokens[1].c_str());
+            run->pullRadius = atof(tokens[2].c_str());
             pull_written = 1;
-            cout << "pulling rate: " << run->pullRate << " radius: " << run->pullRadiusMin << " -> " << run->pullRadiusMax << endl;
+            cout << "pulling force: " << run->pullForce << " radius: " << run->pullRadius << endl;
         }
         else {
             cerr << "conf file error: ";
