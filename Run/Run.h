@@ -24,8 +24,9 @@ class Run {
     double  kB_;
     double  temperature_;
     int     NCell_;
-    double pullForce;
-    double pullRadius;
+    double pullRate;
+    double pullRadiusMin;
+    double pullRadiusMax;
     double  simulation_time_;
     double   t_start_;
     double   t_end_;
@@ -43,6 +44,7 @@ class Run {
     Reconnection * reconnection_;
     Box * box_;
     std::stringstream verboseReconnection_;
+    double radius_;
 
     std::vector<Vertex *> vertices_;
     std::vector<Edge *> edges_;
@@ -70,7 +72,7 @@ class Run {
     int     dumpCellShapeIndex();
     int     dumpTopo();
     int     dumpReconnection();
-    int     updateRadialForces();
+    int     updateRadialPositions();
 };
 
 #endif
