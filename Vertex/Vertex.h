@@ -17,7 +17,7 @@ public:
     double position_[3];
     double volumeForce_[3];
     double interfaceForce_[3];
-    double radialForce_[3];
+    double pullingForce_[3];
     double velocity_[3];
     std::vector<Edge *> edges_;
     std::vector<Cell *> cells_;

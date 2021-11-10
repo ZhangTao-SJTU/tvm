@@ -24,8 +24,8 @@ class Run {
     double  kB_;
     double  temperature_;
     int     NCell_;
-    double pullForce;
-    double pullRadius;
+    double pullForce_;
+    double pullxMax_;
     double  simulation_time_;
     double   t_start_;
     double   t_end_;
@@ -70,7 +70,8 @@ class Run {
     int     dumpCellShapeIndex();
     int     dumpTopo();
     int     dumpReconnection();
-    int     updateRadialForces();
+    int     assignPullingPolygons();
+    int     updatePullingForces();
 };
 
 #endif

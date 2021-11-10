@@ -18,6 +18,7 @@ public:
     double tension_;
     double volumeForce_[3];
     double interfaceForce_[3];
+    bool pull_;
     std::vector<Edge *> edges_;
     std::vector<Vertex *> vertices_;
     std::vector<Cell *> cells_;

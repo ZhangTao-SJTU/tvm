@@ -28,6 +28,7 @@ Polygon::Polygon(Run * run, long int id) {
     }
     area_ = 0.;
     tension_ = 0.;
+    pull_ = false;
 }
 
 int Polygon::updateVertices() {

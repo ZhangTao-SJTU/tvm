@@ -436,10 +436,10 @@ int LoadConf(string filename, Run * run) {
                 cerr << endl;
                 exit(1);
             }
-            run->pullForce = atof(tokens[1].c_str());
-            run->pullRadius = atof(tokens[2].c_str());
+            run->pullForce_ = atof(tokens[1].c_str());
+            run->pullxMax_ = atof(tokens[2].c_str());
             pull_written = 1;
-            cout << "pulling force: " << run->pullForce << " radius: " << run->pullRadius << endl;
+            cout << "pulling force: " << run->pullForce_ << " x max: " << run->pullxMax_ << endl;
         }
         else {
             cerr << "conf file error: ";
