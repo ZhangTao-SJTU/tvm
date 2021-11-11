@@ -28,6 +28,7 @@ Vertex::Vertex(Run * run, long int id) {
         pullingForce_[i] = 0.;
         velocity_[i] = 0.;
     }
+    pull_ = false;
 }
 
 int Vertex::logCells(std::string name) {

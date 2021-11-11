@@ -133,6 +133,14 @@ int     Run::assignPullingPolygons() {
         }
     }
 
+    for (auto polygon : polygons_) {
+        if (polygon->pull_) {
+            for (auto vertex: polygon->vertices_) {
+                vertex->pull_ = true;
+            }
+        }
+    }
+
     return 0;
 }
 
@@ -161,6 +169,13 @@ int     Run::updatePullingForces() {
     for (auto vertex : verticesSurface) {
         double x = vertex->position_[0];
         if (fabs(x) >= pullxMax_) {
+            vertex->pullingForce_[0] = 0.;
+            vertex->volumeForce_[0] = 0.;
+            vertex->volumeForce_[1] = 0.;
+            vertex->volumeForce_[2] = 0.;
+            vertex->interfaceForce_[0] = 0.;
+            vertex->interfaceForce_[1] = 0.;
+            vertex->interfaceForce_[2] = 0.;
             continue;
         }
         if (x < 0) {
@@ -209,8 +224,14 @@ int     Run::updateVerticesPosition() {
     std::normal_distribution<double> ndist(0., 1.);
     double cR = sqrt(2.0*mu_*kB_*temperature_*dt_);
     for (long int i = 0; i < vertices_.size(); i++) {
-        for (int m = 0; m < 3; m++) {
-            vertices_[i]->position_[m] = vertices_[i]->position_[m] + vertices_[i]->velocity_[m] * dt_ + cR*ndist(generator);
+        if (vertices_[i]->pull_) {
+            for (int m = 0; m < 3; m++) {
+                vertices_[i]->position_[m] = vertices_[i]->position_[m] + vertices_[i]->velocity_[m] * dt_;
+            }
+        } else {
+            for (int m = 0; m < 3; m++) {
+                vertices_[i]->position_[m] = vertices_[i]->position_[m] + vertices_[i]->velocity_[m] * dt_ + cR*ndist(generator);
+            }
         }
         box_->resetPosition(vertices_[i]->position_);
     }
