@@ -57,8 +57,8 @@ int Run::start() {
         // update interfaceForces
         interface_->updateForces();
         // update radialForces
-        if (simulation_time_ - t_start_ + t_roundError > 100.) {
-            if (simulation_time_ - t_start_ < 100. + t_roundError) {
+        if (simulation_time_ - t_start_ + t_roundError > 500.) {
+            if (simulation_time_ - t_start_ < 500. + t_roundError) {
                 assignPullingPolygons();
             }
             updatePullingForces();
