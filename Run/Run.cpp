@@ -124,10 +124,10 @@ int     Run::assignPullingPolygons() {
                 xa += vertex->position_[0];
             }
             xa /= polygon->vertices_.size();
-            if (xa < (-4.5)) {
+            if (xa < (-4.2)) {
                 polygon->pull_ = true;
             }
-            if (xa > 4.5) {
+            if (xa > 4.2) {
                 polygon->pull_ = true;
             }
         }
