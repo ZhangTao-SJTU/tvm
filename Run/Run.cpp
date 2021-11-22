@@ -120,14 +120,17 @@ int     Run::assignPullingPolygons() {
     for (auto cell : emptyCells_) {
         for (auto polygon: cell->polygons_) {
             double xa = 0.;
+            double ya = 0.;
+            double za = 0.;
             for (auto vertex: polygon->vertices_) {
                 xa += vertex->position_[0];
+                ya += vertex->position_[1];
+                za += vertex->position_[2];
             }
             xa /= polygon->vertices_.size();
-            if (xa < (-4.2)) {
-                polygon->pull_ = true;
-            }
-            if (xa > 4.2) {
+            ya /= polygon->vertices_.size();
+            za /= polygon->vertices_.size();
+            if (fabs(xa) > 4.0 && sqrt(ya*ya + za*za) < 2.0) {
                 polygon->pull_ = true;
             }
         }
