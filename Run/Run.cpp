@@ -57,12 +57,7 @@ int Run::start() {
         // update interfaceForces
         interface_->updateForces();
         // update radialForces
-        if (simulation_time_ - t_start_ + t_roundError > 500.) {
-            if (simulation_time_ - t_start_ < 500. + t_roundError) {
-                assignPullingPolygons();
-            }
-            updatePullingForces();
-        }
+        updatePullingForces();
         // update velocities
         updateVerticesVelocity();
 
@@ -86,9 +81,9 @@ int Run::start() {
         // dump
         if (simulation_time_ - t_start_ + t_roundError > count_dump_ * dump_period_) {
             if (simulation_time_ > (-0.01)*dt_) {
-//                dumpTopo();
-//                dumpCellCenter();
-//                dumpCellShapeIndex();
+                dumpTopo();
+                dumpCellCenter();
+                dumpCellShapeIndex();
 //                dumpReconnection();
                 dumpConfigurationVtk();
             }
@@ -117,28 +112,52 @@ int Run::start() {
 }
 
 int     Run::assignPullingPolygons() {
-    for (auto cell : emptyCells_) {
-        for (auto polygon: cell->polygons_) {
-            double xa = 0.;
-            double ya = 0.;
-            double za = 0.;
-            for (auto vertex: polygon->vertices_) {
-                xa += vertex->position_[0];
-                ya += vertex->position_[1];
-                za += vertex->position_[2];
-            }
-            xa /= polygon->vertices_.size();
-            ya /= polygon->vertices_.size();
-            za /= polygon->vertices_.size();
-            if (fabs(xa) > 4.0 && sqrt(ya*ya + za*za) < 2.0) {
-                polygon->pull_ = true;
+    double t_roundError = 0.01*dt_;
+    if (simulation_time_ - t_start_ + t_roundError < 500.) {
+        return 1;
+    } else if (simulation_time_ - t_start_ < 500. + t_roundError) {
+        for (auto cell : emptyCells_) {
+            for (auto polygon: cell->polygons_) {
+                double xa = 0.;
+                double ya = 0.;
+                double za = 0.;
+                for (auto vertex: polygon->vertices_) {
+                    xa += vertex->position_[0];
+                    ya += vertex->position_[1];
+                    za += vertex->position_[2];
+                }
+                xa /= polygon->vertices_.size();
+                ya /= polygon->vertices_.size();
+                za /= polygon->vertices_.size();
+                if (fabs(xa) > 4.0 && sqrt(ya*ya + za*za) < 2.0) {
+                    polygon->pull_ = true;
+                }
             }
         }
-    }
 
-    for (auto polygon : polygons_) {
-        if (polygon->pull_) {
-            for (auto vertex: polygon->vertices_) {
+        for (auto polygon : polygons_) {
+            if (polygon->pull_) {
+                for (auto vertex: polygon->vertices_) {
+                    vertex->pull_ = true;
+                }
+            }
+        }
+    } else {
+        double xmax = 0.;
+        double xmin = 0.;
+        for (auto vertex : vertices_) {
+            if (vertex->pull_) {
+                double x = vertex->position_[0];
+                if (x > xmax) {
+                    xmax = x;
+                }
+                if (x < xmin) {
+                    xmin = x;
+                }
+            }
+        }
+        for (auto vertex : vertices_) {
+            if (vertex->position_[0] > xmax || vertex->position_[0] < xmin) {
                 vertex->pull_ = true;
             }
         }
@@ -148,6 +167,7 @@ int     Run::assignPullingPolygons() {
 }
 
 int     Run::updatePullingForces() {
+    assignPullingPolygons();
     // reset all volumeForce values in vertices
     for (auto vertex : vertices_) {
         for (int m = 0; m < 3; m++) {
@@ -157,14 +177,9 @@ int     Run::updatePullingForces() {
 
     // update vertices on surface
     std::vector<Vertex *> verticesSurface;
-    for (auto polygon : polygons_) {
-        if (polygon->pull_) {
-            for (auto vertex: polygon->vertices_) {
-                if (std::find(verticesSurface.begin(), verticesSurface.end(), vertex) == verticesSurface.end()) {
-                    // new vertex to be added
-                    verticesSurface.push_back(vertex);
-                }
-            }
+    for (auto vertex : vertices_) {
+        if (vertex->pull_) {
+            verticesSurface.push_back(vertex);
         }
     }
 
