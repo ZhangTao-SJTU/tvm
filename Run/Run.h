@@ -68,6 +68,7 @@ class Run {
     int     dumpConfigurationVtk();
     int     dumpCellCenter();
     int     dumpCellShapeIndex();
+    int     dumpCellVolume();
     int     dumpTopo();
     int     dumpReconnection();
     int     assignPullingPolygons();

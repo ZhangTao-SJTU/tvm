@@ -84,8 +84,9 @@ int Run::start() {
                 dumpTopo();
                 dumpCellCenter();
                 dumpCellShapeIndex();
+                dumpCellVolume();
 //                dumpReconnection();
-                dumpConfigurationVtk();
+//                dumpConfigurationVtk();
             }
 //            dumpCellCenter();
 //            dumpCellShapeIndex();
@@ -574,6 +575,35 @@ int     Run::dumpCellShapeIndex() {
     for (auto cell : cells_) {
         out << left << setw(6) << cell->id_;
         out << " " << cell->shapeIndex_;
+        out << endl;
+    }
+    out << endl;
+
+    out.close();
+
+    return 0;
+}
+
+int     Run::dumpCellVolume() {
+    stringstream filename;
+    filename << "cellVolume.txt";
+    ofstream out(filename.str().c_str(), std::ios_base::app);
+    if (!out.is_open()) {
+        cout << "Error opening output file " << filename.str().c_str() << endl;
+        exit(1);
+    }
+    out << "time ";
+    out << left << setw(12) << simulation_time_;
+    double totalVolume = 0.;
+    for (auto cell : cells_) {
+        totalVolume += cell->volume_;
+    }
+    out << " " << left << setw(12) << totalVolume;
+    out << endl;
+
+    for (auto cell : cells_) {
+        out << left << setw(6) << cell->id_;
+        out << " " << cell->volume_;
         out << endl;
     }
     out << endl;
