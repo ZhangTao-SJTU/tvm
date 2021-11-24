@@ -24,13 +24,39 @@ class Polygon:
         self.edges_ = edges
         self.vertices_ = []
         self.dump_ = True
+    def updateVertices(self):
+        self.vertices_ = []
+        tmp_edges = list(self.edges_)
+        currentVertex = None
+        for i in range(len(self.edges_) - 1, 0, -1):
+            if (i == len(self.edges_) - 1):
+                self.vertices_.append(tmp_edges[-1].vertices_[0])
+                currentVertex = tmp_edges[-1].vertices_[1]
+                self.vertices_.append(currentVertex)
+                del tmp_edges[-1]
+                continue
+            for j in range(len(self.edges_)):
+                if (currentVertex.id_ == tmp_edges[j].vertices_[0].id_):
+                    currentVertex = tmp_edges[j].vertices_[1]
+                    self.vertices_.append(currentVertex)
+                    if (j < len(self.edges_) - 1):
+                        tmp_edges[j] = tmp_edges[-1]
+                    del tmp_edges[-1]
+                    break
+                if (currentVertex.id_ == tmp_edges[j].vertices_[1].id_):
+                    currentVertex = tmp_edges[j].vertices_[0]
+                    self.vertices_.append(currentVertex)
+                    if (j < len(self.edges_) - 1):
+                        tmp_edges[j] = tmp_edges[-1]
+                    del tmp_edges[-1]
+                    break
 
 def main(begin_num, end_num):
     for runid in range(begin_num, end_num+1):
         run(runid)
 
 def run(runid):
-    L = 8.0
+    L = (8., 8., 8.)
     runDir = "{:06d}".format(runid)
     readFilePath = os.path.join(runDir, "topoFixed.txt")
     if not os.path.exists(readFilePath):
@@ -64,10 +90,7 @@ def run(runid):
                 polygonsFlag = False
                 # set polygon.vertices_
                 for tmpPolygonID in polygons:
-                    for edge in polygons[tmpPolygonID].edges_:
-                        for vertex in edge.vertices_:
-                            if vertex not in polygons[tmpPolygonID].vertices_:
-                                polygons[tmpPolygonID].vertices_.append(vertex)
+                    polygons[tmpPolygonID].updateVertices()
                 # set vertex.dumpID_
                 vertexIDs_List = sorted(list(vertices.keys()))
                 for i in range(len(vertexIDs_List)):
@@ -79,7 +102,7 @@ def run(runid):
                     dx = edge.vertices_[1].position_[0] - edge.vertices_[0].position_[0]
                     dy = edge.vertices_[1].position_[1] - edge.vertices_[0].position_[1]
                     dz = edge.vertices_[1].position_[2] - edge.vertices_[0].position_[2]
-                    if abs(dx) > L/2.0 or abs(dy) > L/2.0 or abs(dz) > L/2.0:
+                    if abs(dx) > L[0]/2.0 or abs(dy) > L[1]/2.0 or abs(dz) > L[2]/2.0:
                         edge.dump_ = False
                 for tmpPolygonID in polygons:
                     polygon = polygons[tmpPolygonID]
