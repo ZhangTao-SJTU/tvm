@@ -255,7 +255,6 @@ int LoadConf(string filename, Run * run) {
     int temperature_written = 0;
     int kv_written = 0;
     int box_written = 0;
-    int pull_written = 0;
 
     while (getline(conf, buffer))
     {
@@ -427,20 +426,6 @@ int LoadConf(string filename, Run * run) {
             cout << "box: " << run->box_->size_[0] << " " << run->box_->size_[1] << " " << run->box_->size_[2] << " ";
             cout << "periodic boundary condition: " << run->box_->boundaryCondition_[0] << " " << run->box_->boundaryCondition_[1] << " " << run->box_->boundaryCondition_[2] << endl;
         }
-        else if (tokens[0] == "pull") {
-            if (tokens.size() != 3) {
-                cerr << "conf file error: ";
-                for (int j = 0; j < tokens.size(); j++) {
-                    cerr << tokens[j] << " ";
-                }
-                cerr << endl;
-                exit(1);
-            }
-            run->pullForce_ = atof(tokens[1].c_str());
-            run->pullxMax_ = atof(tokens[2].c_str());
-            pull_written = 1;
-            cout << "pulling force: " << run->pullForce_ << " x max: " << run->pullxMax_ << endl;
-        }
         else {
             cerr << "conf file error: ";
             for (int j = 0; j < tokens.size(); j++) {
@@ -493,11 +478,6 @@ int LoadConf(string filename, Run * run) {
 
     if (box_written == 0) {
         cout << "conf file error: box" << endl;
-        exit(1);
-    }
-
-    if (pull_written == 0) {
-        cout << "conf file error: pull" << endl;
         exit(1);
     }
 

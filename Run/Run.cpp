@@ -56,8 +56,6 @@ int Run::start() {
         volume_->updateForces();
         // update interfaceForces
         interface_->updateForces();
-        // update radialForces
-        updatePullingForces();
         // update velocities
         updateVerticesVelocity();
 
@@ -112,111 +110,10 @@ int Run::start() {
     return 0;
 }
 
-int     Run::assignPullingPolygons() {
-    double t_roundError = 0.01*dt_;
-    if (simulation_time_ - t_start_ + t_roundError < 500.) {
-        return 1;
-    } else if (simulation_time_ - t_start_ < 500. + t_roundError) {
-        for (auto cell : emptyCells_) {
-            for (auto polygon: cell->polygons_) {
-                double xa = 0.;
-                double ya = 0.;
-                double za = 0.;
-                for (auto vertex: polygon->vertices_) {
-                    xa += vertex->position_[0];
-                    ya += vertex->position_[1];
-                    za += vertex->position_[2];
-                }
-                xa /= polygon->vertices_.size();
-                ya /= polygon->vertices_.size();
-                za /= polygon->vertices_.size();
-                if (fabs(xa) > 4.0 && sqrt(ya*ya + za*za) < 2.0) {
-                    polygon->pull_ = true;
-                }
-            }
-        }
-
-        for (auto polygon : polygons_) {
-            if (polygon->pull_) {
-                for (auto vertex: polygon->vertices_) {
-                    vertex->pull_ = true;
-                }
-            }
-        }
-    } else {
-        double xmax = 0.;
-        double xmin = 0.;
-        for (auto vertex : vertices_) {
-            if (vertex->pull_) {
-                double x = vertex->position_[0];
-                if (x > xmax) {
-                    xmax = x;
-                }
-                if (x < xmin) {
-                    xmin = x;
-                }
-            }
-        }
-        for (auto vertex : vertices_) {
-            if (vertex->position_[0] > xmax || vertex->position_[0] < xmin) {
-                vertex->pull_ = true;
-            }
-        }
-    }
-
-    return 0;
-}
-
-int     Run::updatePullingForces() {
-    assignPullingPolygons();
-    // reset all volumeForce values in vertices
-    for (auto vertex : vertices_) {
-        for (int m = 0; m < 3; m++) {
-            vertex->pullingForce_[m] = 0.;
-        }
-    }
-
-    // update vertices on surface
-    std::vector<Vertex *> verticesSurface;
-    for (auto vertex : vertices_) {
-        if (vertex->pull_) {
-            verticesSurface.push_back(vertex);
-        }
-    }
-
-    // update radialForces for each vertex on surface
-    for (auto vertex : verticesSurface) {
-        double x = vertex->position_[0];
-        if (fabs(x) >= pullxMax_) {
-            vertex->pullingForce_[0] = 0.;
-            vertex->volumeForce_[0] = 0.;
-            vertex->volumeForce_[1] = 0.;
-            vertex->volumeForce_[2] = 0.;
-            vertex->interfaceForce_[0] = 0.;
-            vertex->interfaceForce_[1] = 0.;
-            vertex->interfaceForce_[2] = 0.;
-            continue;
-        }
-        if (x < 0) {
-            vertex->pullingForce_[0] = (-1.0)*pullForce_;
-        } else {
-            vertex->pullingForce_[0] = pullForce_;
-        }
-        vertex->volumeForce_[0] = 0.;
-        vertex->volumeForce_[1] = 0.;
-        vertex->volumeForce_[2] = 0.;
-        vertex->interfaceForce_[0] = 0.;
-        vertex->interfaceForce_[1] = 0.;
-        vertex->interfaceForce_[2] = 0.;
-    }
-
-    return 0;
-}
-
 int     Run::updateVerticesVelocity() {
     for (auto vertex : vertices_) {
         for (int m = 0; m < 3; m++) {
-            vertex->velocity_[m] = mu_ * (vertex->volumeForce_[m] + vertex->interfaceForce_[m] + vertex->pullingForce_[m]);
+            vertex->velocity_[m] = mu_ * (vertex->volumeForce_[m] + vertex->interfaceForce_[m]);
         }
     }
     // remove drift velocity
@@ -243,14 +140,8 @@ int     Run::updateVerticesPosition() {
     std::normal_distribution<double> ndist(0., 1.);
     double cR = sqrt(2.0*mu_*kB_*temperature_*dt_);
     for (long int i = 0; i < vertices_.size(); i++) {
-        if (vertices_[i]->pull_) {
-            for (int m = 0; m < 3; m++) {
-                vertices_[i]->position_[m] = vertices_[i]->position_[m] + vertices_[i]->velocity_[m] * dt_;
-            }
-        } else {
-            for (int m = 0; m < 3; m++) {
-                vertices_[i]->position_[m] = vertices_[i]->position_[m] + vertices_[i]->velocity_[m] * dt_ + cR*ndist(generator);
-            }
+        for (int m = 0; m < 3; m++) {
+            vertices_[i]->position_[m] = vertices_[i]->position_[m] + vertices_[i]->velocity_[m] * dt_ + cR*ndist(generator);
         }
         box_->resetPosition(vertices_[i]->position_);
     }
