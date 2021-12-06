@@ -51,8 +51,12 @@ int     Volume::updateForces() {
 
 int Volume::updatePolygonDirections() {
     run_->updatePolygonVertices();
+    run_->updatePolygonCells();
     for (auto cell : run_->cells_) {
         cell->updatePolygonDirections();
+    }
+    for (auto cell : run_->emptyCells_) {
+        cell->updateSurfacePolygonDirections();
     }
 
     return 0;
@@ -94,24 +98,7 @@ int Volume::updatePolygonForces(Cell *cell, Polygon *polygon) {
         for (int m = 0; m < 3; m++) {
             cv[i][m] = polygon->vertices_[i]->position_[m] - polygon->center_[m];
         }
-        while (cv[i][0] > run_->Lx_/2.0) {
-            cv[i][0] = cv[i][0] - run_->Lx_;
-        }
-        while (cv[i][0] < (-1.0)*run_->Lx_/2.0) {
-            cv[i][0] = cv[i][0] + run_->Lx_;
-        }
-        while (cv[i][1] > run_->Ly_/2.0) {
-            cv[i][1] = cv[i][1] - run_->Ly_;
-        }
-        while (cv[i][1] < (-1.0)*run_->Ly_/2.0) {
-            cv[i][1] = cv[i][1] + run_->Ly_;
-        }
-        while (cv[i][2] > run_->Lz_/2.0) {
-            cv[i][2] = cv[i][2] - run_->Lz_;
-        }
-        while (cv[i][2] < (-1.0)*run_->Lz_/2.0) {
-            cv[i][2] = cv[i][2] + run_->Lz_;
-        }
+        run_->box_->resetDistance(cv[i]);
     }
     for (int i = 0; i < Nv; i++) {
         // compute the vector of the triangle interface formed by polygon center, and edge vertices

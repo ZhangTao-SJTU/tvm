@@ -21,6 +21,7 @@ using namespace std;
 Interface::Interface(Run * run) {
     run_ = run;
     s0_ = 5.40; // 0~5.82
+    kL_ = 1.0;
     energy_ = 0.;
 }
 
@@ -65,24 +66,7 @@ int Interface::updatePolygonForces(Polygon *polygon) {
             for (int m = 0; m < 3; m++) {
                 cv[k][m] = vertex->position_[m] - polygon->center_[m];
             }
-            while (cv[k][0] > run_->Lx_/2.0) {
-                cv[k][0] = cv[k][0] - run_->Lx_;
-            }
-            while (cv[k][0] < (-1.0)*run_->Lx_/2.0) {
-                cv[k][0] = cv[k][0] + run_->Lx_;
-            }
-            while (cv[k][1] > run_->Ly_/2.0) {
-                cv[k][1] = cv[k][1] - run_->Ly_;
-            }
-            while (cv[k][1] < (-1.0)*run_->Ly_/2.0) {
-                cv[k][1] = cv[k][1] + run_->Ly_;
-            }
-            while (cv[k][2] > run_->Lz_/2.0) {
-                cv[k][2] = cv[k][2] - run_->Lz_;
-            }
-            while (cv[k][2] < (-1.0)*run_->Lz_/2.0) {
-                cv[k][2] = cv[k][2] + run_->Lz_;
-            }
+            run_->box_->resetDistance(cv[k]);
         }
         // the edge vector
         double vv[3];
@@ -149,6 +133,12 @@ int Interface::updateTension() {
         }
         for (auto polygon : cell->polygons_) {
             polygon->tension_ += 2.0*(s - s0_);
+        }
+    }
+    // set interface tension with empty cells
+    for (auto cell : run_->emptyCells_) {
+        for (auto polygon : cell->polygons_) {
+            polygon->tension_ += kL_;
         }
     }
 

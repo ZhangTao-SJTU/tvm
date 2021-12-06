@@ -152,24 +152,7 @@ int Cell::updatePolygonDirections() {
             cc[m] = polygon->center_[m] - polygons_[0]->vertices_[0]->position_[m];
 //            cc[m] = polygon->center_[m];
         }
-        while (cc[0] > run_->Lx_/2.0) {
-            cc[0] = cc[0] - run_->Lx_;
-        }
-        while (cc[0] < (-1.0)*run_->Lx_/2.0) {
-            cc[0] = cc[0] + run_->Lx_;
-        }
-        while (cc[1] > run_->Ly_/2.0) {
-            cc[1] = cc[1] - run_->Ly_;
-        }
-        while (cc[1] < (-1.0)*run_->Ly_/2.0) {
-            cc[1] = cc[1] + run_->Ly_;
-        }
-        while (cc[2] > run_->Lz_/2.0) {
-            cc[2] = cc[2] - run_->Lz_;
-        }
-        while (cc[2] < (-1.0)*run_->Lz_/2.0) {
-            cc[2] = cc[2] + run_->Lz_;
-        }
+        run_->box_->resetDistance(cc);
         for (int i = 0; i < polygon->vertices_.size(); i++) {
             double cv[2][3];   // the vectors pointing from polygon center to edge vertices
             for (int k = 0; k < 2; k++) {
@@ -177,24 +160,7 @@ int Cell::updatePolygonDirections() {
                 for (int m = 0; m < 3; m++) {
                     cv[k][m] = vertex->position_[m] - polygon->center_[m];
                 }
-                while (cv[k][0] > run_->Lx_/2.0) {
-                    cv[k][0] = cv[k][0] - run_->Lx_;
-                }
-                while (cv[k][0] < (-1.0)*run_->Lx_/2.0) {
-                    cv[k][0] = cv[k][0] + run_->Lx_;
-                }
-                while (cv[k][1] > run_->Ly_/2.0) {
-                    cv[k][1] = cv[k][1] - run_->Ly_;
-                }
-                while (cv[k][1] < (-1.0)*run_->Ly_/2.0) {
-                    cv[k][1] = cv[k][1] + run_->Ly_;
-                }
-                while (cv[k][2] > run_->Lz_/2.0) {
-                    cv[k][2] = cv[k][2] - run_->Lz_;
-                }
-                while (cv[k][2] < (-1.0)*run_->Lz_/2.0) {
-                    cv[k][2] = cv[k][2] + run_->Lz_;
-                }
+                run_->box_->resetDistance(cv[k]);
             }
             // compute the volume of the tetrahedron formed by origin, polygon center, and edge vertices
             double cP[3];
@@ -223,6 +189,30 @@ int Cell::updatePolygonDirections() {
     return 0;
 }
 
+int Cell::updateSurfacePolygonDirections() {
+    // compute direction of polygons
+    polygonDirections_.clear();
+
+    for (auto polygon : polygons_) {
+        if (polygon->cells_.size() != 2) {
+            printf("polygon's neighboring cells number not equal to 2");
+            exit(1);
+        }
+        Cell * cellReal;
+        if (polygon->cells_[0]->id_ != id_) {
+            cellReal = polygon->cells_[0];
+        } else if (polygon->cells_[1]->id_ != id_) {
+            cellReal = polygon->cells_[1];
+        } else {
+            printf("polygon's neighboring cells wrong");
+            exit(1);
+        }
+        polygonDirections_[polygon->id_] = !(cellReal->polygonDirections_[polygon->id_]);
+    }
+
+    return 0;
+}
+
 int Cell::updateVolume() {
     // compute cell volume
     volume_ = 0.;
@@ -233,48 +223,14 @@ int Cell::updateVolume() {
             cc[m] = polygon->center_[m] - polygons_[0]->vertices_[0]->position_[m];
 //            cc[m] = polygon->center_[m];
         }
-        while (cc[0] > run_->Lx_/2.0) {
-            cc[0] = cc[0] - run_->Lx_;
-        }
-        while (cc[0] < (-1.0)*run_->Lx_/2.0) {
-            cc[0] = cc[0] + run_->Lx_;
-        }
-        while (cc[1] > run_->Ly_/2.0) {
-            cc[1] = cc[1] - run_->Ly_;
-        }
-        while (cc[1] < (-1.0)*run_->Ly_/2.0) {
-            cc[1] = cc[1] + run_->Ly_;
-        }
-        while (cc[2] > run_->Lz_/2.0) {
-            cc[2] = cc[2] - run_->Lz_;
-        }
-        while (cc[2] < (-1.0)*run_->Lz_/2.0) {
-            cc[2] = cc[2] + run_->Lz_;
-        }
+        run_->box_->resetDistance(cc);
         int Nv = polygon->vertices_.size();
         double cv[Nv][3];   // the vectors pointing from polygon center to edge vertices
         for (int i = 0; i < Nv; i++) {
             for (int m = 0; m < 3; m++) {
                 cv[i][m] = polygon->vertices_[i]->position_[m] - polygon->center_[m];
             }
-            while (cv[i][0] > run_->Lx_/2.0) {
-                cv[i][0] = cv[i][0] - run_->Lx_;
-            }
-            while (cv[i][0] < (-1.0)*run_->Lx_/2.0) {
-                cv[i][0] = cv[i][0] + run_->Lx_;
-            }
-            while (cv[i][1] > run_->Ly_/2.0) {
-                cv[i][1] = cv[i][1] - run_->Ly_;
-            }
-            while (cv[i][1] < (-1.0)*run_->Ly_/2.0) {
-                cv[i][1] = cv[i][1] + run_->Ly_;
-            }
-            while (cv[i][2] > run_->Lz_/2.0) {
-                cv[i][2] = cv[i][2] - run_->Lz_;
-            }
-            while (cv[i][2] < (-1.0)*run_->Lz_/2.0) {
-                cv[i][2] = cv[i][2] + run_->Lz_;
-            }
+            run_->box_->resetDistance(cv[i]);
         }
         for (int i = 0; i < Nv; i++) {
             // compute the volume of the tetrahedron formed by origin, polygon center, and edge vertices
