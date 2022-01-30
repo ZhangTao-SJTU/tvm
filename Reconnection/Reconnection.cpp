@@ -289,6 +289,12 @@ int Reconnection::I_H(Edge * edge) {
         exit(1);
     }
 
+    if (verbose_) {
+        dumpVtk(true, true, tmpCells);
+        std::vector<Edge *> tmpEdges = {edge, e1, e2, e3, e4, e5, e6};
+        dumpEdgesVtk(true, true, tmpEdges);
+    }
+
     // create vertices 7, 8, 9
     Vertex * v7 = new Vertex(run_, run_->count_vertices_);
     run_->count_vertices_ = run_->count_vertices_ + 1;
@@ -482,8 +488,11 @@ int Reconnection::I_H(Edge * edge) {
 //    }
 
     if (verbose_) {
+        std::vector<Edge *> tmpEdges = {e78, e79, e89, e71, e82, e93, e74, e85, e96};
+        dumpEdgesVtk(true, false, tmpEdges);
         std::vector<Cell *> tmpCells = {c123, c456, c1245, c2356, c1346};
         dumpCells(false, true, tmpCells);
+        dumpVtk(true, false, tmpCells);
     }
 
     count_IH_ += 1;
@@ -670,6 +679,12 @@ int Reconnection::H_I(Polygon * polygon) {
         exit(1);
     }
 
+    if (verbose_) {
+        dumpVtk(false, true, tmpCells);
+        std::vector<Edge *> tmpEdges = {e78, e79, e89, e71, e82, e93, e74, e85, e96};
+        dumpEdgesVtk(false, true, tmpEdges);
+    }
+
     // create vertices 10, 11
     Vertex * v10 = new Vertex(run_, run_->count_vertices_);
     run_->count_vertices_ = run_->count_vertices_ + 1;
@@ -831,8 +846,11 @@ int Reconnection::H_I(Polygon * polygon) {
 //    }
 
     if (verbose_) {
+        std::vector<Edge *> tmpEdges = {e1011, e1, e2, e3, e4, e5, e6};
+        dumpEdgesVtk(false, false, tmpEdges);
         std::vector<Cell *> tmpCells = {c123, c456, c1245, c2356, c1346};
         dumpCells(false, false, tmpCells);
+        dumpVtk(false, false, tmpCells);
     }
 
     count_HI_ += 1;
@@ -944,6 +962,169 @@ int Reconnection::dumpCells(bool printTime, bool IH, std::vector<Cell *> tmpCell
     if (!printTime) {
         run_->verboseReconnection_ << endl;
     }
+
+    return 0;
+}
+
+int Reconnection::dumpVtk(bool IH, bool before, std::vector<Cell *> tmpCells) {
+    //////////////////////////////////////////////////////////////////////////////////////
+    stringstream filename;
+    if (IH) {
+        filename << "IH";
+    } else {
+        filename << "HI";
+    }
+    filename << "_" << setw(7) << setfill('0') << (long int) (floor(run_->simulation_time_ + 0.01 * run_->dt_)) << "_" << run_->count_reconnect_;
+    if (before) {
+        filename << "_0.cells.vtk";
+    } else {
+        filename << "_1.cells.vtk";
+        run_->count_reconnect_ ++;
+    }
+    ofstream out(filename.str().c_str());
+    if (!out.is_open()) {
+        cout << "Error opening output file " << filename.str().c_str() << endl;
+        exit(1);
+    }
+    out << "# vtk DataFile Version 2.0" << endl;
+    out << "polydata" << endl;
+    out << "ASCII" << endl;
+    out << "DATASET POLYDATA" << endl;
+
+    std::vector<Polygon *> tmpPolygons;
+    for (auto cell : tmpCells) {
+        for (auto polygon : cell->polygons_) {
+            if (std::find(tmpPolygons.begin(), tmpPolygons.end(), polygon) == tmpPolygons.end()) {
+                // new polygon to be added
+                tmpPolygons.push_back(polygon);
+            }
+        }
+    }
+    std::vector<Vertex *> tmpVertices;
+    for (auto polygon : tmpPolygons) {
+        polygon->updateVertices();
+    }
+    for (auto polygon : tmpPolygons) {
+        for (auto vertex : polygon->vertices_) {
+            if (std::find(tmpVertices.begin(), tmpVertices.end(), vertex) == tmpVertices.end()) {
+                // new vertex to be added
+                tmpVertices.push_back(vertex);
+            }
+        }
+    }
+
+    out << "POINTS " << tmpVertices.size() << " double" << endl;
+    double x0 = 0;
+    double y0 = run_->box_->size_[1]/2.0;
+    double z0 = run_->box_->size_[2]/2.0;
+    for (long int i = 0; i < tmpVertices.size(); i++) {
+        // reset vertex id for dumping polygons
+        tmpVertices[i]->dumpID_ = i;
+        double x = tmpVertices[i]->position_[0];
+        double y = tmpVertices[i]->position_[1];
+        double z = tmpVertices[i]->position_[2];
+//        x = x - run_->box_->size_[0] * floor((x - x0 + run_->box_->size_[0] / 2.0) / run_->box_->size_[0]);
+//        y = y - run_->box_->size_[1] * floor((y - y0 + run_->box_->size_[1] / 2.0) / run_->box_->size_[1]);
+//        z = z - run_->box_->size_[2] * floor((z - z0 + run_->box_->size_[2] / 2.0) / run_->box_->size_[2]);
+        out << right << setw(12) << scientific << setprecision(5) << x;
+        out << " " << right << setw(12) << scientific << setprecision(5) << y;
+        out << " " << right << setw(12) << scientific << setprecision(5) << z;
+        out << endl;
+    }
+    out << endl;
+
+    long int Npolygons = 0;
+    long int NpolygonVertices = 0;
+    for (long int i = 0; i < tmpPolygons.size(); i++) {
+            Npolygons++;
+            NpolygonVertices += tmpPolygons[i]->vertices_.size();
+    }
+    out << "POLYGONS " << Npolygons << " " << Npolygons + NpolygonVertices << endl;
+    for (long int i = 0; i < tmpPolygons.size(); i++) {
+        out << left << setw(6) << tmpPolygons[i]->vertices_.size();
+        for (int j = 0; j < tmpPolygons[i]->vertices_.size(); j++) {
+            out << " " << left << setw(6) << tmpPolygons[i]->vertices_[j]->dumpID_;
+        }
+        out << endl;
+    }
+    out << endl;
+
+    out.close();
+
+    return 0;
+}
+
+int Reconnection::dumpEdgesVtk(bool IH, bool before, std::vector<Edge *> tmpEdges) {
+    //////////////////////////////////////////////////////////////////////////////////////
+    stringstream filename;
+    if (IH) {
+        filename << "IH";
+    } else {
+        filename << "HI";
+    }
+    filename << "_" << setw(7) << setfill('0') << (long int) (floor(run_->simulation_time_ + 0.01 * run_->dt_)) << "_" << run_->count_reconnect_;
+    if (before) {
+        filename << "_0.edges.vtk";
+    } else {
+        filename << "_1.edges.vtk";
+    }
+    ofstream out(filename.str().c_str());
+    if (!out.is_open()) {
+        cout << "Error opening output file " << filename.str().c_str() << endl;
+        exit(1);
+    }
+    out << "# vtk DataFile Version 2.0" << endl;
+    out << "polydata" << endl;
+    out << "ASCII" << endl;
+    out << "DATASET POLYDATA" << endl;
+
+    std::vector<Vertex *> tmpVertices;
+    for (auto edge : tmpEdges) {
+        for (auto vertex : edge->vertices_) {
+            if (std::find(tmpVertices.begin(), tmpVertices.end(), vertex) == tmpVertices.end()) {
+                // new vertex to be added
+                tmpVertices.push_back(vertex);
+            }
+        }
+    }
+
+    out << "POINTS " << tmpVertices.size() << " double" << endl;
+    double x0 = 0;
+    double y0 = run_->box_->size_[1]/2.0;
+    double z0 = run_->box_->size_[2]/2.0;
+    for (long int i = 0; i < tmpVertices.size(); i++) {
+        // reset vertex id for dumping polygons
+        tmpVertices[i]->dumpID_ = i;
+        double x = tmpVertices[i]->position_[0];
+        double y = tmpVertices[i]->position_[1];
+        double z = tmpVertices[i]->position_[2];
+//        x = x - run_->box_->size_[0] * floor((x - x0 + run_->box_->size_[0] / 2.0) / run_->box_->size_[0]);
+//        y = y - run_->box_->size_[1] * floor((y - y0 + run_->box_->size_[1] / 2.0) / run_->box_->size_[1]);
+//        z = z - run_->box_->size_[2] * floor((z - z0 + run_->box_->size_[2] / 2.0) / run_->box_->size_[2]);
+        out << right << setw(12) << scientific << setprecision(5) << x;
+        out << " " << right << setw(12) << scientific << setprecision(5) << y;
+        out << " " << right << setw(12) << scientific << setprecision(5) << z;
+        out << endl;
+    }
+    out << endl;
+
+    long int Nedges = 0;
+    long int NedgeVertices = 0;
+    for (long int i = 0; i < tmpEdges.size(); i++) {
+        Nedges++;
+        NedgeVertices += tmpEdges[i]->vertices_.size();
+    }
+    out << "LINES " << Nedges << " " << Nedges + NedgeVertices << endl;
+    for (long int i = 0; i < tmpEdges.size(); i++) {
+        out << left << setw(6) << tmpEdges[i]->vertices_.size();
+        for (int j = 0; j < tmpEdges[i]->vertices_.size(); j++) {
+            out << " " << left << setw(6) << tmpEdges[i]->vertices_[j]->dumpID_;
+        }
+        out << endl;
+    }
+    out << endl;
+
+    out.close();
 
     return 0;
 }

@@ -83,7 +83,7 @@ int Run::start() {
                 dumpCellCenter();
                 dumpCellShapeIndex();
                 dumpCellVolume();
-//                dumpReconnection();
+                dumpReconnection();
 //                dumpConfigurationVtk();
             }
 //            dumpCellCenter();
@@ -322,7 +322,7 @@ Edge *  Run::addEdge(Vertex * v0, Vertex * v1) {
 int Run::dumpConfigurationVtk() {
     //////////////////////////////////////////////////////////////////////////////////////
     stringstream filename;
-    filename << setw(7) << setfill('0') << (long int)(floor(simulation_time_+0.01*dt_)) << ".sample.vtk";
+    filename << setw(7) << setfill('0') << (long int) (floor(simulation_time_ + 0.01 * dt_)) << ".sample.vtk";
     ofstream out(filename.str().c_str());
     if (!out.is_open()) {
         cout << "Error opening output file " << filename.str().c_str() << endl;

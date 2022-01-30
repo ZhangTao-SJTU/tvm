@@ -26,6 +26,8 @@ public:
     int computeDistance(double *, double *, double *);
     int dumpVertices(std::vector<Vertex *>);
     int dumpCells(bool, bool, std::vector<Cell *>);
+    int dumpVtk(bool, bool, std::vector<Cell *>);
+    int dumpEdgesVtk(bool, bool, std::vector<Edge *>);
 private:
     Run * run_;
 };
