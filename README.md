@@ -40,17 +40,21 @@ The `conf` file defines values of simulation parameters. See an example as below
 ```
 time -10000.0 1000000.0 0.005
 dump vtk 500.0
-log 5.0
-s0 5.30
-Lth 0.020
-T 1.0e-05
+log 50.0
+s0 5.30 1.0
+Lth 0.02
+T 1.0e-04
+kv 10.
+box 8. 8. 8. p p p
 ```
 Here `time` specifies start time, end time, timestep;
 `dump` specifies the dumped file format (the `.vtk` file format is for visualization using `paraview`), the dumping time period;
 `log` specifies the time period logging simulation information to screen;
-`s0` specifies the target cell area;
+`s0` specifies the target cell area, and the strength of the surface tension with empty space;
 `Lth` specifies the threshold edge length to trigger reconnection;
-`T` specifies the temperature. 
+`T` specifies the temperature;
+`kv` specifies the strength of the volume elasticity;
+`box` specifies the simulation box sizes and boundary conditions. 
 
 Use python script `scripts/tvm/main.py` to generate the initial configuration file `sample.topo`, 
 which contains the information of vertices' coordinates and the system topology. 
