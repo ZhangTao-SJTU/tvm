@@ -7,9 +7,11 @@
 
 A 3D vertex model code 
 
-Author: Tao Zhang @ Shanghai Jiao Tong University, zhangtao.scholar@sjtu.edu.cn
+Author: 
 
-Corresponding author: Jennifer Schwarz @ Syracuse University, jschwarz@physics.syr.edu
+Tao Zhang @ Shanghai Jiao Tong University, zhangtao.scholar@sjtu.edu.cn
+
+Jennifer Schwarz @ Syracuse University, jschwarz@physics.syr.edu
 
 ## Description
 This code is based on Okuda 2013 paper: https://link.springer.com/article/10.1007/s10237-012-0430-7. 
