@@ -68,4 +68,4 @@ Run `tvm`
 ```
 
 ## License
-[GPL License](./LICENSE)
+[GNU GPL v3 License](./LICENSE.md)
