@@ -41,7 +41,6 @@ using namespace std;
 Interface::Interface(Run * run) {
     run_ = run;
     s0_ = 5.40; // 0~5.82
-    kL_ = 1.0;
     energy_ = 0.;
 }
 

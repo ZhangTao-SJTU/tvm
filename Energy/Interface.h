@@ -32,7 +32,6 @@ class Interface {
 public:
     double s0_;
     double energy_;
-    double kL_;     // linear interface tension with empty cells
 
     explicit Interface(Run *);
 
