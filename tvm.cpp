@@ -174,21 +174,6 @@ int InitializeAll(Run * run) {
                 }
                 run->cells_.push_back(cell);
             }
-            // add the empty cells
-            if (emptyCellsFlag) {
-                tmp_id = atol(tokens[0].c_str());
-                Cell * cell = new Cell(run, tmp_id);
-                for (int j = 1; j < tokens.size(); j++) {
-                    tmp_id = atol(tokens[j].c_str());
-                    for (auto polygon : run->polygons_) {
-                        if (polygon->id_ == tmp_id) {
-                            cell->polygons_.push_back(polygon);
-                            break;
-                        }
-                    }
-                }
-                run->emptyCells_.push_back(cell);
-            }
         }
     }
 
@@ -212,11 +197,6 @@ int InitializeAll(Run * run) {
             run->count_cells_ = cell->id_ + 1;
         }
     }
-    for (auto cell : run->emptyCells_) {
-        if (run->count_cells_ < cell->id_ + 1) {
-            run->count_cells_ = cell->id_ + 1;
-        }
-    }
     cout << "Number of vertices: " << run->vertices_.size() << endl;
     cout << "Maximum vertex ID: " << run->count_vertices_ - 1 << endl;
     cout << "Number of edges: " << run->edges_.size() << endl;
@@ -224,7 +204,6 @@ int InitializeAll(Run * run) {
     cout << "Number of polygons: " << run->polygons_.size() << endl;
     cout << "Maximum polygon ID: " << run->count_polygons_ - 1 << endl;
     cout << "Number of cells: " << run->cells_.size() << endl;
-    cout << "Number of empty cells: " << run->emptyCells_.size() << endl;
     cout << "Maximum cell ID: " << run->count_cells_ - 1 << endl;
 
     run->updatePolygonCells();

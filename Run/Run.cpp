@@ -212,11 +212,7 @@ int     Run::updateVertexCells() {
     for (auto vertex : vertices_) {
         vertex->cells_.clear();
     }
-    std::vector<Cell *> tmp_cells = cells_;
-    for (auto cell : emptyCells_) {
-        tmp_cells.push_back(cell);
-    }
-    for (auto cell : tmp_cells) {
+    for (auto cell : cells_) {
         for (auto polygon : cell->polygons_) {
             for (auto edge : polygon->edges_) {
                 for (auto vertex : edge->vertices_) {
@@ -243,11 +239,6 @@ int     Run::updatePolygonCells() {
     for (long int i = 0; i < cells_.size(); i++) {
         for (int j = 0; j < cells_[i]->polygons_.size(); j++) {
             cells_[i]->polygons_[j]->cells_.push_back(cells_[i]);
-        }
-    }
-    for (long int i = 0; i < emptyCells_.size(); i++) {
-        for (int j = 0; j < emptyCells_[i]->polygons_.size(); j++) {
-            emptyCells_[i]->polygons_[j]->cells_.push_back(emptyCells_[i]);
         }
     }
 

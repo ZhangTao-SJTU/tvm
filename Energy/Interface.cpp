@@ -155,12 +155,6 @@ int Interface::updateTension() {
             polygon->tension_ += 2.0*(s - s0_);
         }
     }
-    // set interface tension with empty cells
-    for (auto cell : run_->emptyCells_) {
-        for (auto polygon : cell->polygons_) {
-            polygon->tension_ += kL_;
-        }
-    }
 
     return 0;
 }

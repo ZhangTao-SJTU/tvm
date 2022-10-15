@@ -209,30 +209,6 @@ int Cell::updatePolygonDirections() {
     return 0;
 }
 
-int Cell::updateSurfacePolygonDirections() {
-    // compute direction of polygons
-    polygonDirections_.clear();
-
-    for (auto polygon : polygons_) {
-        if (polygon->cells_.size() != 2) {
-            printf("polygon's neighboring cells number not equal to 2");
-            exit(1);
-        }
-        Cell * cellReal;
-        if (polygon->cells_[0]->id_ != id_) {
-            cellReal = polygon->cells_[0];
-        } else if (polygon->cells_[1]->id_ != id_) {
-            cellReal = polygon->cells_[1];
-        } else {
-            printf("polygon's neighboring cells wrong");
-            exit(1);
-        }
-        polygonDirections_[polygon->id_] = !(cellReal->polygonDirections_[polygon->id_]);
-    }
-
-    return 0;
-}
-
 int Cell::updateVolume() {
     // compute cell volume
     volume_ = 0.;

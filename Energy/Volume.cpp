@@ -75,9 +75,6 @@ int Volume::updatePolygonDirections() {
     for (auto cell : run_->cells_) {
         cell->updatePolygonDirections();
     }
-    for (auto cell : run_->emptyCells_) {
-        cell->updateSurfacePolygonDirections();
-    }
 
     return 0;
 }

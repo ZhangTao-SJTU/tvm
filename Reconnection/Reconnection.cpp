@@ -178,28 +178,10 @@ int Reconnection::I_H(Edge * edge) {
     }
 
     std::vector<Cell *> tmpCells = {c123, c456, c1245, c2356, c1346};
-    int countEmptyCells = 0;
-    for (auto tmpCell : tmpCells) {
-        if (std::find(run_->emptyCells_.begin(), run_->emptyCells_.end(), tmpCell) != run_->emptyCells_.end()) {
-            countEmptyCells++;
-        }
-    }
-    if (countEmptyCells > 1) {
-        if (verbose_) {
-            printf("Topology warning: more than one empty cells involved before I->H reconnection\n");
-        }
-        return 1;
-    }
-
     // check if top/bottom pair of cells already have common polygon
     if (commonPolygon(c123, c456) != NULL) {
 //        c123->logPolygons("c123");
 //        c456->logPolygons("c456");
-        if (verbose_) {
-            printf("Topology warning: cell %ld %d and %ld %d already have common polygon before I->H reconnection\n",
-                   c123->id_, std::find(run_->emptyCells_.begin(), run_->emptyCells_.end(), c123) != run_->emptyCells_.end(),
-                   c456->id_, std::find(run_->emptyCells_.begin(), run_->emptyCells_.end(), c456) != run_->emptyCells_.end());
-        }
         return 1;
     }
 
@@ -617,20 +599,7 @@ int Reconnection::H_I(Polygon * polygon) {
         exit(1);
     }
 
-    int countEmptyCells = 0;
     std::vector<Cell *> tmpCells = {c123, c456, c1245, c2356, c1346};
-    for (auto tmpCell : tmpCells) {
-        if (std::find(run_->emptyCells_.begin(), run_->emptyCells_.end(), tmpCell) != run_->emptyCells_.end()) {
-            countEmptyCells++;
-        }
-    }
-    if (countEmptyCells > 1) {
-        if (verbose_) {
-            printf("Topology warning: more than one empty cells involved before H->I reconnection\n");
-        }
-        return 1;
-    }
-
     if (verbose_) {
         dumpCells(true, false, tmpCells);
     }
