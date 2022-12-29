@@ -61,8 +61,9 @@ Here `time` specifies start time, end time, timestep;
 `box` specifies the simulation box sizes and boundary conditions.
 
 Use python script `scripts/tvm/main.py` to generate the initial configuration file `sample.topo`,
-which contains the information of vertices' coordinates and the system topology.
+which contains the information of vertices' coordinates and the system topology. Please install pyvoro in advance. 
 ```bash
+pip install pyvoro-mmalahe
 python ../scripts/tvm/main.py
 ```
 
