@@ -2,7 +2,7 @@
 '''
 generate the initial configuration for the code TVM where Nc cells are generated using the voro++ library
 author: Tao Zhang @ Shanghai Jiao Tong University, zhangtao.scholar@sjtu.edu.cn, May 2021
-corresponding author: Jennifer Schwarz @ Syracuse University, jschwarz@physics.syr.edu
+coauthor: Jennifer Schwarz @ Syracuse University, jschwarz@physics.syr.edu
 '''
 
 import pyvoro
