@@ -2,7 +2,7 @@
 '''
 generate vtk files from simulation output topo.txt file
 author: Tao Zhang @ Shanghai Jiao Tong University, zhangtao.scholar@sjtu.edu.cn, May 2021
-corresponding author: Jennifer Schwarz @ Syracuse University, jschwarz@physics.syr.edu
+coauthor: Jennifer Schwarz @ Syracuse University, jschwarz@physics.syr.edu
 '''
 
 import os
