@@ -21,6 +21,8 @@ This code is based on Okuda 2013 paper: https://link.springer.com/article/10.100
 
 The scripts are in the folder "scripts" on the main branch.
 
+Should you receive any warning prompts, please reach out to us as we work towards making the code more robust for more general geometries, deformations, and energy functionals. 
+
 ## Quick Start
 #### Compiling
 ```bash
