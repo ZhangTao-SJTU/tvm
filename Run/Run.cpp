@@ -104,7 +104,7 @@ int Run::start() {
                 dumpCellShapeIndex();
                 dumpCellVolume();
                 dumpReconnection();
-//                dumpConfigurationVtk();
+                dumpConfigurationVtk();
             }
 //            dumpCellCenter();
 //            dumpCellShapeIndex();

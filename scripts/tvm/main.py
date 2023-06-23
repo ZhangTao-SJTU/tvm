@@ -45,7 +45,13 @@ class Cell:
         self.polygons_.append(polygon)
 
 def main():
-    Lx, Ly, Lz = (8, 8, 8)
+    with open("conf", "r") as file:
+        for line in file.readlines():
+            if line.split()[0]=="box":
+                Lx=(float(line.split()[1]))
+                Ly=(float(line.split()[2]))
+                Lz=(float(line.split()[3]))
+
     points = generatePoints(Lx, Ly, Lz)
     # points = [[1.0, 2.0, 3.0], [4.0, 5.5, 6.0]]
     voroDict = pyvoro.compute_voronoi(
