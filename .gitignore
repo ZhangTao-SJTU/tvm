@@ -3,3 +3,5 @@ cmake-build-debug
 .idea
 .gitignore
 .DS_Store
+build/
+samples/
