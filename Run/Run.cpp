@@ -47,75 +47,244 @@ Run::Run() {
     mu_ = 1.0;
     kB_ = 1.0;
 //    temperature_ = 1.0e-5;
-    NCell_ = 512;
+    // NCell_ = 512;
 }
 
-int Run::start() {
+// int Run::start() {
+//     count_reconnect_ = 0;
+//     count_dump_ = 0;
+//     count_log_ = 0;
+//     simulation_time_ = t_start_;
+//     double t_roundError = 0.01*dt_;
+//     auto start = chrono::steady_clock::now();
+
+//     printf("\nSimulation Start ...\n");
+//     printf("Real time elapsed: Rte\n");
+//     printf("Time        ");
+//     printf("Rte         ");
+//     printf("Volume      ");
+//     printf("I->H        ");
+//     printf("H->I        ");
+//     printf("E_volume    ");
+//     printf("E_interface ");
+//     printf("Energy      \n");
+
+//     while (simulation_time_ < t_end_ + t_roundError) {
+//         // update geometry information
+//         updateGeoinfo();
+//         // update volumeForces
+//         volume_->updateForces();
+//         // update interfaceForces
+//         interface_->updateForces();
+//         // update velocities
+//         updateVerticesVelocity();
+
+//         // log to screen
+//         if (simulation_time_ - t_start_ + t_roundError  > count_log_ * log_period_) {
+//             volume_->updateEnergy();
+//             interface_->updateEnergy();
+//             printf("%-12.2f%-12.3f%-12.3f%-12ld%-12ld%-12.6f%-12.6f%-12.6f\n", simulation_time_,
+//                    (chrono::duration_cast<chrono::microseconds>(chrono::steady_clock::now() - start).count())/1.0e6,
+//                    volume_->totalVolume_,
+//                    reconnection_->count_IH_,
+//                    reconnection_->count_HI_,
+//                    volume_->energy_,
+//                    interface_->energy_,
+//                    volume_->energy_+interface_->energy_);
+//             start = chrono::steady_clock::now();
+//             reconnection_->count_IH_ = 0;
+//             reconnection_->count_HI_ = 0;
+//             count_log_++;
+//         }
+//         // dump
+//         if (simulation_time_ - t_start_ + t_roundError > count_dump_ * dump_period_) {
+//             if (simulation_time_ > (-0.01)*dt_) {
+//                 dumpTopo();
+//                 dumpCellCenter();
+//                 dumpCellShapeIndex();
+//                 dumpCellVolume();
+//                 dumpReconnection();
+// //                dumpConfigurationVtk();
+//             }
+// //            dumpCellCenter();
+// //            dumpCellShapeIndex();
+//             count_dump_++;
+//         }
+
+//         // Euler dynamics
+//         updateVerticesPosition();
+
+//         // reconnect
+//         if (simulation_time_ - t_start_ + t_roundError > count_reconnect_ * dtr_) {
+//             reconnection_->start();
+//             count_reconnect_++;
+//         }
+
+//         simulation_time_ += dt_;
+//     }
+
+// //    for (long int i = 0; i < cells_.size(); i++) {
+// //        printf("%f\n", cells_[i]->volume_);
+// //    }
+
+//     return 0;
+// }
+
+int     Run::FIREminimize(){
+
+    // FIRE parameters.
+    //
+    // For the basic algorithm applied here, please see
+    // Bitzek, E., Koskinen, P., Gähler, F., Moseler, M., & Gumbsch, P. (2006). 
+    // Structural relaxation made simple. Physical Review Letters, 97(17), 170201.
+
+    double FIRE_finc = 1.1;
+    double FIRE_fdec = 0.5;
+    double FIRE_acoef0 = 0.1;
+    double FIRE_acoef = 0.1;
+    double FIRE_falpha = 0.99;
+    double FIRE_dtmax = 0.005;
+    double FIRE_dt = 0.0005;
+    double FIRE_equilibrium_tolerance = 1e-20;
+    long int FIRE_itermax = 1000000;
+    int FIRE_n_since_positive = 0;
+
     count_reconnect_ = 0;
     count_dump_ = 0;
     count_log_ = 0;
     simulation_time_ = t_start_;
-    double t_roundError = 0.01*dt_;
+    long int simulation_step_counter = 0;
+    int log_iteration_ = 1000;
+    int dump_iteration_ = 20000;
+    int reconnection_iteration_ = 10;
+    double t_roundError = 0.01 * dt_;
     auto start = chrono::steady_clock::now();
 
-    printf("\nSimulation Start ...\n");
+    ////////////////////////////////////////////////////////////////////////////////
+    printf("\nStart FIRE minimization...\n");
     printf("Real time elapsed: Rte\n");
-    printf("Time        ");
-    printf("Rte         ");
-    printf("Volume      ");
-    printf("I->H        ");
-    printf("H->I        ");
-    printf("E_volume    ");
-    printf("E_interface ");
-    printf("Energy      \n");
+    printf("Iter     ");
+    printf("Rte   ");
+    printf("Volume   ");
+    printf("I->H     ");
+    printf("H->I     ");
+    printf("E_V      ");
+    printf("E_S      ");
+    printf("Energy      ");
+    printf("Power    ");
+    printf("F_rms \n");
 
-    while (simulation_time_ < t_end_ + t_roundError) {
+
+
+   for (long int iter = 0; iter < FIRE_itermax; iter++) {
+        // Step 1: Update positions, forces and velocities.
+        // Note: Velocities of are initialized to 0.
+
+        // update positions
+        FIREupdateVerticesPosition(FIRE_dt);
         // update geometry information
         updateGeoinfo();
         // update volumeForces
         volume_->updateForces();
         // update interfaceForces
         interface_->updateForces();
-        // update velocities
-        updateVerticesVelocity();
 
-        // log to screen
-        if (simulation_time_ - t_start_ + t_roundError  > count_log_ * log_period_) {
+        // update velocities
+        FIREupdateVerticesVelocity(FIRE_dt);
+
+        // Step 2: Compute the power and other force, velocity projections.
+        FIREupdateForceVelocityProjections();
+        // Termination check. If ff (sum of square norm of forces) is less than tolerance,
+        // and has been that way for the last 1000 iterations, we
+        // consider the system to be in equilibrium and terminate the process. 
+
+        if (sqrt(FIRE_ff/(3 * vertices_.size())) < FIRE_equilibrium_tolerance) {
+            cout << "FIRE minimization terminated: F_rms less than FIRE_equilibrium_tolerance.\n";
+            dumpTopo();
+            dumpCellCenter();
+            dumpCellShapeIndex();
+            dumpCellVolume();
+            dumpConfigurationVtk();
+            break;
+        } 
+        
+        // Step 3: Adjust velocities and positions and FIRE parameters based on
+        // the power and force-velocity projections.
+
+
+        // If power is positive (i.e. the force is in the direction of the velocity),
+        // we adjust the velocities of vertices, projecting them more towards 
+        // the direction of force.
+        if (FIRE_fv > 0){
+            FIRE_n_since_positive += 1;
+            // FIRE parameter adjustments if power has been positive for the last 5 steps
+            if (FIRE_n_since_positive > 5){
+                FIRE_dt = std::min(FIRE_dt * FIRE_finc,FIRE_dtmax);
+                FIRE_acoef *= FIRE_falpha;
+                FIRE_n_since_positive = 0;
+            }
+
+            double force_multiple = sqrt(FIRE_vv / FIRE_ff);
+
+            // Given the positive power, update the current velocities of vertices
+            // by projecting them onto the force direction.
+            
+            for (auto vertex: vertices_){
+                for (int m = 0; m < 3; m++){
+                    double f_m = vertex->volumeForce_[m] 
+                        + vertex->interfaceForce_[m];
+                    vertex->velocity_[m] = (1 - FIRE_acoef) * vertex->velocity_[m] 
+                        + force_multiple * FIRE_acoef * f_m;
+                }
+            }
+
+            
+        }
+        // If power is negative, we reduce the time step and reset the velocities to 0.
+        else{
+            FIRE_n_since_positive=0;
+            FIRE_acoef = FIRE_acoef0;
+            FIRE_dt *= FIRE_fdec;
+            for (auto vertex: vertices_){
+                for (int m = 0; m < 3; m++){
+                    vertex->velocity_[m] = 0;
+                }
+            }
+            
+        }
+
+
+        // log to screen and dump vtk
+        if (iter % log_iteration_ == 0) {
             volume_->updateEnergy();
             interface_->updateEnergy();
-            printf("%-12.2f%-12.3f%-12.3f%-12ld%-12ld%-12.6f%-12.6f%-12.6f\n", simulation_time_,
-                   (chrono::duration_cast<chrono::microseconds>(chrono::steady_clock::now() - start).count())/1.0e6,
-                   volume_->totalVolume_,
-                   reconnection_->count_IH_,
-                   reconnection_->count_HI_,
-                   volume_->energy_,
-                   interface_->energy_,
-                   volume_->energy_+interface_->energy_);
+            printf("%-9ld%-6.1f%-9.1f%-9ld%-9ld%-9.1f%-9.1f%-9.1f%-9.1f%-9.1f\n", 
+                    iter,
+                    (chrono::duration_cast<chrono::microseconds>
+                    (chrono::steady_clock::now() - start).count()) / 1.0e6,
+                    volume_->totalVolume_,
+                    reconnection_->count_IH_,
+                    reconnection_->count_HI_,
+                    volume_->energy_,
+                    interface_->energy_,
+                    volume_->energy_ + interface_->energy_,
+                    FIRE_fv,
+                    sqrt(FIRE_ff/(3 * vertices_.size())));
             start = chrono::steady_clock::now();
             reconnection_->count_IH_ = 0;
             reconnection_->count_HI_ = 0;
             count_log_++;
         }
-        // dump
-        if (simulation_time_ - t_start_ + t_roundError > count_dump_ * dump_period_) {
-            if (simulation_time_ > (-0.01)*dt_) {
-                dumpTopo();
-                dumpCellCenter();
-                dumpCellShapeIndex();
-                dumpCellVolume();
-                dumpReconnection();
-//                dumpConfigurationVtk();
-            }
-//            dumpCellCenter();
-//            dumpCellShapeIndex();
+        if (iter % dump_iteration_ == 0) {
+            dumpTopo();
+            dumpCellCenter();
+            dumpCellShapeIndex();
+            dumpCellVolume();
+            dumpConfigurationVtk();
             count_dump_++;
         }
-
-        // Euler dynamics
-        updateVerticesPosition();
-
-        // reconnect
-        if (simulation_time_ - t_start_ + t_roundError > count_reconnect_ * dtr_) {
+        // Do reconnection every reconnection_iteration_ steps.
+        if (iter % reconnection_iteration_ == 0) {
             reconnection_->start();
             count_reconnect_++;
         }
@@ -123,10 +292,43 @@ int Run::start() {
         simulation_time_ += dt_;
     }
 
-//    for (long int i = 0; i < cells_.size(); i++) {
-//        printf("%f\n", cells_[i]->volume_);
-//    }
+    return 0;
+}
 
+int     Run::FIREupdateVerticesVelocity(double& FIRE_dt) {
+    for (auto vertex : vertices_) {
+        for (int m = 0; m < 3; m++) {
+            vertex->velocity_[m] += FIRE_dt 
+                * (vertex->volumeForce_[m] 
+                + vertex->interfaceForce_[m]);
+        }
+    }
+    return 0;
+}
+
+int     Run::FIREupdateVerticesPosition(double& FIRE_dt) {
+    for (auto vertex : vertices_) {
+        for (int m = 0; m < 3; m++) {
+            vertex->position_[m] += FIRE_dt * vertex->velocity_[m];
+        }
+        box_->resetPosition(vertex->position_);    
+    }
+    return 0;
+}
+
+int     Run::FIREupdateForceVelocityProjections() {
+    FIRE_ff = 0.;
+    FIRE_fv = 0.;
+    FIRE_vv = 0.;
+    for (auto vertex : vertices_) {
+        for (int m = 0; m < 3; m++) {
+            double f_m = vertex->volumeForce_[m] + vertex->interfaceForce_[m];
+            double v_m = vertex->velocity_[m];
+            FIRE_ff += f_m * f_m;
+            FIRE_fv += f_m * v_m;
+            FIRE_vv += v_m * v_m;
+        }
+    }
     return 0;
 }
 
@@ -224,11 +426,6 @@ int     Run::updateVertexCells() {
             }
         }
     }
-
-//    for (long int i = 0; i < vertices_.size(); i++) {
-//        printf("%d\n", vertices_[i]->cells_.size());
-//    }
-
     return 0;
 }
 
@@ -261,7 +458,7 @@ int     Run::updateGeoinfo() {
     // update edge midpoint and length
     for (long int i = 0; i < edges_.size(); i++) {
         edges_[i]->update();
-//        printf("%6f\n", run->edges_[i]->length_);
+    //        printf("%6f\n", run->edges_[i]->length_);
     }
     // update polygon center position
     for (long int i = 0; i < polygons_.size(); i++) {
@@ -274,7 +471,6 @@ int     Run::updateGeoinfo() {
 int     Run::deleteVertex(Vertex * vertex) {
     auto it = find(vertices_.begin(), vertices_.end(), vertex);
     if (it != vertices_.end()) {
-//        int index = it - vertices_.begin();
         vertices_.erase(it);
     } else {
         printf("vertex %ld not found in vertices_\n", vertex->id_);
@@ -289,12 +485,10 @@ int     Run::deleteEdge(Edge * edge) {
     auto it = find(edges_.begin(), edges_.end(), edge);
     if (it != edges_.end()) {
         edges_[it-edges_.begin()]->markToDelete_ = true;
-//        edges_.erase(it);
     } else {
         printf("edge %ld not found in edges_\n", edge->id_);
         exit(1);
     }
-//    delete edge;
 
     return 0;
 }
@@ -302,7 +496,6 @@ int     Run::deleteEdge(Edge * edge) {
 int     Run::deletePolygon(Polygon * polygon) {
     auto it = find(polygons_.begin(), polygons_.end(), polygon);
     if (it != polygons_.end()) {
-//        int index = it - vertices_.begin();
         polygons_.erase(it);
     } else {
         printf("polygon %ld not found in polygons_\n", polygon->id_);
@@ -354,23 +547,7 @@ int Run::dumpConfigurationVtk() {
     }
     out << endl;
 
-//    long int Nedges = 0;
-//    for (long int i = 0; i < run->edges_.size(); i++) {
-//        if (!run->edges_[i]->crossBoundary()) {
-//            Nedges++;
-//        }
-//    }
-//    out << "LINES " << Nedges << " " << 3*Nedges << endl;
-//    for (long int i = 0; i < run->edges_.size(); i++) {
-//        if (!run->edges_[i]->crossBoundary()) {
-//            out << left << setw(6) << 2;
-//            for (int j = 0; j < run->edges_[i]->vertices_.size(); j++) {
-//                out << " " << left << setw(6) << run->edges_[i]->vertices_[j]->id_;
-//            }
-//            out << endl;
-//        }
-//    }
-//    out << endl;
+
 
     updatePolygonVertices();
     long int Npolygons = 0;
@@ -393,16 +570,7 @@ int Run::dumpConfigurationVtk() {
     }
     out << endl;
 
-//    updatePolygonVolumeRatio();
-//    out << "CELL_DATA " << Npolygons << endl;
-//    out << "SCALARS volumeRatio double 1" << endl;
-//    out << "LOOKUP_TABLE default" << endl;
-//    for (long int i = 0; i < polygons_.size(); i++) {
-//        if (!polygons_[i]->crossBoundary()) {
-//            out << left << setw(6) << polygons_[i]->dumpVolumeRatio_ << endl;
-//        }
-//    }
-//    out << endl;
+
 
     out.close();
 
@@ -518,7 +686,6 @@ int     Run::dumpCellVolume() {
 int     Run::dumpTopo() {
     stringstream filename;
     filename << "topo.txt";
-//    ofstream out(filename.str().c_str(), std::ios::binary | std::ios_base::app);
     ofstream out(filename.str().c_str(), std::ios_base::app);
     if (!out.is_open()) {
         cout << "Error opening output file " << filename.str().c_str() << endl;

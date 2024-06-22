@@ -56,6 +56,10 @@ class Run {
     long int count_edges_;
     long int count_polygons_;
     long int count_cells_;
+    // FIRE force/velocity projections
+    double   FIRE_ff;
+    double   FIRE_fv;
+    double   FIRE_vv;
     Volume * volume_;
     Interface * interface_;
     Reconnection * reconnection_;
@@ -68,7 +72,11 @@ class Run {
     std::vector<Cell *> cells_;
 
     Run();
-    int     start();
+    // int     start();
+    int     FIREminimize();
+    int     FIREupdateVerticesVelocity(double&);
+    int     FIREupdateVerticesPosition(double&);
+    int     FIREupdateForceVelocityProjections();
     int     updatePolygonVertices();
     int     updatePolygonCells();
     int     updateCellVertices();
