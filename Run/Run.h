@@ -72,7 +72,7 @@ class Run {
     std::vector<Cell *> cells_;
 
     Run();
-    // int     start();
+    int     start();
     int     FIREminimize();
     int     FIREupdateVerticesVelocity(double&);
     int     FIREupdateVerticesPosition(double&);

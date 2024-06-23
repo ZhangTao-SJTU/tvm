@@ -38,31 +38,21 @@ import os
 # This function creates a conf file in the input directory "dir"
 # with the given parameters.
 # The intended use is within the makeSamplesSubDir() function.
-def makeConfFile(s0 = 5.7, gamma = 1, dir = "samples/"):
+def makeConfFile(s0 = 5.7, dir = "samples/"):
     initTime = 0
-    finalTime = 25000
+    finalTime = 2000
     eulerStep = 0.005
     dumpTime = 500
     logTime = 500
     Lth = 0.02
     T = 1e-4
     kv = 10
-    xRange = 64
-    yRange = 64
-    zRange = 64
+    xRange = 8
+    yRange = 8
+    zRange = 8
     xPeriodicity = "p"
     yPeriodicity = "p"
     zPeriodicity = "p"
-    fiberEdgeStiffness = 10
-    fiberEdgeL0 = 2.8284271
-    fiberBendingStiffness = 0.001
-    linkerN = 100
-    linkerKS = 10
-    linkerL0 = 1.5
-    linkerL1 = 0.2
-    linkerShrinkSpeed = 0.004
-    linkerShrinkStartTime = 1000
-    
     confContent = ""
     # Initial time, final time, Euler step
     confContent += "time {} {} {}\n".format(initTime, finalTime, eulerStep)
@@ -71,7 +61,7 @@ def makeConfFile(s0 = 5.7, gamma = 1, dir = "samples/"):
     # Log interval
     confContent += "log {:d}\n".format(logTime)
     # Target shape index and gamma
-    confContent += "s0 {} {}\n".format(s0, gamma)
+    confContent += "s0 {}\n".format(s0)
     # Thermal length
     confContent += "Lth {}\n".format(Lth)
     # Temperature 
@@ -81,14 +71,6 @@ def makeConfFile(s0 = 5.7, gamma = 1, dir = "samples/"):
     # Box size
     confContent += "box {} {} {} {} {} {}\n".format(
         xRange, yRange, zRange, xPeriodicity, yPeriodicity, zPeriodicity)
-    # Fiber Network:
-    #   Stiffness, Equilibrium Length and Bending Stiffness
-    confContent += "fiber {} {} {}\n".format(
-        fiberEdgeStiffness, fiberEdgeL0, fiberBendingStiffness)
-    # Linker springs:
-    #   Number, Stiffness, Equilibrium Length, L1, Shrink Speed, Shrink Start Time
-    confContent += "link {} {} {} {} {} {}".format(
-        linkerN, linkerKS, linkerL0, linkerL1, linkerShrinkSpeed, linkerShrinkStartTime)
     # Write to file. First, if a conf file 
     # already exists in this directory, delete it before making a new one.
     if os.path.isfile(dir + "conf"):
@@ -103,8 +85,7 @@ def makeConfFile(s0 = 5.7, gamma = 1, dir = "samples/"):
 
 # The intended use is to create a subdirectory for each run of the code in the samples/ directory.
 
-def makeSamplesSubDir(s0:float = 5.7,
-                      gamma:float = 1,
+def makeSamplesSubDir(s0:float = 5.2,
                       dir:str = "samples/"):
 
     # It is important to ensure then that "dir" is a string that ends with "/"
@@ -119,14 +100,11 @@ def makeSamplesSubDir(s0:float = 5.7,
         # Create the subdirectory
         os.mkdir(dir)
         # Make a conf file in this subdirectory.
-        makeConfFile(s0, gamma, dir)
+        makeConfFile(s0, dir)
         currentDir = os.getcwd()
         # Run the scripts/tvm/sphere1.py script to create a sample.topo in the directory.
-        sampleScriptFile = currentDir + "/scripts/tvm/sample2_5.py"
-        ECMScriptFile = currentDir + "/scripts/tvm/ECM64.py"
-        condorSubFile = currentDir + "/condorThisSample.sub"
-        os.system("cd {} && python3 {} && python3 {}".format(dir, sampleScriptFile, ECMScriptFile))
-        os.system("scp {} {}".format(condorSubFile,dir))
+        sampleScriptFile = currentDir + "/scripts/tvm/main.py"
+        os.system("cd {} && python3 {}".format(dir, sampleScriptFile))
         # Now, make a run.sh file in this directory.
         # with open(dir + "run.sh", "w") as f:
         #     f.write("#!/bin/bash\n")
@@ -137,14 +115,14 @@ def makeSamplesSubDir(s0:float = 5.7,
 
 def main():
     # create the directory "samples/" if it doesnt exist
-    # if not os.path.isdir("samples/"):
-    #     os.mkdir("samples/")
+    if not os.path.isdir("samples/"):
+        os.mkdir("samples/")
     # probability = 0.8
     # if not os.path.isdir("samples/p_{}/".format(probability)):
     #     os.mkdir("samples/p_{}/".format(probability))
 
     # now make subdirectories for the runs
-    s0_vals = [5.8]
+    s0_vals = [5.2]
     numRuns = 1
     for s0 in s0_vals:
         for i in range(numRuns):
