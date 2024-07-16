@@ -50,7 +50,7 @@ Cookbook of changes (in the order in which I addressed them):
 
     We need a dot product function that computes f.f, f.v and v.v. it is okay to calculate them at the same time, and just after velocities are updated.
 
-    To facilitate this, we introduce to the run class the following attributes:
+    To facilitate this, we introduce in the scope of the Run object the following attributes:
     
         double FIRE_ff;
         double FIRE_fv; //power

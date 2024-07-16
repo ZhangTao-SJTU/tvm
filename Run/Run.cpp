@@ -50,7 +50,7 @@ Run::Run() {
     // NCell_ = 512;
 }
 
-int Run::start() {
+int Run::overdampedMotion() {
     count_reconnect_ = 0;
     count_dump_ = 0;
     count_log_ = 0;
@@ -58,8 +58,8 @@ int Run::start() {
     double t_roundError = 0.01*dt_;
     auto start = chrono::steady_clock::now();
 
-    printf("\nSimulation Start ...\n");
-    printf("Real time elapsed: Rte\n");
+    printf("\nStarting overdamped motion...\n");
+    printf("Real time elapsed: Rte\n\n");
     printf("Time        ");
     printf("Rte         ");
     printf("Volume      ");
@@ -67,7 +67,8 @@ int Run::start() {
     printf("H->I        ");
     printf("E_volume    ");
     printf("E_interface ");
-    printf("Energy      \n");
+    printf("Energy      ");
+    printf("F_rms       \n");
 
     while (simulation_time_ < t_end_ + t_roundError) {
         // update geometry information
@@ -78,38 +79,44 @@ int Run::start() {
         interface_->updateForces();
         // update velocities
         updateVerticesVelocity();
-
+        // calculate the power and other force, velocity projections
+        FIREupdateForceVelocityProjections();
         // log to screen
         if (simulation_time_ - t_start_ + t_roundError  > count_log_ * log_period_) {
             volume_->updateEnergy();
             interface_->updateEnergy();
-            printf("%-12.2f%-12.3f%-12.3f%-12ld%-12ld%-12.6f%-12.6f%-12.6f\n", simulation_time_,
+            printf("%-12.2f%-12.3f%-12.3f%-12ld%-12ld%-12.6f%-12.6f%-12.6f%-12.6f\n", simulation_time_,
                    (chrono::duration_cast<chrono::microseconds>(chrono::steady_clock::now() - start).count())/1.0e6,
                    volume_->totalVolume_,
                    reconnection_->count_IH_,
                    reconnection_->count_HI_,
                    volume_->energy_,
                    interface_->energy_,
-                   volume_->energy_+interface_->energy_);
+                   volume_->energy_+interface_->energy_,
+                   sqrt(FIRE_ff/(3*vertices_.size())));
+            if (reconnection_->count_IH_ == 0 && reconnection_->count_HI_ == 0 && simulation_time_ > dt_) {
+                cout << "\n   Zero reconnections since the previous log dump.\n";
+                cout << "   Terminating overdamped motion and proceeding to FIRE minimization.\n";
+                return 0;
+            }
+            
             start = chrono::steady_clock::now();
             reconnection_->count_IH_ = 0;
             reconnection_->count_HI_ = 0;
             count_log_++;
         }
         // dump
-        if (simulation_time_ - t_start_ + t_roundError > count_dump_ * dump_period_) {
-            if (simulation_time_ > (-0.01)*dt_) {
-                dumpTopo();
-                dumpCellCenter();
-                dumpCellShapeIndex();
-                dumpCellVolume();
-                dumpReconnection();
-//                dumpConfigurationVtk();
-            }
-//            dumpCellCenter();
-//            dumpCellShapeIndex();
-            count_dump_++;
-        }
+        // if (simulation_time_ - t_start_ + t_roundError > count_dump_ * dump_period_) {
+        //     if (simulation_time_ > (-0.01)*dt_) {
+        //         dumpTopo();
+        //         dumpCellCenter();
+        //         dumpCellShapeIndex();
+        //         dumpCellVolume();
+        //         dumpReconnection();
+
+        //     }
+        //     count_dump_++;
+        // }
 
         // Euler dynamics
         updateVerticesPosition();
@@ -122,10 +129,6 @@ int Run::start() {
 
         simulation_time_ += dt_;
     }
-
-//    for (long int i = 0; i < cells_.size(); i++) {
-//        printf("%f\n", cells_[i]->volume_);
-//    }
 
     return 0;
 }
@@ -146,7 +149,7 @@ int     Run::FIREminimize(){
     double FIRE_dtmax = 0.005;
     double FIRE_dt = 0.0001;
     double FIRE_equilibrium_tolerance = 1e-8;
-    long int FIRE_itermax = 1000000;
+    long int FIRE_itermax = 100000;
     int FIRE_n_since_positive = 0;
 
     count_reconnect_ = 0;
@@ -154,15 +157,15 @@ int     Run::FIREminimize(){
     count_log_ = 0;
     simulation_time_ = t_start_;
     long int simulation_step_counter = 0;
-    int log_iteration_ = 1000;
-    int dump_iteration_ = 20000;
-    int reconnection_iteration_ = 10;
+    int log_iteration_ = 100;
+    int dump_iteration_ = 2000;
+    int reconnection_iteration_ = 1;
     double t_roundError = 0.01 * dt_;
     auto start = chrono::steady_clock::now();
 
     ////////////////////////////////////////////////////////////////////////////////
-    printf("\nStart FIRE minimization...\n");
-    printf("Real time elapsed: Rte\n");
+    printf("\nStarting FIRE minimization...\n");
+    printf("Real time elapsed: Rte\n\n");
     printf("Iter     ");
     printf("Rte   ");
     printf("Volume   ");
@@ -171,8 +174,8 @@ int     Run::FIREminimize(){
     printf("E_V      ");
     printf("E_S      ");
     printf("Energy      ");
-    printf("Power    ");
-    printf("F_rms \n");
+    printf("Power       ");
+    printf("F_rms       \n");
 
 
 
@@ -197,9 +200,13 @@ int     Run::FIREminimize(){
         // Termination check. If ff (sum of square norm of forces) is less than tolerance,
         // and has been that way for the last 1000 iterations, we
         // consider the system to be in equilibrium and terminate the process. 
-
-        if (sqrt(FIRE_ff/(3 * vertices_.size())) < FIRE_equilibrium_tolerance) {
-            cout << "FIRE minimization terminated: F_rms less than FIRE_equilibrium_tolerance.\n";
+        double F_rms = sqrt(FIRE_ff/(3 * vertices_.size()));
+        if (F_rms < FIRE_equilibrium_tolerance) {
+            cout << "   FIRE minimization terminated successfully at iteration: "<<iter <<"\n";
+            
+            cout << "   F_rms = " << F_rms <<"\n";
+            cout << "   is less than FIRE_equilibrium_tolerance: "
+                << FIRE_equilibrium_tolerance << "\n";
             dumpTopo();
             dumpCellCenter();
             dumpCellShapeIndex();
@@ -258,7 +265,7 @@ int     Run::FIREminimize(){
         if (iter % log_iteration_ == 0) {
             volume_->updateEnergy();
             interface_->updateEnergy();
-            printf("%-9ld%-6.1f%-9.1f%-9ld%-9ld%-9.1f%-9.1f%-9.1f%-9.1f%-9.7e\n", 
+            printf("%-9ld%-6.1f%-9.1f%-9ld%-9ld%-9.1f%-9.1f%-12.1f%-12.1f%-12.7e\n", 
                     iter,
                     (chrono::duration_cast<chrono::microseconds>
                     (chrono::steady_clock::now() - start).count()) / 1.0e6,
