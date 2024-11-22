@@ -43,7 +43,7 @@ def makeConfFile(s0 = 5.7, dir = "samples/"):
     finalTime = 2000
     eulerStep = 0.005
     dumpTime = 100
-    logTime = 100
+    logTime = 10
     Lth = 0.02
     T = 1e-4
     kv = 1
@@ -122,11 +122,12 @@ def main():
     #     os.mkdir("samples/p_{}/".format(probability))
 
     # now make subdirectories for the runs
-    s0 = 4.8
+    s0 = 5.2
     runID = 1
     makeSamplesSubDir(
         s0 = s0,
-        dir = "samples/{}_{}/".format(s0,runID))
+        # dir = "samples/{}_{}/".format(s0,runID))
+        dir = "test/")
     return
 
 if __name__ == "__main__":

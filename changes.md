@@ -15,7 +15,7 @@ Cookbook of changes (in the order in which I addressed them):
         vertex -> interfaceForce_
 
 
-    The first two are calculated with volume->updateforces(), interface->updateforces() respectively. If replacement functions are written, we can just replace the respective function calls.
+    These are calculated with volume->updateforces(), interface->updateforces() respectively. If replacement functions are written, we can just replace the respective function calls.
 
     Let's do this by introducing a new function in run:
 
@@ -60,4 +60,48 @@ Cookbook of changes (in the order in which I addressed them):
 
         int FIREupdateForceVelocityProjections();
 
+1. Implement a COM polygon center. Rewrite the following function in Polygon.cpp:
+        
+        Polygon::updateCenter()
 
+    Note: this routine is only called in Run::updateGeoinfo()
+
+        Run::updateGeoinfo() 
+    is called in every iteration of both these functions
+        
+        Run::overdampedMotion() 
+        Run::FIREminimized()
+    
+    Reason: the resulting exact forces are MUCH easier to code.
+
+1. Exact volume forces: rewrite (in Energy/Volume.cpp) the function:
+
+        Volume::updateForces()
+    
+    Algorithm:
+
+    Upon calling this function, vertex->volumeForce_ is first set to {0,0,0} for each vertex
+
+    The routine the iterates over the cells. Each iteration adds the contribution from that
+    cell to the vertex->volumeForce_.
+
+    The routine requires the anticlockwise orientation of every "list" below:
+
+        for (auto cell : run->cells_){
+            for (auto polygon: cell->polygons_){
+                list = polygon->vertices_;
+            }
+        }
+    
+    We note that the routine Cell::updatePolygonDirections() updates <long int,bool>cell->polygonDirections_().
+    
+    We further note that this polygon directions routine is called (by way of Volume::updatePolygonDirections) during:
+
+    (a) Initialization in tvm.cpp
+    (b) As part of processing reconnection events
+
+    and that it includes a built in volume update for the cells.
+    
+    Implementation:
+
+    We will use Cell::updateVolume() for inspiration since it uses similar concepts.

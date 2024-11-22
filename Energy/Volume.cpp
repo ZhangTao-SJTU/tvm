@@ -45,24 +45,111 @@ Volume::Volume(Run * run) {
     energy_ = 0.;
 }
 
+// The original function to update vertex  -> volumeForces_,
+// which distributes the pressure
+
+// int     Volume::updateForces() {
+//     // reset all volumeForce values in vertices
+//     for (long int i = 0; i < run_->vertices_.size(); i++) {
+//         for (int j = 0; j < 3; j++) {
+//             run_->vertices_[i]->volumeForce_[j] = 0.;
+//         }
+//     }
+//     // update volume of each cell, and direction of polygons in each cell
+//     updateVolume();
+//     // update pressure in each cell
+//     updatePressure();
+//     // update volumeForce values
+//     for (long int i = 0; i < run_->cells_.size(); i++) {
+//         for (int j = 0; j < run_->cells_[i]->polygons_.size(); j++) {
+//             updatePolygonForces(run_->cells_[i], run_->cells_[i]->polygons_[j]);
+//         }
+//     }
+//     return 0;
+// }
+
+// Updated Volume::updateForces() function
+// This calcuates the exact volume force on each vertex
+
 int     Volume::updateForces() {
-    // reset all volumeForce values in vertices
-    for (long int i = 0; i < run_->vertices_.size(); i++) {
-        for (int j = 0; j < 3; j++) {
-            run_->vertices_[i]->volumeForce_[j] = 0.;
+    // initialize volumeForce values in all vertices
+    for (auto vertex : run_->vertices_) {
+        for (int m = 0; m < 3; m++) {
+            vertex->volumeForce_[m] = 0.;
         }
     }
-
-    // update volume of each cell, and direction of polygons in each cell
     updateVolume();
-
-    // update pressure in each cell
-    updatePressure();
-
-    // update volumeForce values
-    for (long int i = 0; i < run_->cells_.size(); i++) {
-        for (int j = 0; j < run_->cells_[i]->polygons_.size(); j++) {
-            updatePolygonForces(run_->cells_[i], run_->cells_[i]->polygons_[j]);
+    // Main algorithm
+    for (auto cell : run_->cells_) {
+        for (auto polygon : cell->polygons_) {
+            //Calculate sum_term = 1/n sum_mu(r_mu cross r_{mu+1})
+            // Step 1: Set origin to the first vertex of the polygon
+            double origin[3];
+            for (int m = 0; m < 3; m++) {
+                origin[m] = polygon->vertices_[0]->position_[m];
+            }
+            // Step 2: Calculate the sum_term = 1/n sum_mu(r_mu cross r_{mu+1})
+            double sum_term[3];
+            for (int m = 0; m < 3; m++) {
+                sum_term[m] = 0.;
+            }
+            for (int i = 0; i < polygon->vertices_.size(); i++) {
+                int j = (i + 1)%polygon->vertices_.size();
+                double r_mu[3];
+                double r_mu_plus_1[3];
+                for (int m = 0; m < 3; m++) {
+                    r_mu[m] = polygon->vertices_[i]->position_[m] - origin[m];
+                    r_mu_plus_1[m] = polygon->vertices_[j]->position_[m] - origin[m];
+                }
+                // adjust for periodic boundary conditions
+                run_->box_->resetDistance(r_mu);
+                run_->box_->resetDistance(r_mu_plus_1);
+                // Calculate the cross product of r_mu and r_{mu+1}
+                double cross_product[3];
+                cross_product[0] = r_mu[1]*r_mu_plus_1[2] - r_mu[2]*r_mu_plus_1[1];
+                cross_product[1] = r_mu[2]*r_mu_plus_1[0] - r_mu[0]*r_mu_plus_1[2];
+                cross_product[2] = r_mu[0]*r_mu_plus_1[1] - r_mu[1]*r_mu_plus_1[0];
+                // Add the cross product to sum_term
+                for (int m = 0; m < 3; m++) {
+                    sum_term[m] += cross_product[m];
+                }
+            }
+            for (int m = 0; m < 3; m++) {
+                sum_term[m] = sum_term[m]/polygon->vertices_.size();
+            }
+            // Step 3: For each vertex on the polygon:
+            //(a) Add sum_term to vertex->volumeForce_
+            //(b) Add (r_mu+1 -r_mu-1) cross poly_center) to vertex->volumeForce_
+            // Add these with a factor of -1 if the polygon direction is incorrect
+            for (int i = 0; i < polygon->vertices_.size(); i++) {
+                int j = (i + 1)%polygon->vertices_.size();
+                int k = (i + polygon->vertices_.size() - 1)%polygon->vertices_.size();
+                double r_mu_plus_1[3];
+                double r_mu_minus_1[3];
+                double poly_center[3];
+                for (int m = 0; m < 3; m++) {
+                    r_mu_plus_1[m] = polygon->vertices_[j]->position_[m] - origin[m];
+                    r_mu_minus_1[m] = polygon->vertices_[k]->position_[m] - origin[m];
+                    poly_center[m] = polygon->center_[m] - origin[m];
+                }
+                // adjust for periodic boundary conditions
+                run_->box_->resetDistance(r_mu_plus_1);
+                run_->box_->resetDistance(r_mu_minus_1);
+                run_->box_->resetDistance(poly_center);
+                // Calculate the cross product of (r_mu+1 - r_mu-1) and poly_center
+                double cross_product[3];
+                cross_product[0] = (r_mu_plus_1[1] - r_mu_minus_1[1])*poly_center[2] - (r_mu_plus_1[2] - r_mu_minus_1[2])*poly_center[1];
+                cross_product[1] = (r_mu_plus_1[2] - r_mu_minus_1[2])*poly_center[0] - (r_mu_plus_1[0] - r_mu_minus_1[0])*poly_center[2];
+                cross_product[2] = (r_mu_plus_1[0] - r_mu_minus_1[0])*poly_center[1] - (r_mu_plus_1[1] - r_mu_minus_1[1])*poly_center[0];
+                // Add (or subtract) to vertex->volumeForce_ based on polygon directions
+                for (int m = 0; m < 3; m++) {
+                    if (cell->polygonDirections_[polygon->id_]) {
+                        polygon->vertices_[i]->volumeForce_[m] -= 2*kv_*(cell->volume_-1)*(sum_term[m]+cross_product[m]);
+                    } else {
+                        polygon->vertices_[i]->volumeForce_[m] += 2*kv_*(cell->volume_-1)*(sum_term[m]+cross_product[m]);
+                    }
+                }
+           }
         }
     }
 

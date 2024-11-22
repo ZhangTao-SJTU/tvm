@@ -229,7 +229,7 @@ int Cell::updateVolume() {
             run_->box_->resetDistance(cv[i]);
         }
         for (int i = 0; i < Nv; i++) {
-            // compute the volume of the tetrahedron formed by origin, polygon center, and edge vertices
+            // compute the volume of the tetrahedron formed by origin (cc), polygon center, and edge vertices
             int j = (i + 1)%Nv;
             double cP[3];
             double dP = 0.;

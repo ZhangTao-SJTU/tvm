@@ -87,6 +87,40 @@ int Polygon::updateVertices() {
     return 0;
 }
 
+// The original, Okuda et al. version of updateCenter() is as follows:
+
+// int Polygon::updateCenter() {
+//     // set reference point
+//     double tmp_origin[3];
+//     for (int i = 0; i < 3; i++) {
+//         tmp_origin[i] = edges_[0]->vertices_[0]->position_[i];
+//     }
+
+//     double sum_lx = 0.;
+//     double sum_ly = 0.;
+//     double sum_lz = 0.;
+//     double sum_l = 0.;
+//     for (int i = 0; i < edges_.size(); i++) {
+//         double length = edges_[i]->length_;
+//         double dx[3];
+//         dx[0] = edges_[i]->center_[0] - tmp_origin[0];
+//         dx[1] = edges_[i]->center_[1] - tmp_origin[1];
+//         dx[2] = edges_[i]->center_[2] - tmp_origin[2];
+//         run_->box_->resetDistance(dx);
+//         sum_lx += length*dx[0];
+//         sum_ly += length*dx[1];
+//         sum_lz += length*dx[2];
+//         sum_l += length;
+//     }
+//     center_[0] = sum_lx/sum_l + tmp_origin[0];
+//     center_[1] = sum_ly/sum_l + tmp_origin[1];
+//     center_[2] = sum_lz/sum_l + tmp_origin[2];
+
+//     return 0;
+// }
+
+// A COM version of updateCenter():
+
 int Polygon::updateCenter() {
     // set reference point
     double tmp_origin[3];
@@ -97,22 +131,20 @@ int Polygon::updateCenter() {
     double sum_lx = 0.;
     double sum_ly = 0.;
     double sum_lz = 0.;
-    double sum_l = 0.;
     for (int i = 0; i < edges_.size(); i++) {
-        double length = edges_[i]->length_;
+        // double length = edges_[i]->length_;
         double dx[3];
         dx[0] = edges_[i]->center_[0] - tmp_origin[0];
         dx[1] = edges_[i]->center_[1] - tmp_origin[1];
         dx[2] = edges_[i]->center_[2] - tmp_origin[2];
         run_->box_->resetDistance(dx);
-        sum_lx += length*dx[0];
-        sum_ly += length*dx[1];
-        sum_lz += length*dx[2];
-        sum_l += length;
+        sum_lx += dx[0];
+        sum_ly += dx[1];
+        sum_lz += dx[2];
     }
-    center_[0] = sum_lx/sum_l + tmp_origin[0];
-    center_[1] = sum_ly/sum_l + tmp_origin[1];
-    center_[2] = sum_lz/sum_l + tmp_origin[2];
+    center_[0] = sum_lx/edges_.size() + tmp_origin[0];
+    center_[1] = sum_ly/edges_.size() + tmp_origin[1];
+    center_[2] = sum_lz/edges_.size() + tmp_origin[2];
 
     return 0;
 }
