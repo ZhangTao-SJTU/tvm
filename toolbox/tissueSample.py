@@ -15,6 +15,7 @@ class Sample:
         self.tissueType_ = None
         self.time_ = None
         self.config_dir_ = None
+        self.file_ = None
         self.vertices_:dict[int,topology.Vertex] = {}
         self.edges_:dict[int,topology.Edge] = {}
         self.polygons_:dict[int,topology.Polygon] = {}
@@ -59,19 +60,22 @@ class Sample:
         sample.kv_ = None
         return sample
     
-    @classmethod 
-    def periodic_tissue(cls,configDir:str = "samples/",simulationTime = 20000):
+    @classmethod
+    # def periodic_tissue(cls,configDir:str = "samples/",simulationTime = 20000):
+    def periodic_tissue(cls, config_dir, input_filename = "sample.topo"):
         # Validate the input: 
-        if not configDir.endswith("/"):
-            raise ValueError("config_dir must end with a '/'")
-         
-        if not os.path.isdir(configDir):
+        if not config_dir.endswith("/"):
+            print("config_dir must end with a '/'. Attempting to fix this...")
+            config_dir = config_dir + "/"
+        if not os.path.isdir(config_dir):
             raise ValueError("config_dir must be a valid directory")
+        if not os.path.isfile(config_dir+input_filename):
+            raise ValueError("input_filename must exist and be in the config_dir")
         
         sample = cls()
         sample.tissueType_ = "periodic"
-        sample.time_ = simulationTime
-        sample.config_dir_ = configDir
+        sample.time_ = 0
+        sample.config_dir_ = config_dir
 
         sample.load_config()
         sample.load_conf_file()
@@ -116,16 +120,18 @@ class Sample:
     # self.vertices_,self.edges_,self.polygons_,self.cells_,self.cellIDs_
 
     def load_config(self):
-        if not os.path.isfile(self.config_dir_ 
-                              + "{:07d}".format(self.time_) 
-                              + ".topo.txt"):
-            functions.make_time_topo(self.config_dir_, self.time_)
+        if self.file_ is None:
+            if os.path.isfile(self.config_dir_ + "topo.txt"):
+                self.file_ = "{}{:07}.topo.txt".format(self.config_dir_,self.time_)
+        if not os.path.isfile(self.file_):
+            if os.path.isfile(self.config_dir_ + "topo.txt"):    
+                functions.make_time_topo(self.config_dir_, self.time_)
+            else:
+                raise ValueError("topo.txt not found in config_dir.")
 
         # Load the topology. When loading cell polygons, note that there are
         # virtual cells (type=0) and real cells (type=1).
-        with open(self.config_dir_ 
-                  + "{:07d}".format(self.time_) 
-                  + ".topo.txt", "r") as file:
+        with open(self.file_, "r") as file:
             verticesFlag = False
             edgesFlag = False
             polygonsFlag = False
