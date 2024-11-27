@@ -1,7 +1,7 @@
-from toolbox import functions
-from toolbox import topology
 import numpy as np
 import os
+from toolbox import functions
+from toolbox import topology
 
 def coordinatesAndEdgesDict(file):
     with open(file,"r") as f:

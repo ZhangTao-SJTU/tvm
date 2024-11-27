@@ -43,7 +43,7 @@ def makeConfFile(s0 = 5.7, dir = "samples/"):
     finalTime = 2000
     eulerStep = 0.005
     dumpTime = 100
-    logTime = 10
+    logTime = 100
     Lth = 0.02
     T = 1e-4
     kv = 1

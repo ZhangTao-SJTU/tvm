@@ -1,6 +1,6 @@
-from toolbox import topology,tissueSample, functions
 import numpy as np
-from pyvtk import PolyData, CellData, Scalars, VtkData
+import pyvtk
+from toolbox import topology,tissueSample, functions
 
 def makeSampleCrossSection(sample:tissueSample.Sample,
                            normal:np.ndarray = np.array([1,0,0]),
@@ -269,11 +269,11 @@ def makeSampleCrossSection(sample:tissueSample.Sample,
         Polygons_.append([vertexID for vertexID in polygon.vertices_])
         cellscalars.append(0)
 
-    structure = PolyData(points=Points_,polygons=Polygons_)
-    celldata = CellData(\
-        Scalars(cellscalars,
+    structure = pyvtk.PolyData(points=Points_,polygons=Polygons_)
+    celldata = pyvtk.CellData(\
+        pyvtk.Scalars(cellscalars,
                 name = 'cell_scalars'))
-    vtk = VtkData(structure,celldata)
+    vtk = pyvtk.VtkData(structure,celldata)
     vtk.tofile(sample.config_dir_ + "{:07d}.triangles.vtk".format(sample.time_),'ascii')
 
     Points_=[]
@@ -285,11 +285,11 @@ def makeSampleCrossSection(sample:tissueSample.Sample,
         Polygons_.append([vertexID for vertexID in polygon.vertices_])
         cellscalars.append(intersection_polygon_scalars[polygonID])
 
-    structure = PolyData(points = Points_,polygons=Polygons_)
-    celldata = CellData(\
-        Scalars(cellscalars,
+    structure = pyvtk.PolyData(points = Points_,polygons=Polygons_)
+    celldata = pyvtk.CellData(\
+        pyvtk.Scalars(cellscalars,
                 name='cell_scalars'))
-    vtk = VtkData(structure,celldata)
+    vtk = pyvtk.VtkData(structure,celldata)
     vtk.tofile(sample.config_dir_+"{:07d}.crossSection.vtk".format(sample.time_),'ascii')
     
     return

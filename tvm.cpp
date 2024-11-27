@@ -39,11 +39,13 @@
 using namespace std;
 
 int     InitializeAll(Run *);
+int     InitializeFixed(Run *);
 int     LoadConf(string filename, Run *);
 
 int main(int argc, char *argv[]) {
     Run * run = new Run();
     InitializeAll(run);
+    InitializeFixed(run);
     run->updatePolygonVertices();
 //    run->dumpConfigurationVtk();
 
@@ -229,6 +231,89 @@ int InitializeAll(Run * run) {
     run->updateVertexCells();
     run->volume_->updatePolygonDirections();
 
+    return 0;
+}
+
+int InitializeFixed(Run * run){
+    printf("Initialization start ...\n");
+
+    // load initial configuration
+    ifstream topofile("fixed.topo");
+    if (!topofile.is_open()) {
+        cout << "fixed.topo not present or could not be processed" << endl;
+        cout << "Resuming with regular minimization" << endl;
+        return 0;
+    }
+
+    string buffer;
+    string delimiter = " ";
+    size_t pos = 0;
+    long int tmp_id;
+    vector<string> tokens;
+    vector<vector<string>> lines;
+
+    while (getline(topofile, buffer))
+    {
+        pos = buffer.find((char)13);
+        if (pos != string::npos) {
+            buffer = buffer.substr(0, pos);
+        }
+        if (buffer.length() == 0) continue;
+
+        tokens.clear();
+        while ((pos = buffer.find(delimiter)) != string::npos) {
+            string token = buffer.substr(0, pos);
+            if (token.length() > 0) {
+                tokens.push_back(token);
+            }
+            buffer.erase(0, pos + delimiter.length());
+        }
+        if (buffer.length() > 0) {
+            tokens.push_back(buffer);
+        }
+        lines.push_back(tokens);
+    }
+
+    // bool verticesFlag = false;
+    // bool edgesFlag = false;
+    // bool polygonsFlag = false;
+    // bool cellsFlag = false;
+    // bool emptyCellsFlag = false;
+    for (int i = 0; i < lines.size(); i++) {
+        tokens = lines[i];
+        tmp_id = atol(tokens[0].c_str());
+        // cout << run->vertices_[tmp_id]->is_fixed_ <<endl;
+        run->cells_[tmp_id]->is_fixed_ = true;
+        // for (auto polygon: run->cells_[tmp_id]->polygons_){
+        //     for (auto vertex: polygon->vertices_){
+        //         vertex->is_fixed_ = true;
+        //     }
+        // }
+        // if (tokens[0] == "vertices") {
+        //     verticesFlag = true;
+        // } else if (tokens[0] == "edges") {
+        //     verticesFlag = false;
+        //     edgesFlag = true;
+        // } else if (tokens[0] == "polygons") {
+        //     edgesFlag = false;
+        //     polygonsFlag = true;
+        // } else if (tokens[0] == "cells") {
+        //     polygonsFlag = false;
+        //     cellsFlag = true;
+        // } else if (tokens[0] == "virtual" && tokens[1] == "cells") {
+        //     cellsFlag = false;
+        //     emptyCellsFlag = true;
+        // } else {
+        //     if (verticesFlag) {
+        //         tmp_id = atol(tokens[0].c_str());
+        //         Vertex * vertex = new Vertex(run, tmp_id);
+        //         for (int j = 1; j < tokens.size(); j++) {
+        //             vertex->position_[j - 1] = atof(tokens[j].c_str());
+        //         }
+        //         run->vertices_.push_back(vertex);
+        //     }
+        // }
+    }
     return 0;
 }
 

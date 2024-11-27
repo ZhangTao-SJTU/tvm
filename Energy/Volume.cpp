@@ -44,33 +44,33 @@ Volume::Volume(Run * run) {
     totalVolume_ = 0.;
     energy_ = 0.;
 }
+/* The original function to update vertex  -> volumeForces_,*/
 
-// The original function to update vertex  -> volumeForces_,
-// which distributes the pressure
+// This works by distributing the pressure
 
-// int     Volume::updateForces() {
-//     // reset all volumeForce values in vertices
-//     for (long int i = 0; i < run_->vertices_.size(); i++) {
-//         for (int j = 0; j < 3; j++) {
-//             run_->vertices_[i]->volumeForce_[j] = 0.;
-//         }
-//     }
-//     // update volume of each cell, and direction of polygons in each cell
-//     updateVolume();
-//     // update pressure in each cell
-//     updatePressure();
-//     // update volumeForce values
-//     for (long int i = 0; i < run_->cells_.size(); i++) {
-//         for (int j = 0; j < run_->cells_[i]->polygons_.size(); j++) {
-//             updatePolygonForces(run_->cells_[i], run_->cells_[i]->polygons_[j]);
-//         }
-//     }
-//     return 0;
-// }
+int     Volume::updateForces() {
+    // reset all volumeForce values in vertices
+    for (long int i = 0; i < run_->vertices_.size(); i++) {
+        for (int j = 0; j < 3; j++) {
+            run_->vertices_[i]->volumeForce_[j] = 0.;
+        }
+    }
+    // update volume of each cell, and direction of polygons in each cell
+    updateVolume();
+    // update pressure in each cell
+    updatePressure();
+    // update volumeForce values
+    for (long int i = 0; i < run_->cells_.size(); i++) {
+        for (int j = 0; j < run_->cells_[i]->polygons_.size(); j++) {
+            updatePolygonForces(run_->cells_[i], run_->cells_[i]->polygons_[j]);
+        }
+    }
+    return 0;
+}
 
-// Updated Volume::updateForces() function
+/* Updated Volume::updateForces() function
+
 // This calcuates the exact volume force on each vertex
-
 int     Volume::updateForces() {
     // initialize volumeForce values in all vertices
     for (auto vertex : run_->vertices_) {
@@ -155,7 +155,7 @@ int     Volume::updateForces() {
 
     return 0;
 }
-
+*/
 int Volume::updatePolygonDirections() {
     run_->updatePolygonVertices();
     run_->updatePolygonCells();

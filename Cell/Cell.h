@@ -32,6 +32,7 @@ class Cell;
 class Cell {
 public:
     long int id_;
+    bool is_fixed_;
     double volume_;
     double pressure_;
     double shapeIndex_;

@@ -1,6 +1,6 @@
+import random
 from toolbox import tissueSample
 from toolbox import cellDivision
-import random
 
 def main():
     sample = tissueSample.Sample(configDir = "samples/", simulationTime = 500, tissueType = "periodic")

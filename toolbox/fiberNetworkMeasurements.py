@@ -1,8 +1,8 @@
-from toolbox import fiberNetwork
 import numpy as np
 import pandas as pd
 from scipy import stats
 import os
+from toolbox import fiberNetwork
 
 def evalRbinsToNodeIDs(fiberNetwork,rBins,origin = None):
     if origin is None :

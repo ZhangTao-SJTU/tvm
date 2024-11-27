@@ -105,3 +105,39 @@ Cookbook of changes (in the order in which I addressed them):
     Implementation:
 
     We will use Cell::updateVolume() for inspiration since it uses similar concepts.
+
+1. Exact surface forces (TBD)
+
+1. Fixed cells (and their vertices):
+
+Introduce a bool is_fixed_ attribute in Vertices.h
+Introduce a bool is_fixed_ attribute in Cells.h
+
+Every new vertex is initialized with vertex.is_fixed_ = false
+Every new cell is initialized with cell.is_fixed_ = false
+
+1. In the position update functions in Run.cpp:
+
+        Run::updateVerticesPosition()
+        Run::FIREupdateVerticesPosition()
+
+    skip over updating fixed vertices
+
+1. Skip fixed vertices in the loop when calculating F_rms in 
+
+        Run::FIREupdateForceVelocityProjections
+
+1. Read Fixed topology in tvm.cpp
+
+        int InitializeFixed(Run * run)
+
+    reads "fixed.topo" in the run folder. if it doesnt exist or cannot be read, minimization
+    commences with no cells or vertices are fixed
+
+    For now, we only need to supply cellIDs of fixed cells.
+
+1. Edit fixed vertices corresponding to fixed cells
+
+    Add a routine to Run::updateGeoInfo() that does this.
+
+1. Edit 

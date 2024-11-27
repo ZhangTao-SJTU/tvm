@@ -41,6 +41,7 @@ using namespace std;
 Cell::Cell(Run * run, long int id) {
     run_ = run;
     id_ = id;
+    is_fixed_ = false;
     volume_ = 0.;
     pressure_ = 0.;
     shapeIndex_ = 0.;

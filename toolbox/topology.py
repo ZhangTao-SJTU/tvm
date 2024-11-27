@@ -10,10 +10,10 @@ class Vertex:
         self.boundary_area_derivative_ = None
         self.volume_force_ = None
         self.surface_force_ = None
-        self.is_driven_=False
+        self.is_driven_ = False
         self.force_ = None
-        self.is_surface_=False
-        self.is_daughter_=False
+        self.is_surface_ = False
+        self.is_daughter_ = False
         return
     def setPosition(self, position):
         self.position_ = list(position)
@@ -37,7 +37,7 @@ class Edge:
         self.mother_id_ = None
         self.mother_polygon_id_ = None
         self.divide_flag_ = False
-        self.intersection_vertex_=None
+        self.intersection_vertex_ = None
         return
     def addVertex(self, vertex):
         self.vertices_.append(vertex)
@@ -45,25 +45,26 @@ class Edge:
 class Polygon:
     def __init__(self, id):
         self.id_ = id
-        self.og_id_=None
+        self.og_id_ = None
         self.dumpOn_ = True
         self.edges_ = []
         self.vertices_ = []
-        self.type_=0
+        self.type_ = 0
         self.crossBoundary_ = False
-        self.is_surface_=False
-        self.normal_=None
-        self.center_=None
-        self.perimeter_=None
-        self.area_=None
-        self.is_mother_=False
-        self.is_daughter_=False
-        self.is_dividing_polygon_=False
-        self.intersection_edge_=None
-        self.mother_id_=None
-        self.divide_flag_=False
-        self.daughter_vertices_=None
-        self.daughter_edges_=None
+        self.is_surface_ = False
+        self.normal_ = None
+        self.center_ = None
+        self.perimeter_ = None
+        self.area_ = None
+        self.is_mother_ = False
+        self.is_daughter_ = False
+        self.is_dividing_polygon_ = False
+        self.intersection_edge_ = None
+        self.mother_id_ = None
+        self.divide_flag_ = False
+        self.daughter_vertices_ = None
+        self.daughter_edges_ = None
+        self.scalar_ = None
         return
     def addEdge(self, edge):
         self.edges_.append(edge)
@@ -77,24 +78,25 @@ class Cell:
         self.polygons_ = []
         self.vertices_ = None
         self.crossBoundary_ = False
-        self.is_surface_=False
-        self.surface_area_=None
-        self.boundary_area_=None
-        self.shape_index_=None
-        self.volume_=None
-        self.center_=None
-        self.inertia_tensor_=None
-        self.stress_tensor_=None
-        self.principal_radial_stress_=None
+        self.is_surface_ = False
+        self.surface_area_ = None
+        self.boundary_area_ = None
+        self.shape_index_ = None
+        self.volume_ = None
+        self.center_ = None
+        self.inertia_tensor_ = None
+        self.stress_tensor_ = None
+        # self.principal_radial_stress_=None
         # cell type: 0 = virtual, 1 = real
         self.type_:int = 0
-        self.is_mother_=False
-        self.is_daughter_=False
-        self.mother_id_=None
-        self.force_=None
-        self.torque_=None
-        self.volume_forces_=None
-        self.surface_forces_=None
+        self.is_mother_ = False
+        self.is_daughter_ = False
+        self.is_in_chain_ = False
+        self.mother_id_ = None
+        # self.force_=None
+        # self.torque_=None
+        # self.volume_forces_=None
+        # self.surface_forces_=None
         return
 
 

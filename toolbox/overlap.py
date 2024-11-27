@@ -1,9 +1,10 @@
 import multiprocessing
 from scipy import stats
 import numpy as np
-from toolbox import tissueSample
 import pandas as pd
 import os
+from toolbox import tissueSample
+import copy
 
 # This function takes a spheroid, 
 # and returns a dict: {cellID: list of neighbor cellIDs}
@@ -11,7 +12,6 @@ import os
 # The neighbors of a cell are defined as cells that share a polygon with it.
 
 def find_cell_neighbors(spheroid:tissueSample.Sample):
-    
     cellID_to_neighbors:dict[int,list] = {}
     for cellID,cell in spheroid.cells_.items():
         if bool(cell.type_):
@@ -22,9 +22,15 @@ def find_cell_neighbors(spheroid:tissueSample.Sample):
                 if polygonID in spheroid.cells_[list(cellID_to_neighbors.keys())[j]].polygons_:
                     cellID_to_neighbors[cellID].append(list(cellID_to_neighbors.keys())[j])
                     cellID_to_neighbors[list(cellID_to_neighbors.keys())[j]].append(cellID)
-
-    return cellID_to_neighbors
-
+    spheroid.cell_neighbors_ = cellID_to_neighbors
+    # return cellID_to_neighbors
+def edit_cell_neighbors(sample:tissueSample.Sample):
+    edited_cellID_to_neighbors = copy.deepcopy(sample.cell_neighbors_)
+    for cellID, neighbors in sample.cell_neighbors_.items():
+        if sample.cells_[cellID].is_in_chain_:
+            continue
+        else: del edited_cellID_to_neighbors[cellID]
+    return edited_cellID_to_neighbors
 # This function takes two dicts of the form {cellID: list of neighbor cellIDs}
 # These are intended to be the states of a spheroid at two different times, 
 # with d2 representing the later time.
@@ -57,22 +63,43 @@ def calculate_Q(d1:dict[int,list], d2:dict[int,list]):
 # mean: the average overlap at time t for the runs in dir_list
 # sem: the standard error of the mean of the overlap at time t
 
-def calculate_average_overlap(dir_list:list[str]):
-    timevals=[5000*i for i in range(6)]
+# def calculate_average_overlap(dir_list:list[str]):
+#     timevals=[5000*i for i in range(6)]
+#     Qn={i:[] for i in timevals}
+#     Qn[0]=1
+    
+#     for dir in dir_list:
+#         #equip spheroids
+#         spheroids={i:None for i in timevals}
+#         for time in timevals:
+#             spheroids[time] = tissueSample.Sample(config_dir=dir,
+#                             simulation_time=time)
+#         print("spheroids equipped for ",dir)
+#         for i,time in enumerate(timevals):
+#             if i==0: continue
+#             d1 = find_cell_neighbors(spheroids[timevals[i-1]])
+#             d2 = find_cell_neighbors(spheroids[time])
+#             Qn[time].append(calculate_Q(d1,d2))
+
+#     t=[0]
+#     mean=[1]
+#     sem=[0]
+
+#     for time in timevals[1:]:
+#         t.append(time)
+#         mean.append(np.mean(Qn[time]))
+#         sem.append(stats.sem(Qn[time]))
+#     return pd.DataFrame({"time":t,"mean":mean,"sem":sem})
+
+def calculate_average_overlap(dir_to_time_to_sample:dict[str,dict[int,tissueSample.Sample]]):
+    timevals = list(dir_to_time_to_sample.values())[0].keys()
     Qn={i:[] for i in timevals}
     Qn[0]=1
-    
-    for dir in dir_list:
-        #equip spheroids
-        spheroids={i:None for i in timevals}
-        for time in timevals:
-            spheroids[time] = tissueSample.Sample(config_dir=dir,
-                            simulation_time=time)
-        print("spheroids equipped for ",dir)
+    for dir,time_to_sample in dir_to_time_to_sample.items():
         for i,time in enumerate(timevals):
-            if i==0: continue
-            d1 = find_cell_neighbors(spheroids[timevals[i-1]])
-            d2 = find_cell_neighbors(spheroids[time])
+            if time==0: continue
+            d1 = find_cell_neighbors(timevals[i-1])
+            d2 = find_cell_neighbors(time_to_sample[time])
             Qn[time].append(calculate_Q(d1,d2))
 
     t=[0]
@@ -85,32 +112,54 @@ def calculate_average_overlap(dir_list:list[str]):
         sem.append(stats.sem(Qn[time]))
     return pd.DataFrame({"time":t,"mean":mean,"sem":sem})
 
-def main():    
-    quantity="overlap"
-    output_dir = "sounok/{}_data/".format(quantity)
-    if not os.path.exists("sounok/"): os.mkdir("sounok/")
-    if not os.path.exists(output_dir): os.mkdir(output_dir)
-    s0_vals=["52","54","56","57","58"]
+# def main():    
+#     quantity="overlap"
+#     output_dir = "sounok/{}_data/".format(quantity)
+#     if not os.path.exists("sounok/"): os.mkdir("sounok/")
+#     if not os.path.exists(output_dir): os.mkdir(output_dir)
+#     s0_vals=["52","54","56","57","58"]
 
-    num_runs = 30
+#     num_runs = 30
 
-    for gamma in ["025","100"]:
+#     for gamma in ["025","100"]:
 
-        def process_iteration(s0):
-            dir_list = []
-            for i in range(num_runs):
-                test_dir = "ECM64_5/s0_{}_gamma_{}_run_{}/".format(s0,gamma,i)
-                if os.path.isdir(test_dir):
-                    dir_list.append(test_dir)
-            return calculate_average_overlap(dir_list)
+#         def process_iteration(s0):
+#             dir_list = []
+#             for i in range(num_runs):
+#                 test_dir = "ECM64_5/s0_{}_gamma_{}_run_{}/".format(s0,gamma,i)
+#                 if os.path.isdir(test_dir):
+#                     dir_list.append(test_dir)
+#             return calculate_average_overlap(dir_list)
 
-        pool = multiprocessing.Pool()
+#         pool = multiprocessing.Pool()
 
-        results = pool.map(process_iteration, s0_vals)
+#         results = pool.map(process_iteration, s0_vals)
 
-        for s, df in zip(s0_vals, results):
-            df.to_csv(output_dir+"{}_{}.csv".format(s,gamma),index=False)
+#         for s, df in zip(s0_vals, results):
+#             df.to_csv(output_dir+"{}_{}.csv".format(s,gamma),index=False)
+#     return
+def main():
+    dir_list = ["samples/5.8_1"]
+    timevals = [0,10000,25000]
+    # timevals = [5000*i for i in range(6)]
+    print("Timevals: ",timevals)
+    dir_to_time_to_sample = {}
+    for dir in dir_list:
+        print("Loading samples for dir: ",dir)
+        time_to_sample = {
+            time:tissueSample.Sample(
+                configDir = dir,
+                simulationTime = time) for time in timevals}
+        dir_to_time_to_sample[dir] = time_to_sample
+    print("Samples loaded")
+    df = calculate_average_overlap(dir_to_time_to_sample)
+    df.to_csv("output.csv",index=False)
+
+    # for time, sample in time_to_sample.items():
+    #     for cellID,cell in sample.cells_.items():
+    #         if bool(cell.type_):
+    #             cell
+
     return
-
 if __name__ == "__main__":
     main()

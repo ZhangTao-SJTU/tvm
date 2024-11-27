@@ -203,7 +203,6 @@ int     Run::FIREminimize(){
         double F_rms = sqrt(FIRE_ff/(3 * vertices_.size()));
         if (F_rms < FIRE_equilibrium_tolerance) {
             cout << "   FIRE minimization terminated successfully at iteration: "<<iter <<"\n";
-            
             cout << "   F_rms = " << F_rms <<"\n";
             cout << "   is less than FIRE_equilibrium_tolerance: "
                 << FIRE_equilibrium_tolerance << "\n";
@@ -290,7 +289,8 @@ int     Run::FIREminimize(){
             dumpConfigurationVtk();
             count_dump_++;
         }
-        // Do reconnection every reconnection_iteration_ steps.
+        // Do reconnection every reconnection_iteration_ steps
+        // (I set it to 1, see list of parameters)
         if (iter % reconnection_iteration_ == 0) {
             reconnection_->start();
             count_reconnect_++;
@@ -315,6 +315,9 @@ int     Run::FIREupdateVerticesVelocity(double& FIRE_dt) {
 
 int     Run::FIREupdateVerticesPosition(double& FIRE_dt) {
     for (auto vertex : vertices_) {
+        if (vertex->is_fixed_) {
+            continue;
+        }
         for (int m = 0; m < 3; m++) {
             vertex->position_[m] += FIRE_dt * vertex->velocity_[m];
         }
@@ -328,6 +331,9 @@ int     Run::FIREupdateForceVelocityProjections() {
     FIRE_fv = 0.;
     FIRE_vv = 0.;
     for (auto vertex : vertices_) {
+        if (vertex->is_fixed_){
+            continue;
+        }
         for (int m = 0; m < 3; m++) {
             double f_m = vertex->volumeForce_[m] + vertex->interfaceForce_[m];
             double v_m = vertex->velocity_[m];
@@ -369,6 +375,9 @@ int     Run::updateVerticesPosition() {
     std::normal_distribution<double> ndist(0., 1.);
     double cR = sqrt(2.0*mu_*kB_*temperature_*dt_);
     for (long int i = 0; i < vertices_.size(); i++) {
+        if (vertices_[i]->is_fixed_) {
+            continue;
+        }
         for (int m = 0; m < 3; m++) {
             vertices_[i]->position_[m] = vertices_[i]->position_[m] + vertices_[i]->velocity_[m] * dt_ + cR*ndist(generator);
         }
@@ -472,6 +481,17 @@ int     Run::updateGeoinfo() {
         polygons_[i]->updateCenter();
     }
 
+    // update fixed vertices:
+    for (auto cell: cells_){
+        if (!cell->is_fixed_){
+            continue;
+        }
+        for (auto polygon: cell->polygons_){
+            for (auto vertex: polygon->vertices_){
+                vertex->is_fixed_ = true;
+            }
+        }
+    }
     return 0;
 }
 

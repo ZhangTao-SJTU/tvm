@@ -1,7 +1,7 @@
-from toolbox import topology
 import numpy as np
 import copy
 import os
+from toolbox import topology
 
 def levi_civita(i,j,k):
     if i==j or j==k or k==i:

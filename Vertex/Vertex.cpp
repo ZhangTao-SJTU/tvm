@@ -41,6 +41,7 @@ using namespace std;
 Vertex::Vertex(Run * run, long int id) {
     run_ = run;
     id_ = id;
+    is_fixed_ = false;
     for (int i = 0; i < 3; i++) {
         position_[i] = 0.;
         volumeForce_[i] = 0.;
