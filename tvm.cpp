@@ -47,18 +47,34 @@ int main(int argc, char *argv[]) {
     InitializeAll(run);
     InitializeFixed(run);
     run->updatePolygonVertices();
-//    run->dumpConfigurationVtk();
+    double FIRE_equilibrium_tolerance = 1e-8;
 
-//    for (auto cell : run->cells_) {
-//        cell->updateVolume();
-//        printf("%f\n", cell->volume_);
-//    }
-//    run->cells_[200]->updateVolume();
-//    printf("%f\n", run->cells_[200]->volume_);
-//    run->reconnection_->Lth_ = 0.5;
-//    run->reconnection_->I_H(run->edges_[2700], true);
-//    run->reconnection_->Lth_ = 2.0;
-//    run->reconnection_->H_I(run->polygons_[run->polygons_.size()-1], true);
+    // Check if the system is already in equilibrium. If it is, basically return the system.
+    
+    // update geometry information
+    run->updateGeoinfo();
+    // update volumeForces
+    run->volume_->updateForces();
+    // update interfaceForces
+    run->interface_->updateForces();
+    // update velocities
+    run->updateVerticesVelocity();
+    // calculate the power and other force, velocity projections
+    run->FIREupdateForceVelocityProjections();
+    double F_rms = sqrt(run->FIRE_ff/(3 * run->vertices_.size()));
+    cout<<"Initial F_rms: "<< F_rms <<"\n";
+    if (F_rms < FIRE_equilibrium_tolerance) {
+        cout << "   Minimization terminated:\n"; 
+        cout << "   Input is already minimized at FIRE_equilibrium_tolerance: ";
+        cout << FIRE_equilibrium_tolerance << "\n";
+        // run->dumpTopo();
+        // run->dumpCellCenter();
+        // run->dumpCellShapeIndex();
+        // run->dumpCellVolume();
+        // run->dumpConfigurationVtk();
+        run->dumpMinimization();
+        return 0;
+    }
     run->overdampedMotion();
     run->FIREminimize();
 

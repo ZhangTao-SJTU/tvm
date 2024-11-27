@@ -50,7 +50,7 @@ Run::Run() {
     // NCell_ = 512;
 }
 
-int Run::overdampedMotion() {
+int     Run::overdampedMotion() {
     count_reconnect_ = 0;
     count_dump_ = 0;
     count_log_ = 0;
@@ -120,13 +120,12 @@ int Run::overdampedMotion() {
 
         // Euler dynamics
         updateVerticesPosition();
-
+        reconnection_->start();
         // reconnect
-        if (simulation_time_ - t_start_ + t_roundError > count_reconnect_ * dtr_) {
-            reconnection_->start();
-            count_reconnect_++;
-        }
-
+        // if (simulation_time_ - t_start_ + t_roundError > count_reconnect_ * dtr_) {
+        //     reconnection_->start();
+        //     count_reconnect_++;
+        // }
         simulation_time_ += dt_;
     }
 
@@ -134,7 +133,6 @@ int Run::overdampedMotion() {
 }
 
 int     Run::FIREminimize(){
-
     // FIRE parameters.
     //
     // For the basic algorithm applied here, please see
@@ -181,18 +179,15 @@ int     Run::FIREminimize(){
 
    for (long int iter = 0; iter < FIRE_itermax; iter++) {
         // Step 1: Update positions, forces and velocities.
-        // Note: Velocities of are initialized to 0.
+        // Note: Velocities of vertices are initialized to 0.
 
-        // update positions
+        // Update positions and any resulting topology changes
         FIREupdateVerticesPosition(FIRE_dt);
-        // update geometry information
         updateGeoinfo();
-        // update volumeForces
+        // Update forces
         volume_->updateForces();
-        // update interfaceForces
         interface_->updateForces();
-
-        // update velocities
+        // Update velocities
         FIREupdateVerticesVelocity(FIRE_dt);
 
         // Step 2: Compute the power and other force, velocity projections.
@@ -204,19 +199,18 @@ int     Run::FIREminimize(){
         if (F_rms < FIRE_equilibrium_tolerance) {
             cout << "   FIRE minimization terminated successfully at iteration: "<<iter <<"\n";
             cout << "   F_rms = " << F_rms <<"\n";
-            cout << "   is less than FIRE_equilibrium_tolerance: "
-                << FIRE_equilibrium_tolerance << "\n";
-            dumpTopo();
-            dumpCellCenter();
-            dumpCellShapeIndex();
-            dumpCellVolume();
-            dumpConfigurationVtk();
+            cout << "   is less than FIRE_equilibrium_tolerance: " << FIRE_equilibrium_tolerance << "\n";
+            // dumpTopo();
+            // dumpCellCenter();
+            // dumpCellShapeIndex();
+            // dumpCellVolume();
+            // dumpConfigurationVtk();
+            dumpMinimization();
             break;
         } 
         
         // Step 3: Adjust velocities and positions and FIRE parameters based on
         // the power and force-velocity projections.
-
 
         // If power is positive (i.e. the force is in the direction of the velocity),
         // we adjust the velocities of vertices, projecting them more towards 
@@ -229,12 +223,10 @@ int     Run::FIREminimize(){
                 FIRE_acoef *= FIRE_falpha;
                 FIRE_n_since_positive = 0;
             }
-
             double force_multiple = sqrt(FIRE_vv / FIRE_ff);
 
             // Given the positive power, update the current velocities of vertices
             // by projecting them onto the force direction.
-            
             for (auto vertex: vertices_){
                 for (int m = 0; m < 3; m++){
                     double f_m = vertex->volumeForce_[m] 
@@ -256,7 +248,6 @@ int     Run::FIREminimize(){
                     vertex->velocity_[m] = 0;
                 }
             }
-            
         }
 
 
@@ -281,21 +272,21 @@ int     Run::FIREminimize(){
             reconnection_->count_HI_ = 0;
             count_log_++;
         }
-        if (iter % dump_iteration_ == 0) {
-            dumpTopo();
-            dumpCellCenter();
-            dumpCellShapeIndex();
-            dumpCellVolume();
-            dumpConfigurationVtk();
-            count_dump_++;
-        }
+        // if (iter % dump_iteration_ == 0) {
+        //     dumpTopo();
+        //     dumpCellCenter();
+        //     dumpCellShapeIndex();
+        //     dumpCellVolume();
+        //     dumpConfigurationVtk();
+        //     count_dump_++;
+        // }
+        reconnection_->start();
         // Do reconnection every reconnection_iteration_ steps
         // (I set it to 1, see list of parameters)
-        if (iter % reconnection_iteration_ == 0) {
-            reconnection_->start();
-            count_reconnect_++;
-        }
-
+        // if (iter % reconnection_iteration_ == 0) {
+        //     reconnection_->start();
+        //     count_reconnect_++;
+        // }
         simulation_time_ += dt_;
     }
 
@@ -550,7 +541,7 @@ Edge *  Run::addEdge(Vertex * v0, Vertex * v1) {
     return edge;
 }
 
-int Run::dumpConfigurationVtk() {
+int     Run::dumpConfigurationVtk() {
     //////////////////////////////////////////////////////////////////////////////////////
     stringstream filename;
     filename << setw(7) << setfill('0') << (long int) (floor(simulation_time_ + 0.01 * dt_)) << ".sample.vtk";
@@ -730,6 +721,65 @@ int     Run::dumpTopo() {
         out << " " << right << setw(12) << scientific << setprecision(5) << vertex->position_[0];
         out << " " << right << setw(12) << scientific << setprecision(5) << vertex->position_[1];
         out << " " << right << setw(12) << scientific << setprecision(5) << vertex->position_[2];
+        out << endl;
+    }
+
+    out << "edges ";
+    out << left << setw(12) << edges_.size();
+    out << endl;
+    for (auto edge : edges_) {
+        out << left << setw(6) << edge->id_;
+        for (auto vertex : edge->vertices_) {
+            out << " " << right << setw(12) << scientific << setprecision(5) << vertex->id_;
+        }
+        out << endl;
+    }
+
+    out << "polygons ";
+    out << left << setw(12) << polygons_.size();
+    out << endl;
+    for (auto polygon : polygons_) {
+        out << left << setw(6) << polygon->id_;
+        for (auto edge : polygon->edges_) {
+            out << " " << right << setw(12) << scientific << setprecision(5) << edge->id_;
+        }
+        out << endl;
+    }
+
+    out << "cells ";
+    out << left << setw(12) << cells_.size();
+    out << endl;
+    for (auto cell : cells_) {
+        out << left << setw(6) << cell->id_;
+        for (auto polygon : cell->polygons_) {
+            out << " " << right << setw(12) << scientific << setprecision(5) << polygon->id_;
+        }
+        out << endl;
+    }
+
+    out << endl;
+    out.close();
+
+    return 0;
+}
+
+int     Run::dumpMinimization() {
+    stringstream filename;
+    filename << "minimized.txt";
+    ofstream out(filename.str().c_str(), std::ios_base::app);
+    if (!out.is_open()) {
+        cout << "Error opening output file " << filename.str().c_str() << endl;
+        exit(1);
+    }
+    
+    out << "vertices ";
+    out << left << setw(12) << vertices_.size();
+    out << endl;
+    for (auto vertex : vertices_) {
+        out << left << setw(6) << vertex->id_;
+        for (int m = 0; m < 3; m++) {
+            out << " " << right << setw(19) << setprecision(15) << vertex->position_[m];
+        }
         out << endl;
     }
 

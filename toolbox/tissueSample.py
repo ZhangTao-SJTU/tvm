@@ -64,46 +64,47 @@ class Sample:
         # Validate the input: 
         if not configDir.endswith("/"):
             raise ValueError("config_dir must end with a '/'")
-        
+         
         if not os.path.isdir(configDir):
             raise ValueError("config_dir must be a valid directory")
         
-        cls.tissueType_ = "periodic"
-        cls.time_ = simulationTime
-        cls.config_dir_ = configDir
+        sample = cls()
+        sample.tissueType_ = "periodic"
+        sample.time_ = simulationTime
+        sample.config_dir_ = configDir
 
-        Sample.load_config(cls)
-        Sample.load_conf_file(cls)
-        Sample.load_cell_attributes(cls)
-        Sample.calculate_cell_surface_areas(cls)
-        Sample.loadCrossBoundaryAttributes(cls)
-        Sample.calculate_polygon_centers_and_perimeters(cls)
-        Sample.calculate_polygon_areas(cls)
-        Sample.arrange_polygon_vertices(cls)
-        return cls
+        sample.load_config()
+        sample.load_conf_file()
+        sample.load_cell_attributes()
+        # sample.calculate_cell_surface_areas()
+        sample.loadCrossBoundaryAttributes()
+        sample.calculate_polygon_centers_and_perimeters()
+        sample.calculate_polygon_areas()
+        sample.arrange_polygon_vertices()
+        return sample
     
-    @classmethod 
-    def periodic_tissue(cls,configDir:str = "samples/",simulationTime = 20000):
-        # Validate the input: 
-        if not configDir.endswith("/"):
-            raise ValueError("config_dir must end with a '/'")
+    # @classmethod 
+    # def periodic_tissue(cls,configDir:str = "samples/",simulationTime = 20000):
+    #     # Validate the input: 
+    #     if not configDir.endswith("/"):
+    #         raise ValueError("config_dir must end with a '/'")
         
-        if not os.path.isdir(configDir):
-            raise ValueError("config_dir must be a valid directory")
+    #     if not os.path.isdir(configDir):
+    #         raise ValueError("config_dir must be a valid directory")
         
-        cls.tissueType_ = "periodic"
-        cls.time_ = simulationTime
-        cls.config_dir_ = configDir
+    #     cls.tissueType_ = "periodic"
+    #     cls.time_ = simulationTime
+    #     cls.config_dir_ = configDir
 
-        Sample.load_config(cls)
-        Sample.load_conf_file(cls)
-        Sample.load_cell_attributes(cls)
-        Sample.calculate_cell_surface_areas(cls)
-        Sample.loadCrossBoundaryAttributes(cls)
-        Sample.calculate_polygon_centers_and_perimeters(cls)
-        Sample.calculate_polygon_areas(cls)
-        Sample.arrange_polygon_vertices(cls)
-        return cls
+    #     Sample.load_config(cls)
+    #     Sample.load_conf_file(cls)
+    #     Sample.load_cell_attributes(cls)
+    #     Sample.calculate_cell_surface_areas(cls)
+    #     Sample.loadCrossBoundaryAttributes(cls)
+    #     Sample.calculate_polygon_centers_and_perimeters(cls)
+    #     Sample.calculate_polygon_areas(cls)
+    #     Sample.arrange_polygon_vertices(cls)
+    #     return cls
     # loadconfig(): given self.time_, this function first checks if
     # {time}.topo.txt exists in self.config_dir_. If not, it creates this file -
     # that is, it mines the topology at this time from topo.txt

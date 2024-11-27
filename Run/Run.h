@@ -95,6 +95,7 @@ class Run {
     int     dumpCellShapeIndex();
     int     dumpCellVolume();
     int     dumpTopo();
+    int     dumpMinimization();
     int     dumpReconnection();
 };
 
