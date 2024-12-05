@@ -47,7 +47,7 @@ int main(int argc, char *argv[]) {
     InitializeAll(run);
     InitializeFixed(run);
     run->updatePolygonVertices();
-    double FIRE_equilibrium_tolerance = 1e-8;
+    double FIRE_equilibrium_tolerance = 1e-7;
 
     // Check if the system is already in equilibrium. If it is, basically return the system.
     
@@ -67,17 +67,36 @@ int main(int argc, char *argv[]) {
         cout << "   Minimization terminated:\n"; 
         cout << "   Input is already minimized at FIRE_equilibrium_tolerance: ";
         cout << FIRE_equilibrium_tolerance << "\n";
-        // run->dumpTopo();
-        // run->dumpCellCenter();
-        // run->dumpCellShapeIndex();
-        // run->dumpCellVolume();
-        // run->dumpConfigurationVtk();
         run->dumpMinimization();
+        return 0;
+    }
+    if (F_rms < 1e-4) {
+        cout << "   Since F_rms is low, skip overdamped stage and commence FIRE minimization.\n";
+        run->FIREminimize();
         return 0;
     }
     run->overdampedMotion();
     run->FIREminimize();
-
+    F_rms = sqrt(run->FIRE_ff/(3 * run->vertices_.size()));
+    if (F_rms > FIRE_equilibrium_tolerance) {
+        cout << "   FIRE minimization terminated unsuccessfully at max iterations.\n";
+        cout << "   Trying overdamping and FIRE minimization again, with no fixed topology...\n";
+        for (auto cell : run->cells_) {
+            cell->is_fixed_ = false;
+        }
+        for (auto vertex : run->vertices_) {
+            vertex->is_fixed_ = false;
+        }
+        run->overdampedMotion();
+        run->FIREminimize();
+        // cout << "Trying overdamping and FIRE minimization again...\n";
+        // run->log_period_*=2;
+        // run->overdampedMotion();
+        // run->FIREminimize();
+        // F_rms = sqrt(run->FIRE_ff/(3 * run->vertices_.size()));
+    }
+    cout << "Final F_rms: " << F_rms << "\n";
+    run->dumpMinimization();
     return 0;
 }
 
@@ -260,7 +279,7 @@ int InitializeFixed(Run * run){
         cout << "Resuming with regular minimization" << endl;
         return 0;
     }
-
+    
     string buffer;
     string delimiter = " ";
     size_t pos = 0;
@@ -289,46 +308,12 @@ int InitializeFixed(Run * run){
         }
         lines.push_back(tokens);
     }
-
-    // bool verticesFlag = false;
-    // bool edgesFlag = false;
-    // bool polygonsFlag = false;
-    // bool cellsFlag = false;
-    // bool emptyCellsFlag = false;
+    cout << "Fixing vertices for cells: " << endl;
     for (int i = 0; i < lines.size(); i++) {
         tokens = lines[i];
         tmp_id = atol(tokens[0].c_str());
-        // cout << run->vertices_[tmp_id]->is_fixed_ <<endl;
+        cout << tmp_id << "\n";
         run->cells_[tmp_id]->is_fixed_ = true;
-        // for (auto polygon: run->cells_[tmp_id]->polygons_){
-        //     for (auto vertex: polygon->vertices_){
-        //         vertex->is_fixed_ = true;
-        //     }
-        // }
-        // if (tokens[0] == "vertices") {
-        //     verticesFlag = true;
-        // } else if (tokens[0] == "edges") {
-        //     verticesFlag = false;
-        //     edgesFlag = true;
-        // } else if (tokens[0] == "polygons") {
-        //     edgesFlag = false;
-        //     polygonsFlag = true;
-        // } else if (tokens[0] == "cells") {
-        //     polygonsFlag = false;
-        //     cellsFlag = true;
-        // } else if (tokens[0] == "virtual" && tokens[1] == "cells") {
-        //     cellsFlag = false;
-        //     emptyCellsFlag = true;
-        // } else {
-        //     if (verticesFlag) {
-        //         tmp_id = atol(tokens[0].c_str());
-        //         Vertex * vertex = new Vertex(run, tmp_id);
-        //         for (int j = 1; j < tokens.size(); j++) {
-        //             vertex->position_[j - 1] = atof(tokens[j].c_str());
-        //         }
-        //         run->vertices_.push_back(vertex);
-        //     }
-        // }
     }
     return 0;
 }

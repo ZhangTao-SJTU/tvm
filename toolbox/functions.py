@@ -326,3 +326,31 @@ def linker_springs_dict(dir,time):
                   for i,edge in enumerate(edges)}
     #print("Time to make coordinates and edges dict: ",time.time()-start)
     return coordinates_dict,edges_dict
+
+def write_configuration(sample,filename = "sample.topo"):
+    with open(filename, "w") as file:
+        file.write("vertices {:d}\n".format(len(sample.vertices_)))
+        for key,vertex in sample.vertices_.items():
+            id = vertex.id_
+            x = vertex.position_[0]
+            y = vertex.position_[1]
+            z = vertex.position_[2]
+            file.write("{:6d} {:.14f} {:.14f} {:.14f}\n".format(id, x, y, z))
+        file.write("edges {:d}\n".format(len(sample.edges_)))
+        for key,edge in sample.edges_.items():
+            file.write("{:d}".format(edge.id_))
+            for vertexID in edge.vertices_:
+                file.write(" {:6d}".format(vertexID))
+            file.write("\n")
+        file.write("polygons {:d}\n".format(len(sample.polygons_)))
+        for key, polygon in sample.polygons_.items():
+            file.write("{:d}".format(polygon.id_))
+            for edgeID in polygon.edges_:
+                file.write(" {:6d}".format(edgeID))
+            file.write("\n")
+        file.write("cells {:d}\n".format(len(sample.cells_)))
+        for key, cell in sample.cells_.items():
+            file.write("{:d}".format(cell.id_))
+            for polygonID in cell.polygons_:
+                file.write(" {:6d}".format(polygonID))
+            file.write("\n")

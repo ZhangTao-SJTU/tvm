@@ -65,6 +65,7 @@ class Polygon:
         self.daughter_vertices_ = None
         self.daughter_edges_ = None
         self.scalar_ = None
+        self.is_fixed_ = False
         return
     def addEdge(self, edge):
         self.edges_.append(edge)
@@ -86,20 +87,13 @@ class Cell:
         self.center_ = None
         self.inertia_tensor_ = None
         self.stress_tensor_ = None
-        # self.principal_radial_stress_=None
-        # cell type: 0 = virtual, 1 = real
         self.type_:int = 0
         self.is_mother_ = False
         self.is_daughter_ = False
         self.is_in_chain_ = False
         self.mother_id_ = None
-        # self.force_=None
-        # self.torque_=None
-        # self.volume_forces_=None
-        # self.surface_forces_=None
+        self.is_fixed_ = False
         return
-
-
     def addPolygon(self, polygon):
         self.polygons_.append(polygon)
     def deletePolygon(self, polygon):

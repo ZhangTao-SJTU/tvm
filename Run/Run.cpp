@@ -120,12 +120,12 @@ int     Run::overdampedMotion() {
 
         // Euler dynamics
         updateVerticesPosition();
-        reconnection_->start();
+        // reconnection_->start();
         // reconnect
-        // if (simulation_time_ - t_start_ + t_roundError > count_reconnect_ * dtr_) {
-        //     reconnection_->start();
-        //     count_reconnect_++;
-        // }
+        if (simulation_time_ - t_start_ + t_roundError > count_reconnect_ * dtr_) {
+            reconnection_->start();
+            count_reconnect_++;
+        }
         simulation_time_ += dt_;
     }
 
@@ -146,8 +146,8 @@ int     Run::FIREminimize(){
     double FIRE_falpha = 0.99;
     double FIRE_dtmax = 0.005;
     double FIRE_dt = 0.0001;
-    double FIRE_equilibrium_tolerance = 1e-8;
-    long int FIRE_itermax = 100000;
+    double FIRE_equilibrium_tolerance = 1e-7;
+    long int FIRE_itermax = 20000;
     int FIRE_n_since_positive = 0;
 
     count_reconnect_ = 0;
@@ -155,7 +155,7 @@ int     Run::FIREminimize(){
     count_log_ = 0;
     simulation_time_ = t_start_;
     long int simulation_step_counter = 0;
-    int log_iteration_ = 100;
+    int FIRE_log_iteration_ = 1000;
     int dump_iteration_ = 2000;
     int reconnection_iteration_ = 1;
     double t_roundError = 0.01 * dt_;
@@ -205,7 +205,7 @@ int     Run::FIREminimize(){
             // dumpCellShapeIndex();
             // dumpCellVolume();
             // dumpConfigurationVtk();
-            dumpMinimization();
+            // dumpMinimization();
             break;
         } 
         
@@ -235,8 +235,6 @@ int     Run::FIREminimize(){
                         + force_multiple * FIRE_acoef * f_m;
                 }
             }
-
-            
         }
         // If power is negative, we reduce the time step and reset the velocities to 0.
         else{
@@ -252,7 +250,7 @@ int     Run::FIREminimize(){
 
 
         // log to screen and dump vtk
-        if (iter % log_iteration_ == 0) {
+        if (iter % FIRE_log_iteration_ == 0) {
             volume_->updateEnergy();
             interface_->updateEnergy();
             printf("%-9ld%-6.1f%-9.1f%-9ld%-9ld%-9.1f%-9.1f%-12.1f%-12.1f%-12.7e\n", 

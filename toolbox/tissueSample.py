@@ -46,8 +46,6 @@ class Sample:
         #     self.identify_surface_polygons_and_cells()
         #     self.load_spheroid_attributes()
 
-        return
-
     @classmethod
     def from_topology(cls,vertices,edges,polygons,cells):
         sample = cls()
@@ -55,13 +53,11 @@ class Sample:
         sample.edges_ = edges
         sample.polygons_ = polygons
         sample.cells_ = cells
-        # sample.center_ = cell.center_
         sample.s0_ = None
         sample.kv_ = None
         return sample
     
     @classmethod
-    # def periodic_tissue(cls,configDir:str = "samples/",simulationTime = 20000):
     def periodic_tissue(cls, config_dir, input_filename = "sample.topo"):
         # Validate the input: 
         if not config_dir.endswith("/"):
@@ -76,39 +72,15 @@ class Sample:
         sample.tissueType_ = "periodic"
         sample.time_ = 0
         sample.config_dir_ = config_dir
-
+        sample.file_ = config_dir + input_filename
         sample.load_config()
         sample.load_conf_file()
-        sample.load_cell_attributes()
-        # sample.calculate_cell_surface_areas()
-        sample.loadCrossBoundaryAttributes()
-        sample.calculate_polygon_centers_and_perimeters()
-        sample.calculate_polygon_areas()
+        sample.load_cross_boundary_attributes()
+        sample.load_cell_vertices()
         sample.arrange_polygon_vertices()
+        sample.calculate_cell_centers()
         return sample
     
-    # @classmethod 
-    # def periodic_tissue(cls,configDir:str = "samples/",simulationTime = 20000):
-    #     # Validate the input: 
-    #     if not configDir.endswith("/"):
-    #         raise ValueError("config_dir must end with a '/'")
-        
-    #     if not os.path.isdir(configDir):
-    #         raise ValueError("config_dir must be a valid directory")
-        
-    #     cls.tissueType_ = "periodic"
-    #     cls.time_ = simulationTime
-    #     cls.config_dir_ = configDir
-
-    #     Sample.load_config(cls)
-    #     Sample.load_conf_file(cls)
-    #     Sample.load_cell_attributes(cls)
-    #     Sample.calculate_cell_surface_areas(cls)
-    #     Sample.loadCrossBoundaryAttributes(cls)
-    #     Sample.calculate_polygon_centers_and_perimeters(cls)
-    #     Sample.calculate_polygon_areas(cls)
-    #     Sample.arrange_polygon_vertices(cls)
-    #     return cls
     # loadconfig(): given self.time_, this function first checks if
     # {time}.topo.txt exists in self.config_dir_. If not, it creates this file -
     # that is, it mines the topology at this time from topo.txt
@@ -118,17 +90,17 @@ class Sample:
     
     # Then it loads this data into the dictionaries
     # self.vertices_,self.edges_,self.polygons_,self.cells_,self.cellIDs_
-
+    def load_config_from_topo(self):
+        self.file_ = "{}{:07}.topo.txt".format(self.config_dir_,self.time_)
+        if not os.path.isfile(self.file_):
+            functions.make_time_topo(self.config_dir_, self.time_)
+        self.load_config()
+    
     def load_config(self):
         if self.file_ is None:
-            if os.path.isfile(self.config_dir_ + "topo.txt"):
-                self.file_ = "{}{:07}.topo.txt".format(self.config_dir_,self.time_)
-        if not os.path.isfile(self.file_):
-            if os.path.isfile(self.config_dir_ + "topo.txt"):    
-                functions.make_time_topo(self.config_dir_, self.time_)
-            else:
-                raise ValueError("topo.txt not found in config_dir.")
-
+            print("self.file_ not set. If you are loading info from topo.txt,")
+            print("use self.load_config_from_topo()")
+            raise ValueError("self.file_ not set.")
         # Load the topology. When loading cell polygons, note that there are
         # virtual cells (type=0) and real cells (type=1).
         with open(self.file_, "r") as file:
@@ -139,8 +111,8 @@ class Sample:
 
             for line in file.readlines():
                 #skip blank lines
-                if not len(line.split()): continue
-
+                if not len(line.split()):
+                    continue
                 lineSplit = line.split()                
                 if lineSplit[0] == "vertices":
                     verticesFlag = True
@@ -181,7 +153,6 @@ class Sample:
                     polygon = topology.Polygon(polygonID)
                     for i in range(1, len(lineSplit)):
                         polygon.addEdge(int(lineSplit[i]))
-
                     self.polygons_[polygonID] = polygon
                 
                 if cellsFlag:
@@ -193,7 +164,6 @@ class Sample:
                     # 0 for virtual cells, 1 for real cells.
                     # In other words, if you do a boolean cast on cell.type_,
                     # False is a virtual cell, True is a real cell.
-
                     if self.tissueType_ == "spheroid":
                         for i in range(1, len(lineSplit)-1):
                             cell.addPolygon(int(lineSplit[i]))
@@ -202,12 +172,11 @@ class Sample:
                     elif self.tissueType_ == "periodic":
                         for i in range(1, len(lineSplit)):
                             cell.addPolygon(int(lineSplit[i]))
-
                     self.cells_[cellID] = cell
-
-        return
     
     def load_conf_file(self):
+        if not os.path.isfile(self.config_dir_ + "conf"):
+            raise ValueError("conf file not found in config_dir")
         with open(self.config_dir_ + "conf","r") as file:
             lines = file.readlines()
             for line in lines:
@@ -219,16 +188,12 @@ class Sample:
                     self.kv_=(float(line.split()[1]))#kv
                 if (self.tissueType_ == "periodic") and (line.split()[0]) == "box":
                     self.boxSize_ = float(line.split()[1])
-        return
     
-    # Load cell attributes from {self.time_}.cellInfo.txt
-    # Create this file if it does not exist.
-    
-    def load_cell_attributes(self):
-        # Load cell vertices. Note: we only care about real cells (type 1)
+    def load_cell_vertices(self):
+        # Note: for spheroids we only care about real cells (type 1)
+        # For periodic tissue, we care about all cells.
         for cellID, cell in self.cells_.items():
-            if bool(cell.type_):
-                # Cell.vertices_ is a list of vertex ids that make up the cell.
+            if cell.type_ or self.tissueType_ == "periodic":
                 cell.vertices_ = []
                 for polygonID in cell.polygons_:
                     for edgeID in self.polygons_[polygonID].edges_:
@@ -236,8 +201,12 @@ class Sample:
                             cell.vertices_.append(vertexID)
                 cell.vertices_ = np.unique(cell.vertices_)
 
+    # Load cell attributes from {self.time_}.cellInfo.txt
+    # Create this file if it does not exist.
+    def load_cell_attributes(self):
+        # Load cell vertices. 
+        self.load_cell_vertices()
         # Create {time}.cellInfo.txt if it does not exist
-        
         if not os.path.isfile(self.config_dir_ 
                               + "{:07d}".format(self.time_) 
                               + ".cellInfo.txt"):
@@ -258,21 +227,17 @@ class Sample:
                                                float(lineSplit[3])]
                 self.cells_[cellID].volume_ = float(lineSplit[4])
                 self.cells_[cellID].shape_index_ = float(lineSplit[5])
-
-        return
     
     # Here I use information originally from 
     # cellVolume.txt and cellShapeIndex.txt: 
     # A=s*V^2/3
     # instead of calculating areas from triangular polygon patches
-
     def calculate_cell_surface_areas(self):
         for cellID, cell in self.cells_.items():
-
             if bool(cell.type_):
-                cell.surface_area_ = (cell.shape_index_
-                                      * pow(cell.volume_,2/3))
-        return
+                cell.surface_area_ = (
+                    cell.shape_index_
+                    * pow(cell.volume_,2/3))
 
     # As defined in Okuda et al 
     def calculate_polygon_centers_and_perimeters(self):
@@ -294,7 +259,6 @@ class Sample:
             polygon.center_ = np.multiply(polygon.center_,
                                           1/total_length)
             polygon.perimeter_ = total_length
-        return
 
     # Calculate polygon areas by breaking up into triangular patches.
     # Note that this requires that we first calculate polygon centers.
@@ -309,17 +273,17 @@ class Sample:
                     self.vertices_[self.edges_[edgeID].vertices_[1]].position_,
                     polygon.center_)
                 polygon.area_ += 0.5 * np.linalg.norm(np.cross(v_i, v_j))
-        return
     
     def calculate_cell_centers(self):
         for cellID, cell in self.cells_.items():
-            # if not cell.type_:
-            #     continue
+            if self.tissueType_ == "spheroid" and not cell.type_:
+                continue
+            if self.tissueType_ == "periodic" and cell.crossBoundary_:
+                continue
             cell.center_ = np.zeros(3)
             for vertexID in cell.vertices_:
                 cell.center_ = np.add(cell.center_, self.vertices_[vertexID].position_)
             cell.center_ = np.divide(cell.center_, len(cell.vertices_))
-        return
     
     def calculate_cell_surface_areas(self):
         for cellID, cell in self.cells_.items():
@@ -368,23 +332,24 @@ class Sample:
                         cell.is_surface_ = True
         return
 
-
     # this function both loads and arranges the vertices of the polygons. Note that
     # the vertices may either be arranged clockwise or counterclockwise.
     # dont resolve this here, because each polygon is shared between two cells,
     # and for either cell the anticlockwise arrangement of
     # vertices on this polygon is opposed.
-
     def arrange_polygon_vertices(self):
         for cellID, cell in self.cells_.items():
-            if bool(cell.type_) or self.tissueType_ == "periodic":
-                for polygonID in cell.polygons_:
-                    tmp_vertices=[]
-                    for edgeID in self.polygons_[polygonID].edges_:
-                        tmp_vertices.append(self.edges_[edgeID].vertices_)
-                    self.polygons_[polygonID].vertices_ = functions.arrange_polygon(tmp_vertices)
-                    
-        return
+            if self.tissueType_ == "spheroid" and not cell.type_:
+                continue
+            # if self.tissueType_ == "periodic" and cell.crossBoundary_: 
+            #     continue
+            for polygonID in cell.polygons_:
+                if self.tissueType_ == "periodic" and self.polygons_[polygonID].crossBoundary_:
+                    continue
+                tmp_vertices=[]
+                for edgeID in self.polygons_[polygonID].edges_:
+                    tmp_vertices.append(self.edges_[edgeID].vertices_)
+                self.polygons_[polygonID].vertices_ = functions.arrange_polygon(tmp_vertices)
     
     def load_spheroid_attributes(self):
         self.sample_center_ = []
@@ -398,8 +363,7 @@ class Sample:
         for polygonID, polygon in self.polygons_.items():
             if polygon.is_surface_:
                 self.sample_surface_area_ += polygon.area_
-        return
-    
+
     def extract_cell(self,cellID):
         vertices={}
         edges={}
@@ -533,7 +497,10 @@ class Sample:
 
         return
 
-    def loadCrossBoundaryAttributes(self):
+    def load_cross_boundary_attributes(self):
+        if not self.tissueType_ == "periodic":
+            print("This function, load_cross_boundary_attributes()")
+            print("is only supposed to be for periodic tissue")
         for edgeID, edge in self.edges_.items():
             edge.length_ = np.linalg.norm(
                 np.subtract(
@@ -541,6 +508,11 @@ class Sample:
                     self.vertices_[edge.vertices_[1]].position_))
             if edge.length_ > self.boxSize_/2:
                 edge.crossBoundary_ = True
+            # for vertexID in edge.vertices_:
+            #     for coordinate in self.vertices_[vertexID].position_:
+            #         if coordinate < 0 or coordinate > self.boxSize_:
+            #             edge.crossBoundary_ = True
+                
         for polygonID,polygon in self.polygons_.items():
             for edgeID in polygon.edges_:
                 if self.edges_[edgeID].crossBoundary_:
@@ -555,8 +527,6 @@ class Sample:
 
     def dump_vtk(self,filename):
         v_map = functions.mapmaker(self.vertices_)
-        # e_map = functions.mapmaker(self.edges_)
-        # p_map = functions.mapmaker(self.polygons_)
         totalPolygonDataPoints = 0
         for polygonID,polygon in self.polygons_.items():
             totalPolygonDataPoints += (len(polygon.vertices_) + 1)
@@ -576,7 +546,6 @@ class Sample:
                     vertex.position_[2]))
             file.write("POLYGONS {} {}\n".format(len(self.polygons_),
                                                  totalPolygonDataPoints))
-        
     
             for polygonID, polygon in self.polygons_.items():
                 file.write("{:<7d}".format(len(polygon.edges_)))
@@ -594,48 +563,6 @@ class Sample:
             #             break
             # You can include more scalars here if you want.
             file.close()
-            
-    #returns[del_nu(c^s)]j. a 3x3 matrix. the rows (first index) are s, which are components of polygon center.
-    # def okuda_derivative_tensor(self, polygonID, vertexID):
-    #     # self.arrange_cell_polygons(cellID)
-    #     tensor = np.zeros((3,3))
-    #     current_vertex_index = self.polygons_[polygonID].vertices_.index(vertexID)
-    #     previous_vertex_index = current_vertex_index - 1
-    #     next_vertex_index = (current_vertex_index + 1) % len(self.polygons_[polygonID].vertices_)
-    #     current_vertex_id = self.polygons_[polygonID].vertices_[current_vertex_index]
-    #     previous_vertex_id = self.polygons_[polygonID].vertices_[previous_vertex_index]
-    #     next_vertex_id = self.polygons_[polygonID].vertices_[next_vertex_index]
-    #     # print(previous_vertex_id, current_vertex_id, next_vertex_id)
-    #     current_vertex = self.vertices_[current_vertex_id].position_
-    #     previous_vertex = self.vertices_[previous_vertex_id].position_
-    #     next_vertex = self.vertices_[next_vertex_id].position_
-    #     current_edge = np.subtract(next_vertex,current_vertex)
-    #     previous_edge = np.subtract(current_vertex,previous_vertex)
-
-    #     # (1/2P)(||l_v||+||l_nu-1||)delta(sj)
-    #     for i in range(3):
-    #         tensor[i][i] += (np.linalg.norm(current_edge) + np.linalg.norm(previous_edge))/(2 * self.polygons_[polygonID].perimeter_)
-
-    #     # (1/2P)(l_nu-1^j/||l_nu-1||(r_nu-1+r_v)s-(l_v^j/||l_v||(r_v+r_nu+1)^s)
-    #     for s in range(3):
-    #         for j in range(3):
-    #             term = 0
-    #             term += (previous_edge[j]/np.linalg.norm(previous_edge)) * (previous_vertex[s] + current_vertex[s])
-    #             term -= (current_edge[j]/np.linalg.norm(current_edge)) * (current_vertex[s] + next_vertex[s])
-    #             term /= (2 * self.polygons_[polygonID].perimeter_)
-    #             tensor[s][j] += term
-
-    #     # -1/Pc^s(l_nu-1^j/||l_nu-1||-l_v^j/||l_v||)
-    #     for s in range(3):
-    #         for j in range(3):
-    #             term = 0
-    #             term -= (previous_edge[j]/np.linalg.norm(previous_edge))
-    #             term += (current_edge[j]/np.linalg.norm(current_edge))
-    #             term *= (self.polygons_[polygonID].center_[s] / self.polygons_[polygonID].perimeter_)
-    #             tensor[s][j] += term
-
-    #     return tensor
-
 class SingleCell:
     def __init__(self,vertices,edges,polygons,cell):
         self.config_dir_ = None
@@ -678,24 +605,12 @@ class SingleCell:
                     vertex.position_[0],
                     vertex.position_[1],
                     vertex.position_[2]))
-            file.write("POLYGONS {} {}\n".format(len(self.polygons_),
-                                                 totalPolygonDataPoints))
+            file.write("POLYGONS {} {}\n".format(
+                len(self.polygons_),totalPolygonDataPoints))
         
-    
             for polygonID, polygon in self.polygons_.items():
                 file.write("{:<7d}".format(len(polygon.edges_)))
                 for vID in polygon.vertices_: 
                     file.write("{:<7d}".format(v_map[vID]))
                 file.write("\n")
-
-            # file.write("CELL_DATA {}\n".format(len(tmp_polygons)))
-            # file.write("SCALARS shape_index double\n")
-            # file.write("LOOKUP_TABLE default\n")
-            # for polygonID, polygon in tmp_polygons.items():
-            #     for cellID, cell in tmp_cells.items():
-            #         if polygonID in cell.polygons_:
-            #             file.write("{:<12.6f}\n".format(cell.shape_index_))
-            #             break
-            # You can include more scalars here if you want.
             file.close()
-
