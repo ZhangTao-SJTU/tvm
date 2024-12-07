@@ -23,9 +23,6 @@ class Training:
             config_dir = config_dir,
             input_filename = input_filename)
         sample._dir = config_dir
-        # sample._config = copy.deepcopy(sample._init_config)
-        # sample._stepsize = 0.05
-        # sample._minimum_separation = 3
         sample._maximum_separation = sample._config.boxSize_/2
         return sample
     def set_stepsize(self,stepsize):
@@ -46,17 +43,9 @@ class Training:
     # Any file of the same name must be first removed.
     def minimize_config(self):
         self.write_configuration("sample.topo")
-        self.load_fixed_cells()
-        # if self._fixed_cells is not None:
-        #     with open("{}fixed.topo".format(self._dir), "w") as f:
-        #         for cell in self._fixed_cells:
-        #             self._config.cells_[cell.id_].is_fixed_ = True
-        #             f.write("{}\n".format(cell.id_))
+        # self.load_fixed_cells()
         if os.path.isfile("{}minimized.txt".format(self._dir)):
             os.remove("{}minimized.txt".format(self._dir))
-            # os.rename(
-            #     "{}minimized.txt".format(self._dir),
-            #     "{}{}.minimized.txt".format(self._dir, self._minimization_counter))
         os.system("cd {} && ../build/tvm".format(self._dir))
         self._config = tissueSample.Sample.periodic_tissue(
             config_dir = self._dir,
@@ -163,9 +152,9 @@ class Training:
             for cellID in self._fixed_cells:
                 f.write("{:d}\n".format(cellID))
         # set the direction of the drive
-        self.set_direction()
+        # self.set_direction()
     
-    def set_direction(self):
+    def calculate_direction(self):
         if self._fixed_cells is None:
             print("fixed_cells is not set")
             return
@@ -174,23 +163,6 @@ class Training:
         self._direction = cell_2.center_ - cell_1.center_
         self._direction /= np.linalg.norm(self._direction)
 
-    def shift_cell(self,cellID,vector):
-        cell = self._config.cells_[cellID]
-        if not cell.is_fixed_:
-            print("WARNING: shift_cells() should only be used on the fixed cells")
-        for vertexID in cell.vertices_:
-            self._config.vertices_[vertexID].position_ += vector
-
-    def drive_config(self, stepsize, inwards = True):
-        if self._fixed_cells is None:
-            print("nothing to drive. Need to initialize self._fixed_cells")
-        if inwards:
-            self.shift_cell(self._fixed_cells[0], stepsize * self._direction)
-            self.shift_cell(self._fixed_cells[1], -1 * stepsize * self._direction)
-        else:
-            self.shift_cell(self._fixed_cells[0], -1 * stepsize * self._direction)
-            self.shift_cell(self._fixed_cells[1], stepsize * self._direction)
-
     def calculate_separation(self):
         if self._fixed_cells is None:
             print("nothing to calculate. Need to initialize self._fixed_cells")
@@ -198,6 +170,13 @@ class Training:
         cell_1 = self._config.cells_[self._fixed_cells[0]]
         cell_2 = self._config.cells_[self._fixed_cells[1]]
         self._separation = np.linalg.norm(cell_2.center_ - cell_1.center_)
+
+    def shift_cell(self,cellID,vector):
+        cell = self._config.cells_[cellID]
+        if not cell.is_fixed_:
+            print("WARNING: shift_cells() should only be used on the fixed cells")
+        for vertexID in cell.vertices_:
+            self._config.vertices_[vertexID].position_ += vector
 
     # This function loads the fixed cell IDs into self._config
     # If the fixed cell IDs have not already been loaded, 
@@ -219,7 +198,19 @@ class Training:
             cell.is_fixed_ = True
             for polygonID in cell.polygons_:
                 self._config.polygons_[polygonID].is_fixed_ = True
-        self.set_direction()
+        # self.set_direction()
+    
+    def drive_config(self, stepsize, inwards = True):
+        if self._fixed_cells is None:
+            print("nothing to drive. Need to initialize self._fixed_cells")
+            return
+        self.calculate_direction()
+        if inwards:
+            self.shift_cell(self._fixed_cells[0], stepsize * self._direction)
+            self.shift_cell(self._fixed_cells[1], -1 * stepsize * self._direction)
+        else:
+            self.shift_cell(self._fixed_cells[0], -1 * stepsize * self._direction)
+            self.shift_cell(self._fixed_cells[1], stepsize * self._direction)
 
     def drive_config_iteration(self, stepsize, inwards = True):
         self.drive_config(stepsize = stepsize, inwards = inwards)
@@ -239,53 +230,21 @@ class Training:
         if self._separation > self._maximum_separation:
             stepsize = (self._separation - self._maximum_separation)/2
             self.drive_config_iteration(stepsize = stepsize, inwards = True)
-            # self.drive_config(stepsize = stepsize, inwards = True)
-            # self.minimize_config()
-            # self.calculate_separation()
-            # self.write_configuration("{:07d}.sample.topo".format(self._iter_counter))
-            # self.write_periodic_vtk("{:07d}.sample.vtk".format(self._iter_counter))
-
 
         #Step 1: Drive configuration inwards
         while (self._separation >= self._minimum_separation + 2 * self._stepsize):
             self.drive_config_iteration(stepsize = self._stepsize, inwards = True)
-            # self.drive_config(stepsize = self._stepsize, inwards = True)
-            # self.minimize_config()
-            # self.calculate_separation()
-            # print("Current separation: {}".format(self._separation))
-            # self._iter_counter += 1
-            # self.write_configuration("{:07d}.sample.topo".format(self._iter_counter))
-            # self.write_periodic_vtk("{:07d}.sample.vtk".format(self._iter_counter))
-        
+
         # Step 1 Continued: Final step to reach the minimum separation
         if self._separation > self._minimum_separation:
             stepsize = (self._separation - self._minimum_separation)/2
             self.drive_config_iteration(stepsize = stepsize, inwards = True)
-            # self.drive_config(stepsize = stepsize, inwards = True)
-            # self.minimize_config()
-            # self.calculate_separation()
-            # self._iter_counter += 1
-            # self.write_configuration("{:07d}.sample.topo".format(self._iter_counter))
-            # self.write_periodic_vtk("{:07d}.sample.vtk".format(self._iter_counter))
 
         #Step 2: Drive configuration outwards
         while (self._separation + 2 * self._stepsize <= self._maximum_separation):
             self.drive_config_iteration(stepsize = self._stepsize, inwards = False)
-            # self.drive_config(stepsize = self._stepsize, inwards = False)
-            # self.minimize_config()
-            # self.calculate_separation()
-            # print("Current separation: {}".format(self._separation))
-            # self._iter_counter += 1
-            # # if (self._iter_counter%10 == 0):
-            # self.write_configuration("{:07d}.sample.topo".format(self._iter_counter))
-            # self.write_periodic_vtk("{:07d}.sample.vtk".format(self._iter_counter))
+
         # Step 2 Continued: Final step to reach the maximum separation
         if self._separation < self._maximum_separation:
             stepsize = (self._maximum_separation - self._separation)/2
             self.drive_config_iteration(stepsize = stepsize, inwards = False)
-            # self.drive_config(stepsize = stepsize, inwards = False)
-            # self.minimize_config()
-            # self.calculate_separation()
-            # self._iter_counter += 1
-            # self.write_configuration("{:07d}.sample.topo".format(self._iter_counter))
-            # self.write_periodic_vtk("{:07d}.sample.vtk".format(self._iter_counter))

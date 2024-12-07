@@ -33,6 +33,7 @@
 #include <chrono>
 #include <unordered_map>
 #include <random>
+#include <set>
 #include "Run.h"
 
 using namespace std;
@@ -372,7 +373,6 @@ int     Run::updateVerticesPosition() {
         }
         box_->resetPosition(vertices_[i]->position_);
     }
-
     return 0;
 }
 
@@ -381,7 +381,6 @@ int     Run::updatePolygonVertices() {
     for (long int i = 0; i < polygons_.size(); i++) {
         polygons_[i]->updateVertices();
     }
-
     return 0;
 }
 
@@ -399,7 +398,6 @@ int     Run::updateCellVertices() {
             }
         }
     }
-
     return 0;
 }
 
@@ -411,7 +409,6 @@ int     Run::updateVertexEdges() {
         edges_[i]->vertices_[0]->edges_.push_back(edges_[i]);
         edges_[i]->vertices_[1]->edges_.push_back(edges_[i]);
     }
-
     return 0;
 }
 
@@ -443,7 +440,6 @@ int     Run::updatePolygonCells() {
             cells_[i]->polygons_[j]->cells_.push_back(cells_[i]);
         }
     }
-
     return 0;
 }
 
@@ -455,7 +451,6 @@ int     Run::updateCellShapeIndex() {
         }
         cell->shapeIndex_ = area * pow(cell->volume_, (-1.0)*2.0/3.0);
     }
-
     return 0;
 }
 
@@ -817,6 +812,53 @@ int     Run::dumpMinimization() {
     out << endl;
     out.close();
 
+    // dump fixed vertex forces - if they exist
+    stringstream filename2;
+    filename2 << "FE.txt";
+    ofstream out2(filename2.str().c_str(), std::ios_base::app);
+    if (!out2.is_open()) {
+        cout << "Error opening output file " << filename2.str().c_str() << endl;
+        exit(1);
+    }
+    bool fixedCellsExist = false;
+    for (auto cell : cells_) {
+        if (cell->is_fixed_) {
+            fixedCellsExist = true;
+            break;
+        }
+    }
+    if (fixedCellsExist) {
+        for (auto cell : cells_) {
+            if (!cell->is_fixed_) {
+                continue;
+            }
+            out2 << "cell "<< cell->id_ << endl;
+            set<long int> fixedVertices;
+            for (auto polygon : cell->polygons_) {
+                for (auto vertex : polygon->vertices_) {
+                    fixedVertices.insert(vertex->id_);
+                }
+            }
+            for (auto vertex : vertices_) {
+                if (fixedVertices.find(vertex->id_) == fixedVertices.end()) {
+                    continue;
+                }
+                out2 << left << setw(7) << vertex->id_;
+                for (int m = 0; m < 3; m++) {
+                    out2 << " " << right << setw(19) << setprecision(15) << vertex->volumeForce_[m] + vertex->interfaceForce_[m];
+                }
+                out2 << endl;
+            }
+        out2 << endl;
+        }
+    }
+    // Dump Energy:
+    volume_->updateEnergy();
+    interface_->updateEnergy();
+    out2 << "Energy " << setprecision(15) << volume_->energy_ + interface_->energy_ << endl;
+    out2 << "Volume " << setprecision(15) << volume_->energy_ << endl;
+    out2 << "Interface " << setprecision(15) << interface_->energy_ << endl;
+    out2.close();
     return 0;
 }
 

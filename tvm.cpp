@@ -308,7 +308,7 @@ int InitializeFixed(Run * run){
         }
         lines.push_back(tokens);
     }
-    cout << "Fixing vertices for cells: " << endl;
+    cout << "Fixing vertices for the following cells: " << endl;
     for (int i = 0; i < lines.size(); i++) {
         tokens = lines[i];
         tmp_id = atol(tokens[0].c_str());
