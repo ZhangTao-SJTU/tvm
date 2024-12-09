@@ -12,6 +12,7 @@ class Training:
         self._fixed_cells = None
         self._direction = None
         self._stepsize = None
+        self._expansion_factor = None
         self._separation = None
         self._minimum_separation = None
         self._maximum_separation = None
@@ -27,6 +28,8 @@ class Training:
         return sample
     def set_stepsize(self,stepsize):
         self._stepsize = stepsize
+    def set_expansion_factor(self, expansion_factor):
+        self._expansion_factor = expansion_factor
     def set_minimum_separation(self,minimum_separation):
         self._minimum_separation = minimum_separation
     def set_maximum_separation(self,maximum_separation):
@@ -36,14 +39,13 @@ class Training:
 
     # This function write the current state of self._config to
     # self._dir/sample.topo
-    # The topology is then minimized using the tvm program
-    # The minimized topology is then read back into self._config
-
-    # Note: tvm produces a new minimized.txt in self._dir
-    # Any file of the same name must be first removed.
+    # The topology is then minimized using the tvm program.
+    # Finally, the minimized topology is read back into self._config
     def minimize_config(self):
         self.write_configuration("sample.topo")
-        # self.load_fixed_cells()
+        # tvm produces a new minimized.txt in self._dir
+        # Any file of the same name must be therefore first removed.
+        # Otherwise, tvm will append to the existing file.
         if os.path.isfile("{}minimized.txt".format(self._dir)):
             os.remove("{}minimized.txt".format(self._dir))
         os.system("cd {} && ../build/tvm".format(self._dir))
@@ -124,8 +126,22 @@ class Training:
                 else:
                     f.write("0\n")
     
+    def pick_fixed_cell(self):
+        while True:
+            sample = self._config
+            cell = sample.cells_[random.choice(list(sample.cells_.keys()))]
+            if cell.crossBoundary_:
+                continue
+            self._fixed_cells = [cell.id_]
+            break
+        # write the fixed cell IDs to a file
+        with open("{}fixed.topo".format(self._dir),"w") as f:
+            for cellID in self._fixed_cells:
+                f.write("{:d}\n".format(cellID))
+        self.load_fixed_cells()
+
     # pick two fixed cells at random and write fixed.topo
-    def pick_fixed_cells(self,n_fixed_cells = 2):
+    def pick_fixed_pair(self,n_fixed_cells = 2):
         sample = self._config
         self._fixed_cells = []
         while len(self._fixed_cells) < n_fixed_cells:
@@ -137,32 +153,41 @@ class Training:
             self._fixed_cells.append(cell.id_)
             if len(self._fixed_cells) == 2:
                 self.calculate_separation()
-                # if self._separation < sample.boxSize_/2 or self._separation < 3.0:
                 if (self._separation < self._maximum_separation 
                     or self._separation > np.sqrt(3)*self._maximum_separation):
                     self._fixed_cells = []
-        #specify that the cells are fixed in self._config
-        for cellID in self._fixed_cells:
-            cell = self._config.cells_[cellID]
-            cell.is_fixed_ = True
-            for polygonID in cell.polygons_:
-                sample.polygons_[polygonID].is_fixed_ = True
+
         # write the fixed cell IDs to a file
         with open("{}fixed.topo".format(self._dir),"w") as f:
             for cellID in self._fixed_cells:
                 f.write("{:d}\n".format(cellID))
-        # set the direction of the drive
-        # self.set_direction()
+        # fix the cells from self._fixed_cells in self._config
+        self.load_fixed_cells()
+
+    def expand_cell(self,cellID,factor,inwards = False):
+        cell = self._config.cells_[cellID]
+        for vertexID in cell.vertices_:
+            vertex = self._config.vertices_[vertexID]
+            direction = vertex.position_ - cell.center_
+            if inwards:
+                vertex.position_ -= factor * direction
+            else:
+                vertex.position_ += factor * direction
     
+    # Calculate the unit vector between two fixed cells
     def calculate_direction(self):
         if self._fixed_cells is None:
             print("fixed_cells is not set")
+            return
+        if not (len(self._fixed_cells) == 2):
+            print("There are not exactly two fixed cells")
             return
         cell_1 = self._config.cells_[self._fixed_cells[0]]
         cell_2 = self._config.cells_[self._fixed_cells[1]]
         self._direction = cell_2.center_ - cell_1.center_
         self._direction /= np.linalg.norm(self._direction)
 
+    # Radial separation between two vectors
     def calculate_separation(self):
         if self._fixed_cells is None:
             print("nothing to calculate. Need to initialize self._fixed_cells")
@@ -170,7 +195,7 @@ class Training:
         cell_1 = self._config.cells_[self._fixed_cells[0]]
         cell_2 = self._config.cells_[self._fixed_cells[1]]
         self._separation = np.linalg.norm(cell_2.center_ - cell_1.center_)
-
+    
     def shift_cell(self,cellID,vector):
         cell = self._config.cells_[cellID]
         if not cell.is_fixed_:
@@ -200,7 +225,7 @@ class Training:
                 self._config.polygons_[polygonID].is_fixed_ = True
         # self.set_direction()
     
-    def drive_config(self, stepsize, inwards = True):
+    def linear_displace_fixed_pair(self, stepsize, inwards = True):
         if self._fixed_cells is None:
             print("nothing to drive. Need to initialize self._fixed_cells")
             return
@@ -212,8 +237,10 @@ class Training:
             self.shift_cell(self._fixed_cells[0], -1 * stepsize * self._direction)
             self.shift_cell(self._fixed_cells[1], stepsize * self._direction)
 
-    def drive_config_iteration(self, stepsize, inwards = True):
-        self.drive_config(stepsize = stepsize, inwards = inwards)
+    # Packages the linear displacement of fixed pair, 
+    # followed by minimization, writing and iteration increment
+    def pair_drive_iteration(self, stepsize, inwards = True):
+        self.linear_displace_fixed_pair(stepsize = stepsize, inwards = inwards)
         self.minimize_config()
         self.calculate_separation()
         print("Current separation: {}".format(self._separation))
@@ -221,30 +248,42 @@ class Training:
         self.write_periodic_vtk("{:07d}.sample.vtk".format(self._iter_counter))
         self._iter_counter += 1
         
-    def run(self):
+    def pair_drive(self):
         self.write_configuration("initial.topo")
         self.write_periodic_vtk("initial.vtk")
         self.load_fixed_cells()
         self.calculate_separation()
+        
         # Initialize to the maximum separation. This is the 0th iteration.
         if self._separation > self._maximum_separation:
             stepsize = (self._separation - self._maximum_separation)/2
-            self.drive_config_iteration(stepsize = stepsize, inwards = True)
+            self.pair_drive_iteration(stepsize = stepsize, inwards = True)
 
         #Step 1: Drive configuration inwards
         while (self._separation >= self._minimum_separation + 2 * self._stepsize):
-            self.drive_config_iteration(stepsize = self._stepsize, inwards = True)
+            self.pair_drive_iteration(stepsize = self._stepsize, inwards = True)
 
         # Step 1 Continued: Final step to reach the minimum separation
         if self._separation > self._minimum_separation:
             stepsize = (self._separation - self._minimum_separation)/2
-            self.drive_config_iteration(stepsize = stepsize, inwards = True)
+            self.pair_drive_iteration(stepsize = stepsize, inwards = True)
 
         #Step 2: Drive configuration outwards
         while (self._separation + 2 * self._stepsize <= self._maximum_separation):
-            self.drive_config_iteration(stepsize = self._stepsize, inwards = False)
+            self.pair_drive_iteration(stepsize = self._stepsize, inwards = False)
 
         # Step 2 Continued: Final step to reach the maximum separation
         if self._separation < self._maximum_separation:
             stepsize = (self._maximum_separation - self._separation)/2
-            self.drive_config_iteration(stepsize = stepsize, inwards = False)
+            self.pair_drive_iteration(stepsize = stepsize, inwards = False)
+
+    def expand_drive(self, n_iterations):
+        cellID = self._fixed_cells[0]
+        # Stage 1: Expand Cell
+        for i in range(n_iterations):
+            self.expand_cell(cellID = cellID,)
+            
+
+
+
+        

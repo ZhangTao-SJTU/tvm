@@ -1,0 +1,11 @@
+Training class:
+
+
+self._config stores a configuration as a tissueSample object.
+This can be loaded from a file like sample.topo using the
+from_config constructor.
+
+Functions:
+
+1. self.minimize_config():
+The 
