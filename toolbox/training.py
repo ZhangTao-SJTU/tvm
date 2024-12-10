@@ -127,13 +127,21 @@ class Training:
                     f.write("0\n")
     
     def pick_fixed_cell(self):
-        while True:
-            sample = self._config
-            cell = sample.cells_[random.choice(list(sample.cells_.keys()))]
+        self._fixed_cells = []
+        for cellID,cell in self._config.cells_.items():
+            # cell = sample.cells_[random.choice(list(sample.cells_.keys()))]
             if cell.crossBoundary_:
                 continue
-            self._fixed_cells = [cell.id_]
-            break
+            
+            good_cell = True
+            for i in range(3):
+                if cell.center_[i] < 0.25*self._config.boxSize_:
+                    good_cell = False
+                if cell.center_[i] > 0.75*self._config.boxSize_:
+                    good_cell = False
+            if good_cell:
+                self._fixed_cells.append(cell.id_)
+                break        
         # write the fixed cell IDs to a file
         with open("{}fixed.topo".format(self._dir),"w") as f:
             for cellID in self._fixed_cells:
@@ -164,7 +172,7 @@ class Training:
         # fix the cells from self._fixed_cells in self._config
         self.load_fixed_cells()
 
-    def expand_cell(self,cellID,factor,inwards = False):
+    def shrink_cell(self,cellID,factor,inwards = True):
         cell = self._config.cells_[cellID]
         for vertexID in cell.vertices_:
             vertex = self._config.vertices_[vertexID]
@@ -277,11 +285,26 @@ class Training:
             stepsize = (self._maximum_separation - self._separation)/2
             self.pair_drive_iteration(stepsize = stepsize, inwards = False)
 
-    def expand_drive(self, n_iterations):
+    def pulse_drive(self, n_iterations):
         cellID = self._fixed_cells[0]
-        # Stage 1: Expand Cell
+        self.minimize_config()
+        self.write_configuration("{:07d}.sample.topo".format(self._iter_counter))
+        self.write_periodic_vtk("{:07d}.sample.vtk".format(self._iter_counter))
+        self._iter_counter += 1
+        # Stage 1: Shrink Cell
         for i in range(n_iterations):
-            self.expand_cell(cellID = cellID,)
+            self.shrink_cell(cellID = cellID, factor = self._expansion_factor, inwards = True)
+            self.minimize_config()
+            self.write_configuration("{:07d}.sample.topo".format(self._iter_counter))
+            self.write_periodic_vtk("{:07d}.sample.vtk".format(self._iter_counter))
+            self._iter_counter += 1
+        # Stage 2: Expand Cell
+        for i in range(n_iterations):
+            self.shrink_cell(cellID = cellID, factor = self._expansion_factor, inwards = False)
+            self.minimize_config()
+            self.write_configuration("{:07d}.sample.topo".format(self._iter_counter))
+            self.write_periodic_vtk("{:07d}.sample.vtk".format(self._iter_counter))
+            self._iter_counter += 1
             
 
 
