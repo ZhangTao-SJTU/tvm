@@ -259,6 +259,15 @@ class Sample:
             polygon.center_ = np.multiply(polygon.center_,
                                           1/total_length)
             polygon.perimeter_ = total_length
+    
+    def calculate_COM_polygon_centers(self):
+        for polygonID, polygon in self.polygons_.items():
+            if self.tissueType_ == "periodic" and polygon.crossBoundary_:
+                continue
+            polygon.center_ = np.zeros(3)
+            for vertexID in polygon.vertices_:
+                polygon.center_ = np.add(polygon.center_, self.vertices_[vertexID].position_)
+            polygon.center_ = np.divide(polygon.center_, len(polygon.vertices_))
 
     # Calculate polygon areas by breaking up into triangular patches.
     # Note that this requires that we first calculate polygon centers.
@@ -297,6 +306,10 @@ class Sample:
     def calculate_cell_volumes(self):
         self.arrange_polygon_vertices()
         for cellID, cell in self.cells_.items():
+            if self.tissueType_ == "spheroid" and not cell.type_:
+                continue
+            if self.tissueType_ == "periodic" and cell.crossBoundary_:
+                continue
             cell.volume_ = 0
             for polygonID in cell.polygons_:
                 vertices_this_polygon = self.polygons_[polygonID].vertices_
