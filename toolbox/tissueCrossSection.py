@@ -23,17 +23,20 @@ def makeSampleCrossSection(sample:tissueSample.Sample,
     #####################################################################
 
     for cellID,cell in sample.cells_.items():
-        if bool(cell.type_):
-            signs = []
-            for vertexID in cell.vertices_:
-                vector_from_spheroid_center = np.subtract(sample.vertices_[vertexID].position_,
-                                                          sample.sample_center_)
-                sign = np.sign(np.dot(normal,vector_from_spheroid_center))
-                signs.append(sign)
-                if int(sign) == 0:
-                    raise ValueError("Error: a vertex of cell {} on cross section".format(cellID))
-            if len(set(signs)) == 1: pass
-            else: cell.is_mother_ = True
+        if sample.tissueType_ == "spheroid" and not cell.type_:
+            continue
+        if sample.tissueType_ == "periodic" and cell.crossBoundary_:
+            continue
+        signs = []
+        for vertexID in cell.vertices_:
+            vector_from_spheroid_center = np.subtract(sample.vertices_[vertexID].position_,
+                                                        sample.sample_center_)
+            sign = np.sign(np.dot(normal,vector_from_spheroid_center))
+            signs.append(sign)
+            if int(sign) == 0:
+                raise ValueError("Error: a vertex of cell {} on cross section".format(cellID))
+        if len(set(signs)) == 1: pass
+        else: cell.is_mother_ = True
 
     #####################################################################
     # Step 2: Given mother cells, we identify the polygons that are intersected 
