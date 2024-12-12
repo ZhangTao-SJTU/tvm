@@ -228,7 +228,7 @@ def makeSampleCrossSection(sample:tissueSample.Sample,
             new_cellID = len(new_cells)
             new_cell = topology.Cell(new_cellID)
             if scalar == "shape_index":
-                new_cell.shape_index_ = cell.shape_index_
+                new_cell.shape_index_change_ = cell.shape_index_change_
             elif scalar == "principal_radial_stress":
                 new_cell.principal_radial_stress_ = cell.principal_radial_stress_
             new_cell.polygons_ = []
@@ -246,7 +246,7 @@ def makeSampleCrossSection(sample:tissueSample.Sample,
         id = len(intersection_polygons)
         intersection_polygons[id] = topology.Polygon(id)
         if scalar == "shape_index":
-            intersection_polygon_scalars[id]=cell.shape_index_
+            intersection_polygon_scalars[id]=cell.shape_index_change_
         elif scalar == "principal_radial_stress":
             intersection_polygon_scalars[id] = np.linalg.norm(cell.principal_radial_stress_)
         #intersection_polygon_scalars[id]=np.linalg.norm(cell.principal_radial_stress_)

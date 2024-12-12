@@ -83,6 +83,7 @@ class Cell:
         self.surface_area_ = None
         self.boundary_area_ = None
         self.shape_index_ = None
+        self.shape_index_change_ = None
         self.volume_ = None
         self.center_ = None
         self.inertia_tensor_ = None
