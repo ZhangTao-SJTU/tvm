@@ -53,7 +53,7 @@ class Training:
             config_dir = self._dir,
             input_filename = "minimized.txt")
         self.load_fixed_cells()
-  
+
     def write_configuration(self,filename = "sample.topo"):
         sample = self._config
         with open("{}{}".format(self._dir,filename), "w") as file:
@@ -125,6 +125,36 @@ class Training:
                     f.write("1\n")
                 else:
                     f.write("0\n")
+            # f.write("SCALARS shape_index double\n")
+            # f.write("LOOKUP_TABLE default\n")
+            # for polygonID,polygon in sample.polygons_.items():
+            #     if polygon.crossBoundary_:
+            #         continue
+            #     for cellID,cell in sample.cells_.items():
+            #         # if cell.crossBoundary_:
+            #         #     continue
+            #         if polygonID in cell.polygons_:
+            #             if cell.shape_index_ is None:
+            #                 f.write("0\n")
+            #                 break
+            #             else:
+            #                 f.write("{:.14f}\n".format(cell.shape_index_))
+            #                 break
+            # f.write("SCALARS volume double\n")
+            # f.write("LOOKUP_TABLE default\n")
+            # for polygonID,polygon in sample.polygons_.items():
+            #     if polygon.crossBoundary_:
+            #         continue
+            #     for cellID,cell in sample.cells_.items():
+            #         # if cell.crossBoundary_:
+            #         #     continue
+            #         if polygonID in cell.polygons_:
+            #             if cell.shape_index_ is None:
+            #                 f.write("0\n")
+            #                 break
+            #             else:
+            #                 f.write("{:.14f}\n".format(cell.volume_))
+            #                 break
     
     def pick_fixed_cell(self):
         self._fixed_cells = []
@@ -135,9 +165,9 @@ class Training:
             
             good_cell = True
             for i in range(3):
-                if cell.center_[i] < 0.25*self._config.boxSize_:
+                if cell.center_[i] < 0.4*self._config.boxSize_:
                     good_cell = False
-                if cell.center_[i] > 0.75*self._config.boxSize_:
+                if cell.center_[i] > 0.6*self._config.boxSize_:
                     good_cell = False
             if good_cell:
                 self._fixed_cells.append(cell.id_)
@@ -177,6 +207,7 @@ class Training:
         for vertexID in cell.vertices_:
             vertex = self._config.vertices_[vertexID]
             direction = vertex.position_ - cell.center_
+            direction /= np.linalg.norm(direction)
             if inwards:
                 vertex.position_ -= factor * direction
             else:
@@ -291,22 +322,35 @@ class Training:
         self.write_configuration("{:07d}.sample.topo".format(self._iter_counter))
         self.write_periodic_vtk("{:07d}.sample.vtk".format(self._iter_counter))
         self._iter_counter += 1
-        # Stage 1: Shrink Cell
-        for i in range(n_iterations):
-            self.shrink_cell(cellID = cellID, factor = self._expansion_factor, inwards = True)
+        # # Stage 1: Shrink Cell
+        # for i in range(n_iterations):
+        #     self.shrink_cell(cellID = cellID, factor = self._expansion_factor, inwards = True)
+        #     self.minimize_config()
+        #     self.write_configuration("{:07d}.sample.topo".format(self._iter_counter))
+        #     self.write_periodic_vtk("{:07d}.sample.vtk".format(self._iter_counter))
+        #     self._iter_counter += 1
+        # # Stage 2: Expand Cell
+        # for i in range(n_iterations):
+        #     self.shrink_cell(cellID = cellID, factor = self._expansion_factor, inwards = False)
+        #     self.minimize_config()
+        #     self.write_configuration("{:07d}.sample.topo".format(self._iter_counter))
+        #     self.write_periodic_vtk("{:07d}.sample.vtk".format(self._iter_counter))
+        #     self._iter_counter += 1
+
+        
+        for _ in range(n_iterations):
+            # One cycle of shrink and expand
+            for cellID in self._fixed_cells:
+                self.shrink_cell(cellID = cellID, factor = self._expansion_factor, inwards = True)
             self.minimize_config()
             self.write_configuration("{:07d}.sample.topo".format(self._iter_counter))
             self.write_periodic_vtk("{:07d}.sample.vtk".format(self._iter_counter))
             self._iter_counter += 1
-        # Stage 2: Expand Cell
-        for i in range(n_iterations):
-            self.shrink_cell(cellID = cellID, factor = self._expansion_factor, inwards = False)
+            for cellID in self._fixed_cells:
+                self.shrink_cell(cellID = cellID, factor = self._expansion_factor, inwards = False)
             self.minimize_config()
             self.write_configuration("{:07d}.sample.topo".format(self._iter_counter))
             self.write_periodic_vtk("{:07d}.sample.vtk".format(self._iter_counter))
             self._iter_counter += 1
-            
-
-
 
         

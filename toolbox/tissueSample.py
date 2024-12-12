@@ -259,7 +259,8 @@ class Sample:
             polygon.center_ = np.multiply(polygon.center_,
                                           1/total_length)
             polygon.perimeter_ = total_length
-    
+
+    # Equip polygon.center_ with the COM center coordinates (average of vertex positions)    
     def calculate_COM_polygon_centers(self):
         for polygonID, polygon in self.polygons_.items():
             if self.tissueType_ == "periodic" and polygon.crossBoundary_:
@@ -273,6 +274,8 @@ class Sample:
     # Note that this requires that we first calculate polygon centers.
     def calculate_polygon_areas(self):
         for polygonID, polygon in self.polygons_.items():
+            if self.tissueType_ == "periodic" and polygon.crossBoundary_:
+                continue
             polygon.area_=0
             for edgeID in polygon.edges_:
                 v_i = np.subtract(
@@ -282,6 +285,14 @@ class Sample:
                     self.vertices_[self.edges_[edgeID].vertices_[1]].position_,
                     polygon.center_)
                 polygon.area_ += 0.5 * np.linalg.norm(np.cross(v_i, v_j))
+    
+    def calculate_cell_shape_indices(self):
+        for cellID, cell in self.cells_.items():
+            if self.tissueType_ == "spheroid" and not cell.type_:
+                continue
+            if self.tissueType_ == "periodic" and cell.crossBoundary_:
+                continue
+            cell.shape_index_ = cell.surface_area_ / pow(cell.volume_,2/3)
     
     def calculate_cell_centers(self):
         for cellID, cell in self.cells_.items():
@@ -296,8 +307,10 @@ class Sample:
     
     def calculate_cell_surface_areas(self):
         for cellID, cell in self.cells_.items():
-            # if not cell.type_:
-            #     continue
+            if self.tissueType_ == "spheroid" and not cell.type_:
+                continue
+            if self.tissueType_ == "periodic" and cell.crossBoundary_:
+                continue
             cell.surface_area_ = 0
             for polygonID in cell.polygons_:
                 cell.surface_area_ += self.polygons_[polygonID].area_
@@ -376,6 +389,15 @@ class Sample:
         for polygonID, polygon in self.polygons_.items():
             if polygon.is_surface_:
                 self.sample_surface_area_ += polygon.area_
+    
+    # Packaging the call of some functions from tissueSample.Sample
+    # This loads cell.volume_, cell.shape_index_ etc
+    def load_periodic_tissue_cell_properties(self):
+        self.calculate_COM_polygon_centers()
+        self.calculate_cell_volumes()
+        self.calculate_polygon_areas()
+        self.calculate_cell_surface_areas()
+        self.calculate_cell_shape_indices()
 
     def extract_cell(self,cellID):
         vertices={}
