@@ -1,0 +1,155 @@
+Broad Goal:
+
+- FIRE minimize the configuration.
+- Allow for clamping external forces while minimizing.
+
+
+Cookbook of changes (in the order in which I addressed them):
+
+1. FIRE minimization setup: 
+
+    For now lets FIRE minimize in terms of
+
+        vertex -> volumeforce_
+        vertex -> interfaceForce_
+
+
+    These are calculated with volume->updateforces(), interface->updateforces() respectively. If replacement functions are written, we can just replace the respective function calls.
+
+    Let's do this by introducing a new function in run:
+
+        run -> FIREminimize()
+
+    This function does NOT use t_init,t_f and dt from conf (i.e run->dt_). Instead, 
+    
+        FIRE_itermax
+        FIRE_dt
+        FIRE_dtmax
+
+    are parameters in the scope of this function.
+
+    Here are the steps in FIREminimize():
+
+    +   Log, dump, and reconnect by iteration multiples instead of simulation_time_.
+    However, still maintain the run->simulation_time_ (which increases by dt_ every iteration) in order to use the dump functions. 
+
+    + Write FIRE versions of the velocities and positions functions:
+
+            FIREupdateVerticesPosition(double& FIRE_dt)
+            FIREupdateVerticesVelocity(double& FIRE_dt)
+
+    Reasons:
+
+    i. No overdamped motion
+
+    ii. FIRE_dt is a variable in the scope of Run* run
+    
+1. FIRE minimization implementation:
+
+    We need a dot product function that computes f.f, f.v and v.v. it is okay to calculate them at the same time, and just after velocities are updated.
+
+    To facilitate this, we introduce in the scope of the Run object the following attributes:
+    
+        double FIRE_ff;
+        double FIRE_fv; //power
+        double FIRE_vv;
+
+    and the function updates the value of these:
+
+        int FIREupdateForceVelocityProjections();
+
+1. Implement a COM polygon center. Rewrite the following function in Polygon.cpp:
+        
+        Polygon::updateCenter()
+
+    Note: this routine is only called in 
+        
+        Run::updateGeoinfo() 
+    
+    However, Run::updateGeoinfo() is called in every iteration of both these functions
+        
+        Run::overdampedMotion() 
+        Run::FIREminimized()
+    
+    Reason for COM polygon center: the resulting exact forces are MUCH easier to code.
+
+1. Exact volume forces: rewrite (in Energy/Volume.cpp) the function:
+
+        Volume::updateForces()
+    
+    Algorithm:
+
+    Upon calling this function, vertex->volumeForce_ is first set to {0,0,0} for each vertex
+
+    The routine the iterates over the cells. Each iteration adds the contribution from that
+    cell to the vertex->volumeForce_.
+
+    The routine requires the anticlockwise orientation of every "list" below:
+
+        for (auto cell : run->cells_){
+            for (auto polygon: cell->polygons_){
+                list = polygon->vertices_;
+            }
+        }
+    
+    We note that the routine Cell::updatePolygonDirections() updates <long int,bool>cell->polygonDirections_().
+    
+    We further note that this polygon directions routine is called (by way of Volume::updatePolygonDirections) during:
+
+    (a) Initialization in tvm.cpp
+    (b) As part of processing reconnection events
+
+    and that it includes a built in volume update for the cells.
+    
+    Implementation:
+
+    We will use Cell::updateVolume() for inspiration since it uses similar concepts.
+
+1. Exact surface forces (TBC)
+
+1. Fixed cells (and their vertices):
+
+Introduce a bool is_fixed_ attribute in Vertices.h
+Introduce a bool is_fixed_ attribute in Cells.h
+
+Every new vertex is initialized with vertex.is_fixed_ = false
+Every new cell is initialized with cell.is_fixed_ = false
+
+1. In the position update functions in Run.cpp:
+
+        Run::updateVerticesPosition()
+        Run::FIREupdateVerticesPosition()
+
+    skip over updating fixed vertices
+
+1. Skip fixed vertices in the loop when calculating F_rms in 
+
+        Run::FIREupdateForceVelocityProjections
+
+1. Read Fixed topology in tvm.cpp
+
+        int InitializeFixed(Run * run)
+
+    reads "fixed.topo" in the run folder. if it doesnt exist or cannot be read, minimization
+    commences with a topology where no cells or vertices are fixed
+
+    For now, we only need to supply cellIDs of fixed cells.
+
+1. Edit fixed vertices corresponding to fixed cells:
+
+    Add a routine to Run::updateGeoInfo() that does the following:
+    
+    1. Set all vertices to not fixed
+    2. For fixed cells, set each vertex to be fixed
+
+    Hence, in each iteration of overdamped motion and fire minimization, 
+    only fixed cell vertices (whether newly created or original) are fixed 
+    to displacements. 
+
+    Note: Since Run::updateGeoInfo() is called before position updates, 
+    this is a good place to add this routine.
+
+This concludes our first set of edits to obtain a 3D vertex model minimimizer with fixed vertices.
+
+The next set of edits will make v0 and s0 cell properties which can be input individually.
+These are be detailed in cellPropertyEDITS.md

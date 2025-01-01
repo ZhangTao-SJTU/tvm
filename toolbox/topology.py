@@ -81,10 +81,12 @@ class Cell:
         self.crossBoundary_ = False
         self.is_surface_ = False
         self.surface_area_ = None
+        self.s0_ = None
         self.boundary_area_ = None
         self.shape_index_ = None
         self.shape_index_change_ = None
         self.volume_ = None
+        self.v0_ = None
         self.center_ = None
         self.inertia_tensor_ = None
         self.stress_tensor_ = None

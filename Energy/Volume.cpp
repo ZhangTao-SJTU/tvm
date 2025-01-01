@@ -40,7 +40,7 @@ using namespace std;
 
 Volume::Volume(Run * run) {
     run_ = run;
-    kv_ = 10.;  // 0.1, 1, 10, 100, 1000
+    // kv_ = 10.;  // 0.1, 1, 10, 100, 1000
     totalVolume_ = 0.;
     energy_ = 0.;
 }
@@ -50,9 +50,11 @@ Volume::Volume(Run * run) {
 
 int     Volume::updateForces() {
     // reset all volumeForce values in vertices
-    for (long int i = 0; i < run_->vertices_.size(); i++) {
+    // for (long int i = 0; i < run_->vertices_.size(); i++) {
+    for (auto vertex : run_->vertices_){
         for (int j = 0; j < 3; j++) {
-            run_->vertices_[i]->volumeForce_[j] = 0.;
+            // run_->vertices_[i]->volumeForce_[j] = 0.;
+            vertex->volumeForce_[j] = 0.;
         }
     }
     // update volume of each cell, and direction of polygons in each cell
@@ -60,11 +62,16 @@ int     Volume::updateForces() {
     // update pressure in each cell
     updatePressure();
     // update volumeForce values
-    for (long int i = 0; i < run_->cells_.size(); i++) {
-        for (int j = 0; j < run_->cells_[i]->polygons_.size(); j++) {
-            updatePolygonForces(run_->cells_[i], run_->cells_[i]->polygons_[j]);
+    for (auto cell : run_->cells_){
+        for (auto polygon : cell->polygons_){
+            updatePolygonForces(cell,polygon);
         }
     }
+    // for (long int i = 0; i < run_->cells_.size(); i++) {
+    //     for (int j = 0; j < run_->cells_[i]->polygons_.size(); j++) {
+    //         updatePolygonForces(run_->cells_[i], run_->cells_[i]->polygons_[j]);
+    //     }
+    // }
     return 0;
 }
 
@@ -182,7 +189,7 @@ int Volume::updateVolume() {
 
 int Volume::updatePressure() {
     for (auto cell : run_->cells_) {
-        cell->pressure_ = (-1.0)*2.0*kv_*(cell->volume_-1.0);
+        cell->pressure_ = (-1.0)*2.0*kv_*(cell->volume_ - cell->v0_);
     }
 
     return 0;
@@ -248,7 +255,7 @@ int Volume::updatePolygonForces(Cell *cell, Polygon *polygon) {
 int Volume::updateEnergy() {
     energy_ = 0.;
     for (auto cell : run_->cells_) {
-        energy_ += kv_*pow(cell->volume_-1.0, 2.0);
+        energy_ += kv_*pow(cell->volume_ - cell->v0_, 2.0);
     }
 
     return 0;

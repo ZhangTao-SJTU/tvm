@@ -40,15 +40,20 @@ using namespace std;
 
 Interface::Interface(Run * run) {
     run_ = run;
-    s0_ = 5.40; // 0~5.82
     energy_ = 0.;
 }
 
 int     Interface::updateForces() {
     // reset all interfaceForce values in vertices
-    for (long int i = 0; i < run_->vertices_.size(); i++) {
+    // for (long int i = 0; i < run_->vertices_.size(); i++) {
+    //     for (int j = 0; j < 3; j++) {
+    //         run_->vertices_[i]->interfaceForce_[j] = 0.;
+    //     }
+    // }`
+
+    for (auto vertex : run_->vertices_) {
         for (int j = 0; j < 3; j++) {
-            run_->vertices_[i]->interfaceForce_[j] = 0.;
+            vertex->interfaceForce_[j] = 0.;
         }
     }
 
@@ -61,10 +66,12 @@ int     Interface::updateForces() {
     updateTension();
 
     // update interfaceForce values
-    for (long int i = 0; i < run_->polygons_.size(); i++) {
-        updatePolygonForces(run_->polygons_[i]);
+    // for (long int i = 0; i < run_->polygons_.size(); i++) {
+    //     updatePolygonForces(run_->polygons_[i]);
+    // }
+    for (auto polygon : run_->polygons_) {
+        updatePolygonForces(polygon);
     }
-
     return 0;
 }
 
@@ -151,7 +158,7 @@ int Interface::updateTension() {
             s += polygon->area_;
         }
         for (auto polygon : cell->polygons_) {
-            polygon->tension_ += 2.0*(s - s0_);
+            polygon->tension_ += 2.0*(s - cell->s0_);
         }
     }
 
@@ -165,7 +172,7 @@ int Interface::updateEnergy() {
         for (auto polygon : cell->polygons_) {
             s += polygon->area_;
         }
-        energy_ += pow(s - s0_, 2.0);
+        energy_ += pow(s - cell->s0_, 2.0);
     }
 
     return 0;

@@ -4,6 +4,117 @@ import copy
 import os
 import random
 import numpy as np
+from toolbox.minimization import FIREminimization
+
+class pulseDrive(FIREminimization):
+    def __init__(self):
+        super().__init__()
+        #pulse drive parameters
+        self._iter_counter = 0
+
+    
+    @classmethod
+    def from_config(cls, config_dir, input_filename):
+        inst = super().from_config(config_dir,input_filename)
+        return inst
+    
+    # pick a cell; cellID appended to self._modified_cells
+    # Criteria:
+    # 1. No cross boundary cells
+    # 2. No moidified cellls should share polygons
+    # 3. Should not be too close to the boundary (for visualization).
+    def pick_modified_cell(self, v0 = 1, s0 = 5.2, is_fixed = False):
+        sample = self._config
+        cell_found = False
+        while (not cell_found):
+            test_cell_id = random.choice(list(sample.cells_.keys()))
+            cell = sample.cells_[test_cell_id]
+            
+            if cell.crossBoundary_:
+                continue
+            for polygonID in cell.polygons_:
+                if sample.polygons_[polygonID].crossBoundary_:
+                    continue
+            if self._modified_cells:
+                if cell.id_ in self._modified_cells:
+                    continue
+                shared_polygons = False
+                for cellID in self._modified_cells:
+                    for polygonID in sample.cells_[cellID].polygons_:
+                        if polygonID in cell.polygons_:
+                            shared_polygons = True
+                            break
+                    if shared_polygons:
+                        break
+                if shared_polygons:
+                    continue
+            boundary = False
+            for coordinate in cell.center_:
+                if coordinate < 1:
+                    boundary = True
+                    break
+                if coordinate > sample.boxSize_ - 1:
+                    boundary = True
+                    break
+            if boundary:
+                continue
+            # print(cell.center_)
+            self._modified_cells.append(cell.id_)
+            cell.v0_ = v0
+            cell.s0_ = s0
+            cell.is_fixed_ = is_fixed
+            if cell.is_fixed_:
+                for polygonID in cell.polygons_:
+                    self._config.polygons_[polygonID].is_fixed_ = True
+            cell_found = True
+
+    # Writes the file cellParameters.input,
+    # with current state of cells from self._modified_cells
+    # In other words; parameters to be written from self._config.cells_
+    def write_cell_parameters(self):
+        if not self._modified_cells:
+            print("No modified cells")
+            return
+        # write the modified cell IDs to a file
+        with open("{}cellParameters.input".format(self._dir),"w") as f:
+            for cellID in self._modified_cells:
+                cell = self._config.cells_[cellID]
+                f.write("{:d} {} {} {}\n".format(
+                    cell.id_,
+                    cell.v0_,
+                    cell.s0_,
+                    int(cell.is_fixed_)))
+                
+    # A single iteration, consisting of:
+    # 1. writing current state of (driven) cell parameters
+    # 2. Minimizing configuration (subject to current state of driven cells)
+    # 3. Writing resulting configuration, bulk vtk and input cells vtk
+    #   (labelled by iteration number)
+    def single_iteration(self,iter):
+        self.write_cell_parameters()
+        self.minimize_config()
+        self.write_configuration(filename = "{}.bulk.txt".format(iter))
+        self._config.write_periodic_vtk(filename = "{}.bulk.vtk".format(iter))
+        self._config.write_cell_collection_vtk(
+            cells_array = self._modified_cells,
+            filename = "{}.input.vtk".format(iter))
+        
+    def run(self, iterations = 10):
+        for iter in range(iterations):
+            for cellID in self._modified_cells:
+                cell = self._config.cells_[cellID]
+                # v0 training
+                # if iter%2:
+                #     cell.v0_ = 1
+                # else:
+                #     cell.v0_ = 0.8
+                # s0 training
+                if iter%2:
+                    cell.s0_ = 5.6
+                else:
+                    cell.s0_ = 5
+            self.single_iteration(iter)
+
 class Training:
     def __init__(self):
         self._config = None
@@ -287,7 +398,7 @@ class Training:
         self.write_periodic_vtk("{:07d}.sample.vtk".format(self._iter_counter))
         self._iter_counter += 1
         
-    def pair_drive(self):
+    def pair_drive(self,n_oscillations = 1):
         self.write_configuration("initial.topo")
         self.write_periodic_vtk("initial.vtk")
         self.load_fixed_cells()
@@ -297,24 +408,24 @@ class Training:
         if self._separation > self._maximum_separation:
             stepsize = (self._separation - self._maximum_separation)/2
             self.pair_drive_iteration(stepsize = stepsize, inwards = True)
-
+        for _ in range(n_oscillations):
         #Step 1: Drive configuration inwards
-        while (self._separation >= self._minimum_separation + 2 * self._stepsize):
-            self.pair_drive_iteration(stepsize = self._stepsize, inwards = True)
+            while (self._separation >= self._minimum_separation + 2 * self._stepsize):
+                self.pair_drive_iteration(stepsize = self._stepsize, inwards = True)
 
-        # Step 1 Continued: Final step to reach the minimum separation
-        if self._separation > self._minimum_separation:
-            stepsize = (self._separation - self._minimum_separation)/2
-            self.pair_drive_iteration(stepsize = stepsize, inwards = True)
+            # Step 1 Continued: Final step to reach the minimum separation
+            if self._separation > self._minimum_separation:
+                stepsize = (self._separation - self._minimum_separation)/2
+                self.pair_drive_iteration(stepsize = stepsize, inwards = True)
 
-        #Step 2: Drive configuration outwards
-        while (self._separation + 2 * self._stepsize <= self._maximum_separation):
-            self.pair_drive_iteration(stepsize = self._stepsize, inwards = False)
+            #Step 2: Drive configuration outwards
+            while (self._separation + 2 * self._stepsize <= self._maximum_separation):
+                self.pair_drive_iteration(stepsize = self._stepsize, inwards = False)
 
-        # Step 2 Continued: Final step to reach the maximum separation
-        if self._separation < self._maximum_separation:
-            stepsize = (self._maximum_separation - self._separation)/2
-            self.pair_drive_iteration(stepsize = stepsize, inwards = False)
+            # Step 2 Continued: Final step to reach the maximum separation
+            if self._separation < self._maximum_separation:
+                stepsize = (self._maximum_separation - self._separation)/2
+                self.pair_drive_iteration(stepsize = stepsize, inwards = False)
 
     def pulse_drive(self, n_iterations):
         cellID = self._fixed_cells[0]

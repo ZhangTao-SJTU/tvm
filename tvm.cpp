@@ -40,12 +40,14 @@ using namespace std;
 
 int     InitializeAll(Run *);
 int     InitializeFixed(Run *);
+int     LoadCellParameters(Run *);
 int     LoadConf(string filename, Run *);
 
 int main(int argc, char *argv[]) {
     Run * run = new Run();
     InitializeAll(run);
-    InitializeFixed(run);
+    // InitializeFixed(run);
+    LoadCellParameters(run);
     run->updatePolygonVertices();
     double FIRE_equilibrium_tolerance = 1e-7;
 
@@ -62,17 +64,17 @@ int main(int argc, char *argv[]) {
     // calculate the power and other force, velocity projections
     run->FIREupdateForceVelocityProjections();
     double F_rms = sqrt(run->FIRE_ff/(3 * run->vertices_.size()));
-    cout<<"Initial F_rms: "<< F_rms <<"\n";
+    cout<<"Initial F_rms: "<< F_rms << endl;
     if (F_rms < FIRE_equilibrium_tolerance) {
         cout << "   Minimization terminated:\n"; 
         cout << "   Input is already minimized at FIRE_equilibrium_tolerance: ";
-        cout << FIRE_equilibrium_tolerance << "\n";
+        cout << FIRE_equilibrium_tolerance << endl;
         run->dumpMinimization();
         return 0;
     }
     if (F_rms < 1e-4) {
-        cout << "   Since F_rms is low, skip overdamped stage and commence FIRE minimization.\n";
-        run->FIREminimize();
+        cout << "   Since F_rms is low, skip overdamped stage and commence FIRE minimization." << endl;
+        run -> FIREminimize();
         return 0;
     }
     run->overdampedMotion();
@@ -80,7 +82,7 @@ int main(int argc, char *argv[]) {
     F_rms = sqrt(run->FIRE_ff/(3 * run->vertices_.size()));
     if (F_rms > FIRE_equilibrium_tolerance) {
         cout << "   FIRE minimization terminated unsuccessfully at max iterations.\n";
-        cout << "   Trying overdamping and FIRE minimization again, with no fixed topology...\n";
+        cout << "   Trying overdamping and FIRE minimization again, with no fixed topology..." << endl;
         for (auto cell : run->cells_) {
             cell->is_fixed_ = false;
         }
@@ -89,13 +91,8 @@ int main(int argc, char *argv[]) {
         }
         run->overdampedMotion();
         run->FIREminimize();
-        // cout << "Trying overdamping and FIRE minimization again...\n";
-        // run->log_period_*=2;
-        // run->overdampedMotion();
-        // run->FIREminimize();
-        // F_rms = sqrt(run->FIRE_ff/(3 * run->vertices_.size()));
     }
-    cout << "Final F_rms: " << F_rms << "\n";
+    cout << "Final F_rms: " << F_rms << endl;
     run->dumpMinimization();
     return 0;
 }
@@ -234,14 +231,14 @@ int InitializeAll(Run * run) {
             run->count_cells_ = cell->id_ + 1;
         }
     }
-    cout << "Number of vertices: " << run->vertices_.size() << endl;
-    cout << "Maximum vertex ID: " << run->count_vertices_ - 1 << endl;
-    cout << "Number of edges: " << run->edges_.size() << endl;
-    cout << "Maximum edge ID: " << run->count_edges_ - 1 << endl;
-    cout << "Number of polygons: " << run->polygons_.size() << endl;
-    cout << "Maximum polygon ID: " << run->count_polygons_ - 1 << endl;
-    cout << "Number of cells: " << run->cells_.size() << endl;
-    cout << "Maximum cell ID: " << run->count_cells_ - 1 << endl;
+    cout << "Number of vertices: " << run->vertices_.size() << "\n";
+    cout << "Maximum vertex ID: " << run->count_vertices_ - 1 << "\n";
+    cout << "Number of edges: " << run->edges_.size() << "\n";
+    cout << "Maximum edge ID: " << run->count_edges_ - 1 << "\n";
+    cout << "Number of polygons: " << run->polygons_.size() << "\n";
+    cout << "Maximum polygon ID: " << run->count_polygons_ - 1 << "\n";
+    cout << "Number of cells: " << run->cells_.size() << "\n";
+    cout << "Maximum cell ID: " << run->count_cells_ - 1 << "\n";
 
     run->updatePolygonCells();
     long int nPolygon2N = 0;
@@ -318,6 +315,65 @@ int InitializeFixed(Run * run){
     return 0;
 }
 
+int LoadCellParameters(Run * run){
+    // load initial configuration
+    ifstream topofile("cellParameters.input");
+    if (!topofile.is_open()) {
+        cout << "cellParameters.input not present or could not be processed.\n";
+        cout << "Proceeding minimization with homogeneous cell properties." << endl;
+        return 0;
+    }
+    string buffer;
+    string delimiter = " ";
+    size_t pos = 0;
+    long int tmp_id;
+    double tmp_v0;
+    double tmp_s0;
+    bool tmp_fixed;
+    vector<string> tokens;
+    vector<vector<string>> lines;
+
+    while (getline(topofile, buffer))
+    {
+        pos = buffer.find((char)13);
+        if (pos != string::npos) {
+            buffer = buffer.substr(0, pos);
+        }
+        if (buffer.length() == 0) continue;
+
+        tokens.clear();
+        while ((pos = buffer.find(delimiter)) != string::npos) {
+            string token = buffer.substr(0, pos);
+            if (token.length() > 0) {
+                tokens.push_back(token);
+            }
+            buffer.erase(0, pos + delimiter.length());
+        }
+        if (buffer.length() > 0) {
+            tokens.push_back(buffer);
+        }
+        lines.push_back(tokens);
+    }
+    cout << "Editing cell properties for the following cells:\n";
+    for (int i = 0; i < lines.size(); i++) {
+        tokens = lines[i];
+        tmp_id = atol(tokens[0].c_str());
+        tmp_v0 = atof(tokens[1].c_str());
+        tmp_s0 = atof(tokens[2].c_str());
+        tmp_fixed = atoi(tokens[3].c_str());
+        
+        run -> cells_[tmp_id] -> v0_ = tmp_v0;
+        run -> cells_[tmp_id] -> s0_ = tmp_s0;
+        run -> cells_[tmp_id] -> is_fixed_ = tmp_fixed;
+        cout << "cellID: " << tmp_id << " ";
+        cout << "v0: " << run -> cells_[tmp_id] -> v0_ << " ";
+        cout << "s0: " << run -> cells_[tmp_id] -> s0_ << " ";
+        cout << "is_fixed: " << run -> cells_[tmp_id] -> is_fixed_ << "\n";
+    }
+    cout << endl;
+    return 0;
+}
+
 int LoadConf(string filename, Run * run) {
     ifstream conf(filename.c_str());
 
@@ -379,7 +435,7 @@ int LoadConf(string filename, Run * run) {
             run->dt_ = atof(tokens[3].c_str());
             run->dtr_ = 10*run->dt_;
             time_written = 1;
-            cout << "time: " << run->t_start_ << " ~ " << run->t_end_ << " ~ " << run->dt_ << " ~ " << run->dtr_ << endl;
+            cout << "time: " << run->t_start_ << " ~ " << run->t_end_ << " ~ " << run->dt_ << " ~ " << run->dtr_ << "\n";
         }
         else if (tokens[0] == "dump") {
             if (tokens.size() != 3) {
@@ -393,7 +449,7 @@ int LoadConf(string filename, Run * run) {
             if (tokens[1] == "vtk") {
                 run->dump_period_ = atof(tokens[2].c_str());
                 dump_written = 1;
-                cout << "dump: " << tokens[1] << " " << run->dump_period_ << endl;
+                cout << "dump: " << tokens[1] << " " << run->dump_period_ << "\n";
             }
         }
         else if (tokens[0] == "log") {
@@ -407,7 +463,7 @@ int LoadConf(string filename, Run * run) {
             }
             run->log_period_ = atof(tokens[1].c_str());
             log_screen_written = 1;
-            cout << "log: " << run->log_period_ << endl;
+            cout << "log: " << run->log_period_ << "\n";
         }
         else if (tokens[0] == "s0") {
             if (tokens.size() != 2) {
@@ -418,9 +474,15 @@ int LoadConf(string filename, Run * run) {
                 cerr << endl;
                 exit(1);
             }
-            run->interface_->s0_ = atof(tokens[1].c_str());
+            double avg_s0 = atof(tokens[1].c_str());
+            // run->interface_->s0_ = atof(tokens[1].c_str());
+            for (auto cell : run->cells_){
+                cell->s0_ = avg_s0;
+            }
             s0_written = 1;
-            cout << "s0: " << run->interface_->s0_ << endl;
+            // cout << "s0: " << run->interface_->s0_ << endl;
+            cout << "Average s0: " << avg_s0 << "\n";
+
         }
         else if (tokens[0] == "Lth") {
             if (tokens.size() != 2 && tokens.size() != 3) {
@@ -445,7 +507,7 @@ int LoadConf(string filename, Run * run) {
                 }
             }
             Lth_written = 1;
-            cout << "Lth: " << run->reconnection_->Lth_ << " verbose: " << run->reconnection_->verbose_ << endl;
+            cout << "Lth: " << run->reconnection_->Lth_ << " verbose: " << run->reconnection_->verbose_ << "\n";
         }
         else if (tokens[0] == "T") {
             if (tokens.size() != 2) {
@@ -458,7 +520,7 @@ int LoadConf(string filename, Run * run) {
             }
             run->temperature_ = atof(tokens[1].c_str());
             temperature_written = 1;
-            cout << "temperature: " << run->temperature_ << endl;
+            cout << "temperature: " << run->temperature_ << "\n";
         }
         else if (tokens[0] == "kv") {
             if (tokens.size() != 2) {
@@ -471,7 +533,7 @@ int LoadConf(string filename, Run * run) {
             }
             run->volume_->kv_ = atof(tokens[1].c_str());
             kv_written = 1;
-            cout << "kv: " << run->volume_->kv_ << endl;
+            cout << "kv: " << run->volume_->kv_ << "\n";
         }
         else if (tokens[0] == "box") {
             if (tokens.size() != 7) {
@@ -508,7 +570,7 @@ int LoadConf(string filename, Run * run) {
             }
             box_written = 1;
             cout << "box: " << run->box_->size_[0] << " " << run->box_->size_[1] << " " << run->box_->size_[2] << " ";
-            cout << "periodic boundary condition: " << run->box_->boundaryCondition_[0] << " " << run->box_->boundaryCondition_[1] << " " << run->box_->boundaryCondition_[2] << endl;
+            cout << "periodic boundary condition: " << run->box_->boundaryCondition_[0] << " " << run->box_->boundaryCondition_[1] << " " << run->box_->boundaryCondition_[2] << "\n";
         }
         else {
             cerr << "conf file error: ";
@@ -564,8 +626,8 @@ int LoadConf(string filename, Run * run) {
         cout << "conf file error: box" << endl;
         exit(1);
     }
-
+    
     conf.close();
-
+    cout << endl;
     return 0;
 }

@@ -33,9 +33,12 @@ class Cell {
 public:
     long int id_;
     bool is_fixed_;
+    double v0_;
+    double s0_;
     double volume_;
     double pressure_;
     double shapeIndex_;
+
     std::vector<Polygon *> polygons_;
     std::vector<Vertex *> vertices_;
     std::unordered_map<long int, bool> polygonDirections_;

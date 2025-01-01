@@ -86,7 +86,7 @@ int     Run::overdampedMotion() {
         if (simulation_time_ - t_start_ + t_roundError  > count_log_ * log_period_) {
             volume_->updateEnergy();
             interface_->updateEnergy();
-            printf("%-12.2f%-12.3f%-12.3f%-12ld%-12ld%-12.6f%-12.6f%-12.6f%-12.6f\n", simulation_time_,
+            printf("%-12.2f%-12.3f%-12.3f%-12ld%-12ld%-12.6f%-12.6f%-12.6f%-12.6f", simulation_time_,
                    (chrono::duration_cast<chrono::microseconds>(chrono::steady_clock::now() - start).count())/1.0e6,
                    volume_->totalVolume_,
                    reconnection_->count_IH_,
@@ -95,6 +95,7 @@ int     Run::overdampedMotion() {
                    interface_->energy_,
                    volume_->energy_+interface_->energy_,
                    sqrt(FIRE_ff/(3*vertices_.size())));
+            cout<<endl;
             if (reconnection_->count_IH_ == 0 && reconnection_->count_HI_ == 0 && simulation_time_ > dt_) {
                 cout << "\n   Zero reconnections since the previous log dump.\n";
                 cout << "   Terminating overdamped motion and proceeding to FIRE minimization.\n";
@@ -148,7 +149,7 @@ int     Run::FIREminimize(){
     double FIRE_dtmax = 0.005;
     double FIRE_dt = 0.0001;
     double FIRE_equilibrium_tolerance = 1e-7;
-    long int FIRE_itermax = 20000;
+    long int FIRE_itermax = 10000;
     int FIRE_n_since_positive = 0;
 
     count_reconnect_ = 0;
@@ -254,7 +255,7 @@ int     Run::FIREminimize(){
         if (iter % FIRE_log_iteration_ == 0) {
             volume_->updateEnergy();
             interface_->updateEnergy();
-            printf("%-9ld%-6.1f%-9.1f%-9ld%-9ld%-9.1f%-9.1f%-12.1f%-12.1f%-12.7e\n", 
+            printf("%-9ld%-6.1f%-9.1f%-9ld%-9ld%-9.1f%-9.1f%-12.1f%-12.1f%-12.7e", 
                     iter,
                     (chrono::duration_cast<chrono::microseconds>
                     (chrono::steady_clock::now() - start).count()) / 1.0e6,
@@ -266,6 +267,7 @@ int     Run::FIREminimize(){
                     volume_->energy_ + interface_->energy_,
                     FIRE_fv,
                     sqrt(FIRE_ff/(3 * vertices_.size())));
+            cout << endl;
             start = chrono::steady_clock::now();
             reconnection_->count_IH_ = 0;
             reconnection_->count_HI_ = 0;
@@ -466,6 +468,12 @@ int     Run::updateGeoinfo() {
     }
 
     // update fixed vertices:
+    // First, set all vertices to be not fixed
+    // Then, make only fixed cell vertices fixed
+    for (auto vertex: vertices_){
+        vertex->is_fixed_ = false;
+    }
+    
     for (auto cell: cells_){
         if (!cell->is_fixed_){
             continue;

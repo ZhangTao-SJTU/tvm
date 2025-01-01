@@ -184,6 +184,9 @@ class Sample:
                     self.s0_ = (float(line.split()[1]))#s0
                     if self.tissueType_ == "spheroid":
                         self.gamma_=(float(line.split()[2]))#gamma
+                    for cellID,cell in self.cells_.items():
+                        cell.v0_ = 1
+                        cell.s0_ = copy.deepcopy(self.s0_)
                 if (line.split()[0]) == "kv": 
                     self.kv_=(float(line.split()[1]))#kv
                 if (self.tissueType_ == "periodic") and (line.split()[0]) == "box":
@@ -536,6 +539,8 @@ class Sample:
         if not self.tissueType_ == "periodic":
             print("This function, load_cross_boundary_attributes()")
             print("is only supposed to be for periodic tissue")
+            return
+        
         for edgeID, edge in self.edges_.items():
             edge.length_ = np.linalg.norm(
                 np.subtract(
@@ -560,6 +565,82 @@ class Sample:
                     break
         return
 
+    def write_periodic_vtk(self,filename):
+        if not self.tissueType_ == "periodic":
+            print("this function is for periodic tissue only")
+            return
+        vertices = []
+        total_polygons = 0
+        total_polygon_data_points = 0
+        for polygonID,polygon in self.polygons_.items():
+            if polygon.crossBoundary_:
+                continue
+            total_polygons += 1
+            total_polygon_data_points += len(polygon.vertices_) + 1
+            for vertex in polygon.vertices_:
+                vertices.append(vertex)
+        vertices = np.unique(vertices)
+        v_map = functions.mapmaker(vertices)
+        with open("{}{}".format(self.config_dir_,filename),"w") as f:
+            f.write("# vtk DataFile Version 2.0\n")
+            f.write("polydata\n")
+            f.write("ASCII\n")
+            f.write("DATASET POLYDATA\n")
+            f.write("POINTS {} double\n".format(len(vertices)))
+            for vertexID in vertices:
+                for i in range(3):
+                    f.write("{} ".format(self.vertices_[vertexID].position_[i]))
+                f.write("\n")
+            f.write("POLYGONS {} {}\n".format(total_polygons,total_polygon_data_points))
+            for polygonID,polygon in self.polygons_.items():
+                if polygon.crossBoundary_:
+                    continue
+                f.write("{} ".format(len(polygon.vertices_)))
+                for vertexID in polygon.vertices_:
+                    f.write("{} ".format(v_map[vertexID]))
+                f.write("\n")
+
+    def write_cell_collection_vtk(self,cells_array,filename):
+        vertices = []
+        polygons = []  
+        for cellID in cells_array:
+            cell = self.cells_[cellID]
+            if cell.crossBoundary_:
+                continue
+            for polygonID in cell.polygons_:
+                polygon = self.polygons_[polygonID]
+                if not polygon.vertices_:
+                    continue
+                if polygon.crossBoundary_:
+                    continue
+                polygons.append(polygonID)
+                for vertexID in polygon.vertices_:
+                    vertices.append(vertexID)
+        vertices = np.unique(vertices)
+        polygons = np.unique(polygons)
+        total_polygons = len(polygons)
+        total_polygon_data_points = 0
+        for polygonID in polygons:
+            total_polygon_data_points += len(self.polygons_[polygonID].vertices_) + 1
+        v_map = functions.mapmaker(vertices)
+        with open("{}{}".format(self.config_dir_,filename),"w") as f:
+            f.write("# vtk DataFile Version 2.0\n")
+            f.write("polydata\n")
+            f.write("ASCII\n")
+            f.write("DATASET POLYDATA\n")
+            f.write("POINTS {} double\n".format(len(vertices)))
+            for vertexID in vertices:
+                for i in range(3):
+                    f.write("{} ".format(self.vertices_[vertexID].position_[i]))
+                f.write("\n")
+            f.write("POLYGONS {} {}\n".format(total_polygons,total_polygon_data_points))
+            for polygonID in polygons:
+                polygon = self.polygons_[polygonID]
+                f.write("{} ".format(len(polygon.vertices_)))
+                for vertexID in polygon.vertices_:
+                    f.write("{} ".format(v_map[vertexID]))
+                f.write("\n")
+    
     def dump_vtk(self,filename):
         v_map = functions.mapmaker(self.vertices_)
         totalPolygonDataPoints = 0
