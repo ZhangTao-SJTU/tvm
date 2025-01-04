@@ -563,19 +563,30 @@ class Sample:
                 if self.polygons_[polygonID].crossBoundary_:
                     cell.crossBoundary_ = True
                     break
+        
         return
 
-    def write_periodic_vtk(self,filename):
+    def write_periodic_vtk(self,filename, use_scalar = False):
         if not self.tissueType_ == "periodic":
             print("this function is for periodic tissue only")
             return
         vertices = []
-        total_polygons = 0
-        total_polygon_data_points = 0
-        for polygonID,polygon in self.polygons_.items():
-            if polygon.crossBoundary_:
+        polygons = []
+        for cellID,cell in self.cells_.items():
+            if cell.crossBoundary_:
                 continue
-            total_polygons += 1
+            for polygonID in cell.polygons_:
+                polygons.append(polygonID)
+        polygons = np.unique(polygons)
+
+        total_polygons = len(polygons)
+        total_polygon_data_points = 0
+        # for polygonID,polygon in self.polygons_.items():
+        for polygonID in polygons:
+            polygon = self.polygons_[polygonID]
+            # if polygon.crossBoundary_:
+            #     continue
+            # total_polygons += 1
             total_polygon_data_points += len(polygon.vertices_) + 1
             for vertex in polygon.vertices_:
                 vertices.append(vertex)
@@ -592,14 +603,31 @@ class Sample:
                     f.write("{} ".format(self.vertices_[vertexID].position_[i]))
                 f.write("\n")
             f.write("POLYGONS {} {}\n".format(total_polygons,total_polygon_data_points))
-            for polygonID,polygon in self.polygons_.items():
-                if polygon.crossBoundary_:
-                    continue
+            # for polygonID,polygon in self.polygons_.items():
+            #     if polygon.crossBoundary_:
+            #         continue
+            for polygonID in polygons:
+                polygon = self.polygons_[polygonID]
                 f.write("{} ".format(len(polygon.vertices_)))
                 for vertexID in polygon.vertices_:
                     f.write("{} ".format(v_map[vertexID]))
                 f.write("\n")
+            
+            if not use_scalar:
+                return
+            
+            f.write("CELL_DATA {}\n".format(total_polygons))
+            f.write("SCALARS scalar_1 double\n")
+            f.write("LOOKUP_TABLE default\n")
+            # for polygonID,polygon in self.polygons_.items():
+            #     if polygon.crossBoundary_:
+            #         continue
+            for polygonID in polygons:
+                polygon = self.polygons_[polygonID]
+                f.write("{:12.6f}\n".format(polygon.vtk_scalar_))
 
+            
+    
     def write_cell_collection_vtk(self,cells_array,filename):
         vertices = []
         polygons = []  

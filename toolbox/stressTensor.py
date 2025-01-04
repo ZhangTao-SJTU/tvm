@@ -214,3 +214,40 @@ def calculate_stress_invariants(stress_tensor):
         "max_shear" : max_shear,
         "von_mises" : von_mises}
 
+def calculate_stress_tensor_COM_center(sample:tissueSample.Sample, cellID:int):
+    rearrange_polygon_vertices_for_cell(sample, cellID)
+    stress_tensor = np.zeros((3,3))
+    cell = sample.cells_[cellID]
+    if not cell.volume_:
+        raise ValueError("Cell volume is zero or not calculated")
+    # Add volume term:
+    v_term = 2*sample.kv_*(cell.volume_-cell.v0_)*np.identity(3)
+    
+    # Calculate surface area term:
+
+    s_term = cell.surface_area_ * np.identity(3)
+    # Subtract the contributions from each polygon in the second term
+    total_area = 0
+    for polygonID in cell.polygons_:
+        polygon = sample.polygons_[polygonID]
+        for i in range(len(polygon.vertices_)):
+            nowID = polygon.vertices_[i]
+            nextID = polygon.vertices_[(i + 1) % len(polygon.vertices_)]
+            nowVertex = sample.vertices_[nowID].position_
+            nextVertex = sample.vertices_[nextID].position_
+            areaVector = np.cross(
+                np.subtract(nowVertex,polygon.center_),
+                np.subtract(nextVertex,polygon.center_))/ 2
+            area = np.linalg.norm(areaVector)
+            total_area += area
+            s_term = np.subtract(
+                s_term,
+                np.outer(areaVector,areaVector) / area)
+    
+    s_term = (2/cell.volume_)*(cell.surface_area_-cell.s0_)*s_term
+    if not (cell.surface_area_ - total_area < 1e-6):
+        raise ValueError("sanity check failed cell area: {} total area from triangles: {}".format(cell.surface_area_, total_area))
+
+    stress_tensor = (-1) * (v_term + s_term)
+    return stress_tensor
+

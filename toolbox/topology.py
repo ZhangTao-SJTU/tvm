@@ -64,7 +64,7 @@ class Polygon:
         self.divide_flag_ = False
         self.daughter_vertices_ = None
         self.daughter_edges_ = None
-        self.scalar_ = None
+        self.vtk_scalar_ = None
         self.is_fixed_ = False
         return
     def addEdge(self, edge):
