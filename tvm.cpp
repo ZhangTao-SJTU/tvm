@@ -65,6 +65,19 @@ int main(int argc, char *argv[]) {
     run->FIREupdateForceVelocityProjections();
     double F_rms = sqrt(run->FIRE_ff/(3 * run->vertices_.size()));
     cout<<"Initial F_rms: "<< F_rms << endl;
+
+    // If FIRE_only is specified, we will just try FIREminimize procedure once, 
+    // upto maximum iteration steps, and return
+    // In this case one imagines that we may not necessarily be looking for equilibrium.
+
+    if (argc > 1 && string(argv[1]) == "FIRE_only") {
+        run->FIREminimize();
+        F_rms = sqrt(run->FIRE_ff/(3 * run->vertices_.size()));
+        cout << "Final F_rms: " << F_rms << endl;
+        run->dumpMinimization();
+        return 0;
+    }
+
     if (F_rms < FIRE_equilibrium_tolerance) {
         cout << "   Minimization terminated:\n"; 
         cout << "   Input is already minimized at FIRE_equilibrium_tolerance: ";
@@ -75,7 +88,6 @@ int main(int argc, char *argv[]) {
     if (F_rms < 1e-4) {
         cout << "   Since F_rms is low, skip overdamped stage and commence FIRE minimization." << endl;
         run -> FIREminimize();
-        return 0;
     }
     run->overdampedMotion();
     run->FIREminimize();

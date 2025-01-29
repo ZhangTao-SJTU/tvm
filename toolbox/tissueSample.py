@@ -2,7 +2,6 @@ import copy
 import numpy as np
 import os
 from toolbox import functions, topology
-
 # Class representing the tissue sample. 
 # For now, this can handle either spheroids or 3-torus periodic tissue.
 
@@ -79,6 +78,7 @@ class Sample:
         sample.load_cell_vertices()
         sample.arrange_polygon_vertices()
         sample.calculate_cell_centers()
+        sample.calculate_periodic_sample_center()
         return sample
     
     # loadconfig(): given self.time_, this function first checks if
@@ -308,6 +308,14 @@ class Sample:
                 cell.center_ = np.add(cell.center_, self.vertices_[vertexID].position_)
             cell.center_ = np.divide(cell.center_, len(cell.vertices_))
     
+    def calculate_periodic_sample_center(self):
+        center = []
+        for cellID,cell in self.cells_.items():
+            if cell.crossBoundary_:
+                continue
+            center.append(cell.center_)
+        self.sample_center_=np.mean(center, axis = 0)
+
     def calculate_cell_surface_areas(self):
         for cellID, cell in self.cells_.items():
             if self.tissueType_ == "spheroid" and not cell.type_:
@@ -626,8 +634,6 @@ class Sample:
                 polygon = self.polygons_[polygonID]
                 f.write("{:12.6f}\n".format(polygon.vtk_scalar_))
 
-            
-    
     def write_cell_collection_vtk(self,cells_array,filename):
         vertices = []
         polygons = []  

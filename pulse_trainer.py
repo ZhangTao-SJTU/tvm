@@ -1,6 +1,11 @@
-from toolbox.training import pulseDrive
-
-tr = pulseDrive.from_config("7_2/","minimized.txt")
+from toolbox import pulseDrive
+import os
+if os.path.isdir("7_test"):
+    os.system("rm -r 7_test")
+os.system("cp -r init/7_test/ 7_test/")
+dir = "7_test/"
+file = "minimized.txt"
+tr = pulseDrive.from_config(dir,file)
 tr.edit_conf(s0 = 5.2, kv = 100)
 for _ in range(5):
     tr.pick_random_modified_cell()

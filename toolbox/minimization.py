@@ -15,14 +15,17 @@ class FIREminimization:
         sample._dir = config_dir
         return sample
     
-    def minimize_config(self):
+    def minimize_config(self, FIRE_only = False):
         self.write_configuration("sample.topo")
         # tvm produces a new minimized.txt in self._dir
         # Any file of the same name must be therefore first removed.
         # Otherwise, tvm will append to the existing file.
         if os.path.isfile("{}minimized.txt".format(self._dir)):
             os.remove("{}minimized.txt".format(self._dir))
-        os.system("cd {} && ../build/tvm".format(self._dir))
+        if FIRE_only:
+            os.system("cd {} && ../build/tvm FIRE_only".format(self._dir))
+        else:
+            os.system("cd {} && ../build/tvm".format(self._dir))
         self._config = tissueSample.Sample.periodic_tissue(
             config_dir = self._dir,
             input_filename = "minimized.txt")

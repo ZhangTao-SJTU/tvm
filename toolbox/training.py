@@ -1,16 +1,14 @@
-from toolbox import tissueSample
-from toolbox import functions
-import copy
-import os
 import random
-import numpy as np
 from toolbox.minimization import FIREminimization
-
 class Training(FIREminimization):
     def __init__(self):
         super().__init__()
         #pulse drive parameters
         self._iter_counter = 0
+        self._learning_rate = 5e-1
+        self._lambda = 1.1
+        self._cost = None
+        self._tolerance = 1e-8
 
     @classmethod
     def from_config(cls, config_dir, input_filename):
@@ -19,7 +17,14 @@ class Training(FIREminimization):
     
     def set_iter_counter(self,iter_counter):
         self._iter_counter = iter_counter
-    
+    def set_lambda(self,lam):
+        self._lambda = lam
+    def set_learning_rate(self,learning_rate):
+        self._learning_rate = learning_rate
+    def set_tolerance(self,tolerance):
+        self._tolerance = tolerance
+    def set_modified_cell(self):
+        pass
     # Writes the file cellParameters.input,
     # with current state of cells from self._modified_cells
     # In other words; parameters to be written from self._config.cells_
@@ -29,6 +34,7 @@ class Training(FIREminimization):
             return
         
         # write the modified cell IDs to a file
+        print("Writing cell parameters")
         with open("{}cellParameters.input".format(self._dir),"w") as f:
             for cellID in self._modified_cells:
                 cell = self._config.cells_[cellID]
@@ -143,50 +149,3 @@ class Training(FIREminimization):
             f.write("kv {}\n".format(kv))
             f.write("box {} {} {} {} {} {}\n".format(
                 box_l,box_l,box_l,box_periodic,box_periodic,box_periodic))            
-class pulseDrive(Training):
-    def __init__(self):
-        super().__init__()
-
-    @classmethod
-    def from_config(cls, config_dir, input_filename):
-        inst = super().from_config(config_dir,input_filename)
-        return inst
-    
-    # A single iteration, consisting of:
-    # 1. writing current state of (driven) cell parameters
-    # 2. Minimizing configuration (subject to current state of driven cells)
-    # 3. Writing resulting configuration, bulk vtk and input cells vtk
-    #   (labelled by iteration number)
-    # 4. Incrementing the iteration counter (this is mainly helpful for resuming runs)
-    def single_iteration(self):
-        self.write_cell_parameters()
-        self.minimize_config()
-        self.write_configuration(filename = "{}.bulk.txt".format(self._iter_counter))
-        self._config.write_periodic_vtk(filename = "{}.bulk.vtk".format(self._iter_counter))
-        self._config.write_cell_collection_vtk(
-            cells_array = self._modified_cells,
-            filename = "{}.input.vtk".format(self._iter_counter))
-        self._iter_counter += 1
-    
-    # Pulse the s0 of driven cells between min_s0 and max_s0
-    def run_s0_pulsing(self, min_s0 = 5, max_s0 = 5.6, iterations = 10):
-        for iter in range(iterations):
-            for cellID in self._modified_cells:
-                cell = self._config.cells_[cellID]
-                if iter%2:
-                    cell.s0_ = max_s0
-                else:
-                    cell.s0_ = min_s0
-            self.single_iteration()
-
-class stressPatterns(Training):
-    def __init__(self):
-        super().__init__()
-
-    @classmethod
-    def from_config(cls, config_dir, input_filename):
-        inst = super().from_config(config_dir,input_filename)
-        return inst
-    
-
-
