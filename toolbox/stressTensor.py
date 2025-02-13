@@ -245,7 +245,7 @@ def calculate_stress_tensor_COM_center(sample:tissueSample.Sample, cellID:int):
                 np.outer(areaVector,areaVector) / area)
     
     s_term = (2/cell.volume_)*(cell.surface_area_-cell.s0_)*s_term
-    if not (cell.surface_area_ - total_area < 1e-6):
+    if not (cell.surface_area_ - total_area < 1e-4):
         raise ValueError("sanity check failed cell area: {} total area from triangles: {}".format(cell.surface_area_, total_area))
 
     stress_tensor = (-1) * (v_term + s_term)

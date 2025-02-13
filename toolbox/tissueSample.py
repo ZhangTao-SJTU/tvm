@@ -20,30 +20,18 @@ class Sample:
         self.polygons_:dict[int,topology.Polygon] = {}
         self.cells_:dict[int,topology.Cell] = {}
         self.cell_neighbors_ = {}
-    
+        # To be loaded from conf file
         self.s0_ = None
         self.gamma_ = None
         self.kv_ = None
         self.boxSize_ = None
-
         # calculate from cellVolume.txt
         self.sample_total_volume_ = None
         # If the sample is a spheroid, these are relevant quantities
         # if self.tissueType_ == "spheroid":
         self.sample_center_ = None
         self.sample_surface_area_ = None
-        # self.load_config()
-        # self.load_conf_file()
-        # self.load_cell_attributes()
-        # self.calculate_cell_surface_areas()
-        # if self.tissueType_ == "periodic":
-        #     self.loadCrossBoundaryAttributes()
-        # self.calculate_polygon_centers_and_perimeters()
-        # self.calculate_polygon_areas()
-        # self.arrange_polygon_vertices()
-        # if self.tissueType_ == "spheroid":
-        #     self.identify_surface_polygons_and_cells()
-        #     self.load_spheroid_attributes()
+
 
     @classmethod
     def from_topology(cls,vertices,edges,polygons,cells):
@@ -74,13 +62,37 @@ class Sample:
         sample.file_ = config_dir + input_filename
         sample.load_config()
         sample.load_conf_file()
-        sample.load_cross_boundary_attributes()
         sample.load_cell_vertices()
         sample.arrange_polygon_vertices()
         sample.calculate_cell_centers()
         sample.calculate_periodic_sample_center()
         return sample
     
+    @classmethod
+    def spheroid(cls, config_dir, simulation_time):
+        sample = cls()
+        sample.time_ = simulation_time
+        sample.config_dir_ = config_dir
+        sample.file_ = "{}{:07}.topo.txt".format(sample.config_dir_,sample.time_)
+        # Validate the input:
+        if not config_dir.endswith("/"):
+            print("config_dir must end with a '/'. Attempting to fix this...")
+            config_dir = config_dir + "/"
+        if not os.path.isdir(config_dir):
+            raise ValueError("sample.config_dir_ = {} must be a valid directory".format(config_dir))
+        
+        sample.tissueType_ = "spheroid"
+        sample.load_config_from_topo()
+        sample.load_conf_file()
+        sample.load_cell_attributes()
+        sample.calculate_polygon_centers_and_perimeters()
+        sample.arrange_polygon_vertices()
+        sample.calculate_polygon_areas()
+        
+        sample.identify_surface_polygons_and_cells()
+        sample.load_spheroid_attributes()
+
+        return sample
     # loadconfig(): given self.time_, this function first checks if
     # {time}.topo.txt exists in self.config_dir_. If not, it creates this file -
     # that is, it mines the topology at this time from topo.txt
@@ -203,7 +215,29 @@ class Sample:
                         for vertexID in self.edges_[edgeID].vertices_:
                             cell.vertices_.append(vertexID)
                 cell.vertices_ = np.unique(cell.vertices_)
-
+    
+    def calculate_cell_centers(self):
+        for cellID, cell in self.cells_.items():
+            if self.tissueType_ == "spheroid" and not cell.type_:
+                continue
+            if self.tissueType_ == "periodic" and cell.crossBoundary_:
+                continue
+            cell.center_ = np.zeros(3)
+            for vertexID in cell.vertices_:
+                cell.center_ = np.add(cell.center_, self.vertices_[vertexID].position_)
+            cell.center_ = np.divide(cell.center_, len(cell.vertices_))
+    
+    # Here I use information originally from 
+    # cellVolume.txt and cellShapeIndex.txt: 
+    # A=s*V^2/3
+    # instead of calculating areas from triangular polygon patches
+    def load_cell_surface_areas(self):
+        for cellID, cell in self.cells_.items():
+            if bool(cell.type_):
+                cell.surface_area_ = (
+                    cell.shape_index_
+                    * pow(cell.volume_,2/3))
+                
     # Load cell attributes from {self.time_}.cellInfo.txt
     # Create this file if it does not exist.
     def load_cell_attributes(self):
@@ -230,17 +264,8 @@ class Sample:
                                                float(lineSplit[3])]
                 self.cells_[cellID].volume_ = float(lineSplit[4])
                 self.cells_[cellID].shape_index_ = float(lineSplit[5])
-    
-    # Here I use information originally from 
-    # cellVolume.txt and cellShapeIndex.txt: 
-    # A=s*V^2/3
-    # instead of calculating areas from triangular polygon patches
-    def calculate_cell_surface_areas(self):
-        for cellID, cell in self.cells_.items():
-            if bool(cell.type_):
-                cell.surface_area_ = (
-                    cell.shape_index_
-                    * pow(cell.volume_,2/3))
+        self.calculate_cell_centers()
+        self.load_cell_surface_areas()
 
     # As defined in Okuda et al 
     def calculate_polygon_centers_and_perimeters(self):
@@ -273,6 +298,7 @@ class Sample:
                 polygon.center_ = np.add(polygon.center_, self.vertices_[vertexID].position_)
             polygon.center_ = np.divide(polygon.center_, len(polygon.vertices_))
 
+
     # Calculate polygon areas by breaking up into triangular patches.
     # Note that this requires that we first calculate polygon centers.
     def calculate_polygon_areas(self):
@@ -288,25 +314,6 @@ class Sample:
                     self.vertices_[self.edges_[edgeID].vertices_[1]].position_,
                     polygon.center_)
                 polygon.area_ += 0.5 * np.linalg.norm(np.cross(v_i, v_j))
-    
-    def calculate_cell_shape_indices(self):
-        for cellID, cell in self.cells_.items():
-            if self.tissueType_ == "spheroid" and not cell.type_:
-                continue
-            if self.tissueType_ == "periodic" and cell.crossBoundary_:
-                continue
-            cell.shape_index_ = cell.surface_area_ / pow(cell.volume_,2/3)
-    
-    def calculate_cell_centers(self):
-        for cellID, cell in self.cells_.items():
-            if self.tissueType_ == "spheroid" and not cell.type_:
-                continue
-            if self.tissueType_ == "periodic" and cell.crossBoundary_:
-                continue
-            cell.center_ = np.zeros(3)
-            for vertexID in cell.vertices_:
-                cell.center_ = np.add(cell.center_, self.vertices_[vertexID].position_)
-            cell.center_ = np.divide(cell.center_, len(cell.vertices_))
     
     def calculate_periodic_sample_center(self):
         center = []
@@ -327,6 +334,14 @@ class Sample:
                 cell.surface_area_ += self.polygons_[polygonID].area_
         return
     
+    def calculate_cell_shape_indices(self):
+        for cellID, cell in self.cells_.items():
+            if self.tissueType_ == "spheroid" and not cell.type_:
+                continue
+            if self.tissueType_ == "periodic" and cell.crossBoundary_:
+                continue
+            cell.shape_index_ = cell.surface_area_ / pow(cell.volume_,2/3)
+
     def calculate_cell_volumes(self):
         self.arrange_polygon_vertices()
         for cellID, cell in self.cells_.items():

@@ -9,10 +9,13 @@ def calculate_shape_tensor(sample:tissueSample.Sample, cellID:int):
         shapeTensor = np.add(
             shapeTensor,
             np.outer(r_prime,r_prime))
-    # for polygonID in cell.polygons_:
-    #     r_prime = np.subtract(sample.polygons_[polygonID].center_,cell.center_)
-    #     shapeTensor = np.add(
-    #         shapeTensor,
-    #         np.outer(r_prime,r_prime))
-    # shapeTensor /= len(cell.vertices_)+len(cell.polygons_)
+        
+    # Adding polygon centers:
+
+    for polygonID in cell.polygons_:
+        r_prime = np.subtract(sample.polygons_[polygonID].center_,cell.center_)
+        shapeTensor = np.add(
+            shapeTensor,
+            np.outer(r_prime,r_prime))
+    shapeTensor /= len(cell.vertices_)+len(cell.polygons_)
     return shapeTensor
