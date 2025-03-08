@@ -1,5 +1,5 @@
 import numpy as np
-from toolbox import tissueSample
+from toolbox import tissue
 # Checked with Ligesh on 07/30/2024
 # Found and corrected factor errors in a',b',c' calculations
 def calculate_tetrahedral_inertia_tensor(vertices:list[list[float]]):
@@ -52,7 +52,7 @@ def calculate_tetrahedral_inertia_tensor(vertices:list[list[float]]):
         [- c_prime, - a_prime, c]])
     return tetrahedral_inertia_tensor
 
-def calculate_moment_of_inertia_tensor(sample:tissueSample.Sample, cellID:int):
+def calculate_moment_of_inertia_tensor(sample:tissue.Sample, cellID:int):
     inertiaTensor = np.zeros((3,3))
     cell = sample.cells_[cellID]
     for polygonID in cell.polygons_:
@@ -69,19 +69,3 @@ def calculate_moment_of_inertia_tensor(sample:tissueSample.Sample, cellID:int):
                 inertiaTensor,
                 calculate_tetrahedral_inertia_tensor(tetrahedral_vertices))
     return inertiaTensor
-
-def calculate_shape_tensor(sample:tissueSample.Sample, cellID:int):
-    shape_tensor = np.zeros((3,3))
-    cell = sample.cells_[cellID]
-    for vertexID in cell.vertices_:
-        pos = np.subtract(
-            sample.vertices_[vertexID].position_,
-            cell.center_)
-        shape_tensor = np.add(
-            shape_tensor,
-            np.outer(pos,pos))
-    shape_tensor = np.divide(
-        shape_tensor,
-        len(cell.vertices_))
-    return shape_tensor
-

@@ -1,9 +1,9 @@
 import random
-from toolbox import tissueSample
+from toolbox import tissue
 from toolbox import cellDivision
 
 def main():
-    sample = tissueSample.Sample(configDir = "samples/", simulationTime = 500, tissueType = "periodic")
+    sample = tissue.Sample(configDir = "samples/", simulationTime = 500, tissueType = "periodic")
     crossBoundary = True
     while crossBoundary:
         cellID = random.choice(list(sample.cells_.keys()))

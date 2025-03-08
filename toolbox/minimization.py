@@ -1,4 +1,4 @@
-from toolbox import tissueSample
+from toolbox.periodic import PeriodicTissue
 import os
 
 class FIREminimization:
@@ -7,12 +7,11 @@ class FIREminimization:
         self._dir = None
         self._modified_cells = []
     @classmethod
-    def from_config(cls, config_dir, input_filename):
+    def periodic_tissue(cls, tissue:PeriodicTissue):
         sample = cls()
-        sample._config = tissueSample.Sample.periodic_tissue(
-            config_dir = config_dir,
-            input_filename = input_filename)
-        sample._dir = config_dir
+        sample._config = tissue
+        sample._dir = tissue.config_dir_
+        sample.minimize_config()
         return sample
     
     def minimize_config(self, FIRE_only = False):
@@ -26,63 +25,62 @@ class FIREminimization:
             os.system("cd {} && ../build/tvm FIRE_only".format(self._dir))
         else:
             os.system("cd {} && ../build/tvm".format(self._dir))
-        self._config = tissueSample.Sample.periodic_tissue(
-            config_dir = self._dir,
-            input_filename = "minimized.txt")
+        self._config.load_periodic_tissue_from_file("minimized.txt")
+        # self._config.set_file("minimized.txt")
+        # self._config = tissueSample.Sample.periodic_tissue(self._dir,"minimized.txt")
         self.load_cell_parameters()
 
     def write_configuration(self,filename = "sample.topo"):
         sample = self._config
         with open("{}{}".format(self._dir,filename), "w") as file:
             file.write("vertices {:d}\n".format(len(sample.vertices_)))
-            for key,vertex in sample.vertices_.items():
+            for _,vertex in sample.vertices_.items():
                 id = vertex.id_
                 x = vertex.position_[0]
                 y = vertex.position_[1]
                 z = vertex.position_[2]
                 file.write("{:6d} {:.14f} {:.14f} {:.14f}\n".format(id, x, y, z))
             file.write("edges {:d}\n".format(len(sample.edges_)))
-            for key,edge in sample.edges_.items():
+            for _,edge in sample.edges_.items():
                 file.write("{:d}".format(edge.id_))
                 for vertexID in edge.vertices_:
                     file.write(" {:6d}".format(vertexID))
                 file.write("\n")
             file.write("polygons {:d}\n".format(len(sample.polygons_)))
-            for key, polygon in sample.polygons_.items():
+            for _, polygon in sample.polygons_.items():
                 file.write("{:d}".format(polygon.id_))
                 for edgeID in polygon.edges_:
                     file.write(" {:6d}".format(edgeID))
                 file.write("\n")
             file.write("cells {:d}\n".format(len(sample.cells_)))
-            for key, cell in sample.cells_.items():
+            for _, cell in sample.cells_.items():
                 file.write("{:d}".format(cell.id_))
                 for polygonID in cell.polygons_:
                     file.write(" {:6d}".format(polygonID))
                 file.write("\n")
 
     def load_cell_parameters(self):
-        if not self._modified_cells:
-            if not os.path.isfile("{}cellParameters.input".format(self._dir)):
-                print("cellParameters.input does not exist")
-                return
-            self._modified_cells = []
-            with open("{}cellParameters.input".format(self._dir),"r") as f:
-                lines = f.readlines()
-                for line in lines:
-                    if not len(line.split()):
-                        continue
-                    if not len(line.split()) == 4:
-                        print("Error in {}cellParameters.input".format(self._dir))
-                        return
-                    tmp_id = int(line.split()[0])
-                    tmp_v0 = float(line.split()[1])
-                    tmp_s0 = float(line.split()[2])
-                    tmp_is_fixed = bool(int(line.split()[3]))
-                    self._modified_cells.append(tmp_id)
-                    cell = self._config.cells_[tmp_id]
-                    cell.v0_ = tmp_v0
-                    cell.s0_ = tmp_s0
-                    cell.is_fixed_ = tmp_is_fixed
-                    if cell.is_fixed_:
-                        for polygonID in cell.polygons_:
-                            self._config.polygons_[polygonID].is_fixed_ = True
+        if not os.path.isfile("{}cellParameters.input".format(self._dir)):
+            print("cellParameters.input does not exist")
+            return
+        self._modified_cells = []
+        with open("{}cellParameters.input".format(self._dir),"r") as f:
+            lines = f.readlines()
+            for line in lines:
+                if not len(line.split()):
+                    continue
+                if not len(line.split()) == 4:
+                    print("Error in {}cellParameters.input".format(self._dir))
+                    return
+                tmp_id = int(line.split()[0])
+                tmp_v0 = float(line.split()[1])
+                tmp_s0 = float(line.split()[2])
+                tmp_is_fixed = bool(int(line.split()[3]))
+                self._modified_cells.append(tmp_id)
+                cell = self._config.cells_[tmp_id]
+                cell.v0_ = tmp_v0
+                cell.s0_ = tmp_s0
+                cell.is_fixed_ = tmp_is_fixed
+                if cell.is_fixed_:
+                    for polygonID in cell.polygons_:
+                        self._config.polygons_[polygonID].is_fixed_ = True

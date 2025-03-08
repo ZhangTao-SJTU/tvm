@@ -1,8 +1,8 @@
 import numpy as np
 import pyvtk
-from toolbox import topology,tissueSample, functions
+from toolbox import tissue, topology,functions
 
-def makeSampleCrossSection(sample:tissueSample.Sample,
+def makeSampleCrossSection(sample:tissue.Sample,
                            normal:np.ndarray = np.array([1,0,0]),
                            scalar:str = "shape_index"):
 

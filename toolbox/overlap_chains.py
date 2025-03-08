@@ -3,7 +3,7 @@ from scipy import stats
 import numpy as np
 import pandas as pd
 import os
-from toolbox import tissueSample
+from toolbox import tissue
 from toolbox import stressTensor
 
 # This function takes a spheroid, 
@@ -11,8 +11,7 @@ from toolbox import stressTensor
 
 # The neighbors of a cell are defined as cells that share a polygon with it.
 
-def find_cell_neighbors(spheroid:tissueSample.Sample):
-    
+def find_cell_neighbors(spheroid:tissue.Sample):
     cellID_to_neighbors:dict[int,list] = {}
     for cellID,cell in spheroid.cells_.items():
         if bool(cell.type_):
@@ -66,7 +65,7 @@ def calculate_average_overlap(dir_list:list[str],timevals=[5000*i for i in range
         #equip spheroids
         spheroids={i:None for i in timevals}
         for time in timevals:
-            spheroids[time] = tissueSample.Sample(config_dir=dir,
+            spheroids[time] = tissue.Sample(config_dir=dir,
                             simulation_time=time)
         print("spheroids equipped for ",dir)
         for i,time in enumerate(timevals):

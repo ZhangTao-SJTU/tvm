@@ -1,4 +1,4 @@
-from toolbox import tissueSample
+from toolbox import tissue
 from toolbox import cellAspectRatio
 from toolbox import stressTensor
 from toolbox import functions
@@ -7,7 +7,7 @@ import numpy as np
 
 
 class Chain:
-    def __init__(self,id:int,sample:tissueSample.Sample, cellIDs:list[int]):
+    def __init__(self,id:int,sample:tissue.Sample, cellIDs:list[int]):
         self.id_ = id
         self.cellIDs_ = cellIDs
         self.polygonIDs_ = []
@@ -22,13 +22,13 @@ class Chain:
         return
     
 
-    def calculate_volume(self, sample:tissueSample.Sample):
+    def calculate_volume(self, sample:tissue.Sample):
         self.volume_ = 0
         for cellID in self.cellIDs_:
             self.volume_ += sample.cells_[cellID].volume_
         return
     
-    def calculate_surface_area(self, sample:tissueSample.Sample):
+    def calculate_surface_area(self, sample:tissue.Sample):
         # first identify the boundary polygons
         # then add up their areas.
         self.surface_area_ = 0
@@ -42,7 +42,7 @@ class Chain:
             self.surface_area_ += sample.polygons_[polygonID].area_
         return
     
-    def dump_vtk(self, sample:tissueSample.Sample):
+    def dump_vtk(self, sample:tissue.Sample):
         output_dir = sample.config_dir_+"chains/"
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
@@ -92,7 +92,7 @@ class Chain:
         return
 
 # mark cells in sample (via side effect)
-def mark_chain_cells(sample:tissueSample.Sample):
+def mark_chain_cells(sample:tissue.Sample):
     for cellID,cell in sample.cells_.items():
         if cell.type_:
             shape = cellAspectRatio.calculate_shape_tensor(sample,cellID)
@@ -107,7 +107,7 @@ def mark_chain_cells(sample:tissueSample.Sample):
             #     cell.is_in_chain_ = True
     return
 
-def evaluate_chains_dict(sample:tissueSample.Sample):
+def evaluate_chains_dict(sample:tissue.Sample):
     # mark cells that will be part of a chain
     mark_chain_cells(sample)
     # Create a roster for cells that are part of some chain

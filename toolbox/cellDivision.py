@@ -1,11 +1,11 @@
 import random
 import numpy as np
-from toolbox import tissueSample
+from toolbox import tissue
 from toolbox import functions
 from toolbox import momentOfInertia
 from toolbox import topology
 
-def dumpVtk(sample:tissueSample.Sample):
+def dumpVtk(sample:tissue.Sample):
     vertexMap = functions.mapmaker(sample.vertices_)
     with open(sample.config_dir_
                 + "{:07d}.modifiedSample.vtk".format(sample.time_),'w') as file:
@@ -50,7 +50,7 @@ def dumpVtk(sample:tissueSample.Sample):
                         break
     return
     
-def dumpCellVtk(sample:tissueSample.Sample, cellID:int):
+def dumpCellVtk(sample:tissue.Sample, cellID:int):
     cell = sample.cells_[cellID]
     tmp_vertices = {}
     tmp_polygons = {polygonID:sample.polygons_[polygonID] for polygonID in cell.polygons_}
@@ -86,14 +86,14 @@ def dumpCellVtk(sample:tissueSample.Sample, cellID:int):
             file.write("\n")
     return
 
-def calculateElongationAxis(sample:tissueSample.Sample, cellID:int):
+def calculateElongationAxis(sample:tissue.Sample, cellID:int):
     inertia_tensor = momentOfInertia.calculate_moment_of_inertia_tensor(sample,cellID)
     eigenvalues, eigenvectors = np.linalg.eig(inertia_tensor)
     N = eigenvectors[:, np.argmin(eigenvalues)]
     return N
 
 
-def evaluatePostDivisionTopology(sample:tissueSample.Sample, cellID:int):
+def evaluatePostDivisionTopology(sample:tissue.Sample, cellID:int):
     cell = sample.cells_[cellID]
     newVertices = {}
     newEdges = {}
@@ -351,7 +351,7 @@ def dumpSample(sample):
     return
 
 def main():
-    sample = tissueSample.Sample(configDir = "samples/", simulationTime = 500, tissueType = "periodic")
+    sample = tissue.Sample(configDir = "samples/", simulationTime = 500, tissueType = "periodic")
     crossBoundary = True
     while crossBoundary:
         cellID = random.choice(list(sample.cells_.keys()))

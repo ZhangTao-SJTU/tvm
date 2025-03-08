@@ -3,16 +3,15 @@ from toolbox.minimization import FIREminimization
 class Training(FIREminimization):
     def __init__(self):
         super().__init__()
-        #pulse drive parameters
         self._iter_counter = 0
-        self._learning_rate = 5e-1
+        self._learning_rate = 10
         self._lambda = 1.1
-        self._cost = None
         self._tolerance = 1e-8
-
+        self._cost = None
+        self._cost_values = None
     @classmethod
-    def from_config(cls, config_dir, input_filename):
-        inst = super().from_config(config_dir,input_filename)
+    def periodic_tissue(cls, tissue):
+        inst = super().periodic_tissue(tissue)
         return inst
     
     def set_iter_counter(self,iter_counter):
@@ -23,18 +22,12 @@ class Training(FIREminimization):
         self._learning_rate = learning_rate
     def set_tolerance(self,tolerance):
         self._tolerance = tolerance
-    def set_modified_cell(self):
-        pass
-    # Writes the file cellParameters.input,
-    # with current state of cells from self._modified_cells
-    # In other words; parameters to be written from self._config.cells_
+
     def write_cell_parameters(self):
         if not self._modified_cells:
             print("No modified cells")
             return
-        
         # write the modified cell IDs to a file
-        print("Writing cell parameters")
         with open("{}cellParameters.input".format(self._dir),"w") as f:
             for cellID in self._modified_cells:
                 cell = self._config.cells_[cellID]
@@ -44,23 +37,21 @@ class Training(FIREminimization):
                     cell.s0_,
                     int(cell.is_fixed_)))
 
-    # pick a cell; cellID appended to self._modified_cells
-    # Criteria:
-    # 1. No cross boundary cells
-    # 2. No moidified cellls should share polygons
-    # 3. Should not be too close to the boundary (for visualization).
     def pick_random_modified_cell(self, v0 = 1, s0 = 5.2, is_fixed = False):
         sample = self._config
         cell_found = False
         while (not cell_found):
             test_cell_id = random.choice(list(sample.cells_.keys()))
             cell = sample.cells_[test_cell_id]
-            
             if cell.crossBoundary_:
                 continue
+            cross_boundary_polygons = False
             for polygonID in cell.polygons_:
                 if sample.polygons_[polygonID].crossBoundary_:
-                    continue
+                    cross_boundary_polygons = True
+                    break
+            if cross_boundary_polygons:
+                continue
             if self._modified_cells:
                 if cell.id_ in self._modified_cells:
                     continue
@@ -84,7 +75,6 @@ class Training(FIREminimization):
                     break
             if boundary:
                 continue
-            # print(cell.center_)
             self._modified_cells.append(cell.id_)
             cell.v0_ = v0
             cell.s0_ = s0
@@ -94,7 +84,7 @@ class Training(FIREminimization):
                     self._config.polygons_[polygonID].is_fixed_ = True
             cell_found = True
 
-    # Edit global parameters of the configuration               
+    # Edit global parameters of the configuration by changing the conf file.             
     def edit_conf(self,**kwargs):
         init_time = None
         final_time = None
@@ -107,7 +97,6 @@ class Training(FIREminimization):
         kv = None
         box_l = None
         box_periodic = None
-
         with open("{}conf".format(self._dir),"r") as f:
             lines = f.readlines()
             for line in lines:
@@ -132,13 +121,14 @@ class Training(FIREminimization):
                 if line.startswith("box"):
                     box_l = line.split()[1]
                     box_periodic = line.split()[4]
-
         for key in kwargs:
             if key == "s0":
                 s0 = kwargs[key]
-            if key == "kv":
+            elif key == "kv":
                 kv = kwargs[key]
-
+            else:
+                raise ValueError("Invalid key, or not supported yet.")
+            
         with open("{}conf".format(self._dir),"w") as f:
             f.write("time {} {} {}\n".format(init_time,final_time,euler_time))
             f.write("dump vtk {}\n".format(dump_vtk))

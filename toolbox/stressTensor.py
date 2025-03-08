@@ -1,16 +1,17 @@
 import numpy as np
 import math
-from toolbox import tissueSample
+from toolbox import tissue
 
 # corrected second term in calculate_surface_term with Ligesh 7/30/2024
 
 # Assuming that the polygon vertices are arranged in cyclic order, 
 # this function ensures that they are in anticlockwise order
 # (with respect to the vector from cell center to polygon center)
-# Polygon vertices in sample are rearranged as a side effect.
+
+# Polygon vertices in sample are rearranged as a side effect;
 # This function returns nothing.
 def rearrange_polygon_vertices_for_cell(
-        sample:tissueSample.Sample,
+        sample:tissue.Sample,
         cellID:int) -> None:
     cell = sample.cells_[cellID]
     for polygonID in cell.polygons_:
@@ -38,7 +39,7 @@ def rearrange_polygon_vertices_for_cell(
             polygon.vertices_ = polygon.vertices_[::-1]
     return
 
-def calculate_volume_term(sample:tissueSample.Sample, cellID:int):
+def calculate_volume_term(sample:tissue.Sample, cellID:int):
     cell = sample.cells_[cellID]
     # Initialize the volume term with identity matrix
     tensor_product = np.identity(3)
@@ -71,7 +72,7 @@ def calculate_volume_term(sample:tissueSample.Sample, cellID:int):
             
     return 2 * sample.kv_ * (cell.volume_ - 1) * tensor_product
 
-def calculate_surface_area_term(sample:tissueSample.Sample, cellID:int):
+def calculate_surface_area_term(sample:tissue.Sample, cellID:int):
     cell = sample.cells_[cellID]
     # Initialize the surface term S*I
     tensor_product = cell.surface_area_ * np.identity(3)
@@ -128,7 +129,7 @@ def calculate_surface_area_term(sample:tissueSample.Sample, cellID:int):
                 np.outer(edgeVector, edgeVector) * scalarMultiple)
     return 2 * (cell.surface_area_ - sample.s0_) * tensor_product
 
-def calculate_gamma_term(sample:tissueSample.Sample, cellID:int):
+def calculate_gamma_term(sample:tissue.Sample, cellID:int):
     cell = sample.cells_[cellID]
     if not cell.is_surface_:
         return np.zeros((3,3))
@@ -186,7 +187,7 @@ def calculate_gamma_term(sample:tissueSample.Sample, cellID:int):
                     np.outer(edgeVector, edgeVector) * scalarMultiple)
     return sample.gamma_ * tensor_product
 
-def calculate_stress_tensor(sample:tissueSample.Sample, cellID:int):
+def calculate_stress_tensor(sample:tissue.Sample, cellID:int):
     rearrange_polygon_vertices_for_cell(sample, cellID)
     stressTensor = np.add(
         calculate_volume_term(sample, cellID),
@@ -214,7 +215,9 @@ def calculate_stress_invariants(stress_tensor):
         "max_shear" : max_shear,
         "von_mises" : von_mises}
 
-def calculate_stress_tensor_COM_center(sample:tissueSample.Sample, cellID:int):
+# A calculation for the stress tensor where polygons have COM centers
+# (as opposed to Okuda centers)
+def calculate_stress_tensor_COM_center(sample:tissue.Sample, cellID:int):
     rearrange_polygon_vertices_for_cell(sample, cellID)
     stress_tensor = np.zeros((3,3))
     cell = sample.cells_[cellID]
@@ -222,9 +225,7 @@ def calculate_stress_tensor_COM_center(sample:tissueSample.Sample, cellID:int):
         raise ValueError("Cell volume is zero or not calculated")
     # Add volume term:
     v_term = 2*sample.kv_*(cell.volume_-cell.v0_)*np.identity(3)
-    
     # Calculate surface area term:
-
     s_term = cell.surface_area_ * np.identity(3)
     # Subtract the contributions from each polygon in the second term
     total_area = 0
@@ -243,11 +244,9 @@ def calculate_stress_tensor_COM_center(sample:tissueSample.Sample, cellID:int):
             s_term = np.subtract(
                 s_term,
                 np.outer(areaVector,areaVector) / area)
-    
     s_term = (2/cell.volume_)*(cell.surface_area_-cell.s0_)*s_term
     if not (cell.surface_area_ - total_area < 1e-4):
         raise ValueError("sanity check failed cell area: {} total area from triangles: {}".format(cell.surface_area_, total_area))
-
     stress_tensor = (-1) * (v_term + s_term)
     return stress_tensor
 

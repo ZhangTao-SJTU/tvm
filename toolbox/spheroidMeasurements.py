@@ -1,7 +1,7 @@
 import os
 import numpy as np
 from scipy import stats
-from toolbox import tissueSample
+from toolbox.spheroid import Spheroid
 from toolbox import functions
 from toolbox import stressTensor
 from toolbox import cellAspectRatio
@@ -14,9 +14,22 @@ class SpheroidMeasurements:
         self._dirList:list = []
         self._timevals:list[int] = []
         self._outputDir:str = None
-        self._dirToSpheroids:dict[str:dict[int:tissueSample.Sample]] = None
+        self._dirToSpheroids:dict[str:dict[int:Spheroid]] = None
         self._EvalDirList(dirList)
         self._spheroidsEvaluated = False
+        return
+    def setTimevals(self, timevals:list[int]) -> None:
+        self._timevals = timevals
+        return
+    def appendTimevals(self,timevals:list[int]) -> None:
+        for time in timevals:
+            self._timevals.append(time)
+        self._timevals = list(np.unique(self._timevals))
+        return
+    def setOutputDir(self,outputDir:str) -> None:
+        self._outputDir = outputDir
+        if not os.path.isdir(outputDir):
+            os.mkdir(outputDir)
         return
     def _EvalDirList(self,dirList:list) -> None:
         print("Initial list of directories: ", dirList)
@@ -34,49 +47,21 @@ class SpheroidMeasurements:
             raise ValueError("SpheroidMeasurements:_dirList is empty")
         else:
             print("Validated list of directories: ", self._dirList)
-        return
     def EvalSpheroids(self) -> None:
         self._dirToSpheroids = {dir:{} for dir in self._dirList}
         for dir in self._dirList:
             for time in self._timevals:
-                self._dirToSpheroids[dir][time] = tissueSample.Sample(
-                    configDir = dir,
-                    simulationTime = time)
+                self._dirToSpheroids[dir][time] = Spheroid.from_config(config_dir = dir, simulation_time = time)
         self._spheroidsEvaluated = True
         print("Spheroids evaluated.")
-        return
     def EvalCellNeighbors(self) -> None:
         for dir in self._dirList:
             for time in self._timevals:
                 sample = self._dirToSpheroids[dir][time]
-                overlap.find_cell_neighbors(sample)
+                if len(sample.cell_neighbors_):
+                    continue
+                sample.evaluate_cell_neighbors(sample)
         print("Cell neighbors evaluated.")
-        return
-    # def EvalStressTensors(self) -> None:
-    #     for dir in self._dirList:
-    #         for time in self._timevals:
-    #             sample = self._dirToSpheroids[dir][time]
-    #             for cellID,cell in sample.cells_.items():
-    #                 if cell.type_:
-    #                     cell.stress_tensor_ = stressTensor.calculate_stress_tensor(sample,cellID)
-    #     return
-    
-    def setTimevals(self, timevals:list[int]) -> None:
-        self._timevals = timevals
-        return
-        
-    def appendTimevals(self,timevals:list[int]) -> None:
-        for time in timevals:
-            self._timevals.append(time)
-        self._timevals = list(np.unique(self._timevals))
-        return
-
-    def setOutputDir(self,outputDir:str) -> None:
-        self._outputDir = outputDir
-        if not os.path.isdir(outputDir):
-            os.mkdir(outputDir)
-        return
-    
     def writeCellAttributes(self) -> None:
         if not len(self._timevals):
             print("Use SpheroidMeasurements.setTimevals(timevals:list[int])")
@@ -304,9 +289,6 @@ class SpheroidMeasurements:
                     np.mean(QnArray),
                     stats.sem(QnArray)))
         return
-    
-    def WriteCellMaxStress(self) -> None:
-        
 
     def mark_chain_cells(self):
         cutoff = 0.8
@@ -324,3 +306,116 @@ class SpheroidMeasurements:
                         cell.is_in_chain_ = True
         return
     
+    def writeMaxShearStress(self):
+        time_to_max_shear_stress = {time:[] for time in self._timevals}
+        for dir in self._dirList:
+            for time in self._timevals:
+                sample = self._dirToSpheroids[dir][time]
+                for cellID,cell in sample.cells_.items():
+                    if not cell.type_:
+                        continue
+                    if cell.is_surface_:
+                        continue
+                    if not cell.max_shear_stress_:
+                        stress = stressTensor.calculate_stress_tensor(sample,cellID)
+                        egvals = np.linalg.eigvalsh(stress)
+                        cell.max_shear_stress_ = 0.5 * (egvals[-1] - egvals[0])
+                    time_to_max_shear_stress[time].append(cell.max_shear_stress_)
+        for time in self._timevals:
+            filename = self._outputDir + "MaxShearStress_{}.csv".format(time)
+            with open(filename,"w") as file:
+                file.write("maxShearStress\n")
+                for stress in time_to_max_shear_stress[time]:
+                    file.write("{}\n".format(stress))
+    
+    def writeDistanceToShear(self):
+        time = self._timevals[-1]
+        filename = self._outputDir + "DistanceToShear.csv"
+        rBins = np.linspace(0,4,17)
+        distanceToStress = {r:[] for r in rBins}
+        for dir in self._dirList:
+            sample = self._dirToSpheroids[dir][time]
+            for cellID,cell in sample.cells_.items():
+                if not cell.type_:
+                    continue
+                if cell.is_surface_:
+                    continue
+                radial_distance = np.linalg.norm(np.subtract(cell.center_,sample.spheroid_center_))
+                bin = min(rBins, key = lambda x: abs(x - radial_distance))
+                if not cell.max_shear_stress_:
+                    stress = stressTensor.calculate_stress_tensor(sample,cellID)
+                    egvals = np.linalg.eigvalsh(stress)
+                    cell.max_shear_stress_ = 0.5 * (egvals[-1] - egvals[0])
+                distanceToStress[bin].append(cell.max_shear_stress_)
+        with open(filename,"w") as file:
+            file.write("radius,avgMaxShearStress,sem,samplesize\n")
+            for r,stresses in distanceToStress.items():
+                if len(stresses) < 2:
+                    continue
+                file.write("{},{},{},{}\n".format(r,np.mean(stresses),stats.sem(stresses),len(stresses)))
+                
+    def write_high_stress_cell_overlaps(self):
+        shear_stresses = []
+        for dir in self._dirList:
+            for time in self._timevals:
+                sample = self._dirToSpheroids[dir][time]
+                for cellID,cell in sample.cells_.items():
+                    if not cell.type_:
+                        continue
+                    if cell.is_surface_:
+                        continue
+                    if not cell.max_shear_stress_:
+                        stress = stressTensor.calculate_stress_tensor(sample,cellID)
+                        egvals = np.linalg.eigvalsh(stress)
+                        cell.max_shear_stress_ = 0.5 * (egvals[-1] - egvals[0])
+                    shear_stresses.append(cell.max_shear_stress_)
+        cutoff = np.percentile(shear_stresses,90)
+
+        time_to_Qn = {time:[] for time in self._timevals}
+        time_to_high_stress_cell_Qn = {time:[] for time in self._timevals}
+        for i,time in enumerate(self._timevals):
+            currentTime = time
+            previousTime = self._timevals[i-1]
+            for dir in self._dirList:
+                if i == 0:
+                    time_to_Qn[time].append(1)
+                    time_to_high_stress_cell_Qn[time].append(1)
+                    continue
+                if not len(self._dirToSpheroids[dir][previousTime].cell_neighbors_):
+                    self._dirToSpheroids[dir][previousTime].evaluate_cell_neighbors()
+                if not len(self._dirToSpheroids[dir][currentTime].cell_neighbors_):
+                    self._dirToSpheroids[dir][currentTime].evaluate_cell_neighbors()
+                neighbors_previous = self._dirToSpheroids[dir][previousTime].cell_neighbors_
+                neighbors_current = self._dirToSpheroids[dir][currentTime].cell_neighbors_
+                time_to_Qn[currentTime].append(overlap.calculate_Q(neighbors_previous,neighbors_current))
+                previous_high_stress_cell_neighbors = {}
+                for cellID,cell in self._dirToSpheroids[dir][previousTime].cells_.items():
+                    if not cell.type_:
+                        continue
+                    if cell.is_surface_:
+                        continue
+                    if cell.max_shear_stress_ > cutoff:
+                        previous_high_stress_cell_neighbors[cellID] = self._dirToSpheroids[dir][previousTime].cell_neighbors_[cellID]
+                time_to_high_stress_cell_Qn[currentTime].append(
+                    overlap.calculate_Q(previous_high_stress_cell_neighbors,neighbors_current))
+        filename = self._outputDir + "overlap.csv"
+        with open(filename,"w") as file:
+            file.write("time,mean_total,sem_total\n")
+            for time,QnArray in time_to_Qn.items():
+                if len(QnArray) == 0 or len(QnArray) == 1:
+                    continue
+                file.write("{},{},{}\n".format(
+                    time,
+                    np.mean(QnArray),
+                    stats.sem(QnArray)))
+        
+        filename = self._outputDir + "overlap_high_stress.csv"
+        with open(filename,"w") as file:
+            file.write("time,mean_total,sem_total\n")
+            for time,QnArray in time_to_high_stress_cell_Qn.items():
+                if len(QnArray) == 0 or len(QnArray) == 1:
+                    continue
+                file.write("{},{},{}\n".format(
+                    time,
+                    np.mean(QnArray),
+                    stats.sem(QnArray)))

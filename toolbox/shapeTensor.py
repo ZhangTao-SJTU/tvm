@@ -1,7 +1,7 @@
-from toolbox import tissueSample
+from toolbox import tissue
 import numpy as np
 
-def calculate_shape_tensor(sample:tissueSample.Sample, cellID:int):
+def calculate_shape_tensor(sample:tissue.Sample, cellID:int):
     cell = sample.cells_[cellID]
     shapeTensor = np.zeros((3,3))
     for vertexID in cell.vertices_:
@@ -11,11 +11,10 @@ def calculate_shape_tensor(sample:tissueSample.Sample, cellID:int):
             np.outer(r_prime,r_prime))
         
     # Adding polygon centers:
-
-    for polygonID in cell.polygons_:
-        r_prime = np.subtract(sample.polygons_[polygonID].center_,cell.center_)
-        shapeTensor = np.add(
-            shapeTensor,
-            np.outer(r_prime,r_prime))
-    shapeTensor /= len(cell.vertices_)+len(cell.polygons_)
-    return shapeTensor
+    # for polygonID in cell.polygons_:
+    #     r_prime = np.subtract(sample.polygons_[polygonID].center_,cell.center_)
+    #     shapeTensor = np.add(
+    #         shapeTensor,
+    #         np.outer(r_prime,r_prime))
+    # shapeTensor /= len(cell.vertices_)+len(cell.polygons_)
+    # return shapeTensor

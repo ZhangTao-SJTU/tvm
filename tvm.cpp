@@ -366,7 +366,7 @@ int LoadCellParameters(Run * run){
         }
         lines.push_back(tokens);
     }
-    cout << "Editing cell properties for the following cells:\n";
+    // cout << "Editing cell properties for the following cells:\n";
     for (int i = 0; i < lines.size(); i++) {
         tokens = lines[i];
         tmp_id = atol(tokens[0].c_str());
@@ -377,10 +377,11 @@ int LoadCellParameters(Run * run){
         run -> cells_[tmp_id] -> v0_ = tmp_v0;
         run -> cells_[tmp_id] -> s0_ = tmp_s0;
         run -> cells_[tmp_id] -> is_fixed_ = tmp_fixed;
-        cout << "cellID: " << tmp_id << " ";
-        cout << "v0: " << run -> cells_[tmp_id] -> v0_ << " ";
-        cout << "s0: " << run -> cells_[tmp_id] -> s0_ << " ";
-        cout << "is_fixed: " << run -> cells_[tmp_id] -> is_fixed_ << "\n";
+
+        // cout << "cellID: " << tmp_id << " ";
+        // cout << "v0: " << run -> cells_[tmp_id] -> v0_ << " ";
+        // cout << "s0: " << run -> cells_[tmp_id] -> s0_ << " ";
+        // cout << "is_fixed: " << run -> cells_[tmp_id] -> is_fixed_ << "\n";
     }
     cout << endl;
     return 0;
