@@ -16,6 +16,17 @@ class Patterns(Training):
         return inst
     def set_target_stress(self,stress):
         self._target_stress = stress
+    def set_target_cells(self,target_cells):
+        self._target_cells = target_cells
+        # For checking the above functionality with vtk:
+        for polygonID,polygon in self._config.polygons_.items():
+            polygon.vtk_scalar_ = 0
+        for cellID in self._target_cells:
+            cell = self._config.cells_[cellID]
+            for polygonID in cell.polygons_:
+                polygon = self._config.polygons_[polygonID]
+                polygon.vtk_scalar_ = 1
+        self._config.write_periodic_vtk(filename = "target_cells.vtk", use_scalar=True)
     def set_target_cells_spheroid(self, spheroid_radius = 0.5):
         # spheroid_radius_min = 2
         # spheroid_radius_max = 3.5
