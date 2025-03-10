@@ -84,6 +84,10 @@ class Sample:
             raise ValueError("Error using tissueSample.Sample.load_config(): self.file_ not set.")
         # Load the topology. When loading cell polygons, note that there are
         # virtual cells (type=0) and real cells (type=1).
+        self.vertices_ = {}
+        self.edges_ = {}
+        self.polygons_ = {}
+        self.cells_ = {}
         with open(self.file_, "r") as file:
             verticesFlag = False
             edgesFlag = False

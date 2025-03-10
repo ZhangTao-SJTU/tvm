@@ -2,6 +2,7 @@ from toolbox.training import Training
 from toolbox import stressTensor
 import numpy as np
 import os
+import random
 
 class Patterns(Training):
     def __init__(self):
@@ -57,6 +58,28 @@ class Patterns(Training):
                 polygon = self._config.polygons_[polygonID]
                 polygon.vtk_scalar_ = 1
         self._config.write_periodic_vtk(filename = "target_cells.vtk", use_scalar=True)
+    
+    def set_random_target_cells(self, n_cells = 1):
+        self._target_cells = []
+        while len(self._target_cells)<n_cells:
+            cellID = random.choice(list(self._config.cells_.keys()))
+            cell = self._config.cells_[cellID]
+            if cell.crossBoundary_:
+                continue
+            if cellID in self._target_cells:
+                continue
+            self._target_cells.append(cellID)
+            if len(self._target_cells) == n_cells:
+                break
+        # For checking the above functionality with vtk:
+        for polygonID,polygon in self._config.polygons_.items():
+            polygon.vtk_scalar_ = 0
+        for cellID in self._target_cells:
+            cell = self._config.cells_[cellID]
+            for polygonID in cell.polygons_:
+                polygon = self._config.polygons_[polygonID]
+                polygon.vtk_scalar_ = 1
+        self._config.write_periodic_vtk(filename = "target_cells.vtk", use_scalar=True)
         
     def calculate_max_shear_stresses(self):
         for cellID in self._target_cells:
@@ -75,7 +98,7 @@ class Patterns(Training):
             cell = self._config.cells_[cellID]
             self._cost += multiplier * (cell.max_shear_stress_ - self._target_stress) ** 2
 
-    def single_iteration(self):
+    def single_iteration(self,clamp_tol = None):
         if not len(self._target_cells):
             print("No target cells, iteration terminated.")
             return
@@ -101,7 +124,7 @@ class Patterns(Training):
 
         print("\n\n-------------------------------------")
         print("Step 2: CLAMPING")
-        self.clamp_target_cells()
+        self.clamp_target_cells(clamping_tolerance = clamp_tol)
 
         print("\n\n-------------------------------------")
         print("Step 3: Use the clamped state areas to update all learning degrees of freedom.")
@@ -113,7 +136,7 @@ class Patterns(Training):
                 continue
             del_area = cell.surface_area_ - free_state_areas[cellID]
             s0_change = self._learning_rate * del_area
-            self._config.cells_[cellID].s0_ += s0_change
+            self._config.cells_[cellID].s0_ -= s0_change
         
         print("\n\n-------------------------------------")
         print("Step 4: UNCLAMP target cells; write cell parameters")
@@ -122,6 +145,7 @@ class Patterns(Training):
             cell = self._config.cells_[cellID]
             cell.s0_ = self._config.s0_
         self.write_cell_parameters()
+        self.minimize_config(FIRE_only = True)
         # Step 5: Logging, etc
         self.write_configuration(filename = "{}.bulk.txt".format(self._iter_counter))
         for cellID,cell in self._config.cells_.items():
@@ -172,7 +196,7 @@ class Patterns(Training):
                         lower_bound = cell.s0_
                 cell.s0_ = (upper_bound + lower_bound) / 2
             self.write_cell_parameters()
-            self.minimize_config(FIRE_only = False)
+            self.minimize_config(FIRE_only = True)
             
     def run(self):
         self._cost_values = []
@@ -180,7 +204,10 @@ class Patterns(Training):
         self._cost_values.append(self._cost)
         print("Initial Cost: {:.2e}".format(self._cost))
         while self._cost > self._tolerance:
-            self.single_iteration()
+            if self._cost<1e-6:
+                self.single_iteration(clamp_tol = 1e-5)
+            else:
+                self.single_iteration(clamp_tol = 1e-3)
             self.evaluate_cost()
             self._cost_values.append(self._cost)
             print("Iteration: {:d}, Cost: {:.2e}".format(self._iter_counter,self._cost))

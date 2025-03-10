@@ -71,6 +71,9 @@ int main(int argc, char *argv[]) {
     // In this case one imagines that we may not necessarily be looking for equilibrium.
 
     if (argc > 1 && string(argv[1]) == "FIRE_only") {
+        cout<<"FIRE_only specified; skipping overdamping and reducing itermax: ";
+        run->FIRE_itermax = 5000;
+        cout<<run->FIRE_itermax<<endl;
         run->FIREminimize();
         F_rms = sqrt(run->FIRE_ff/(3 * run->vertices_.size()));
         cout << "Final F_rms: " << F_rms << endl;
@@ -243,6 +246,8 @@ int InitializeAll(Run * run) {
             run->count_cells_ = cell->id_ + 1;
         }
     }
+
+    /*
     cout << "Number of vertices: " << run->vertices_.size() << "\n";
     cout << "Maximum vertex ID: " << run->count_vertices_ - 1 << "\n";
     cout << "Number of edges: " << run->edges_.size() << "\n";
@@ -251,7 +256,7 @@ int InitializeAll(Run * run) {
     cout << "Maximum polygon ID: " << run->count_polygons_ - 1 << "\n";
     cout << "Number of cells: " << run->cells_.size() << "\n";
     cout << "Maximum cell ID: " << run->count_cells_ - 1 << "\n";
-
+    */
     run->updatePolygonCells();
     long int nPolygon2N = 0;
     for (auto polygon : run->polygons_) {
@@ -259,7 +264,7 @@ int InitializeAll(Run * run) {
             nPolygon2N++;
         }
     }
-    cout << "Number of polygons with two neighboring cells: " << nPolygon2N << "/" << run->polygons_.size() << endl;
+    // cout << "Number of polygons with two neighboring cells: " << nPolygon2N << "/" << run->polygons_.size() << endl;
 
     // initialize volume object
     run->volume_ = new Volume(run);
@@ -448,7 +453,7 @@ int LoadConf(string filename, Run * run) {
             run->dt_ = atof(tokens[3].c_str());
             run->dtr_ = 10*run->dt_;
             time_written = 1;
-            cout << "time: " << run->t_start_ << " ~ " << run->t_end_ << " ~ " << run->dt_ << " ~ " << run->dtr_ << "\n";
+            // cout << "time: " << run->t_start_ << " ~ " << run->t_end_ << " ~ " << run->dt_ << " ~ " << run->dtr_ << "\n";
         }
         else if (tokens[0] == "dump") {
             if (tokens.size() != 3) {
@@ -462,7 +467,7 @@ int LoadConf(string filename, Run * run) {
             if (tokens[1] == "vtk") {
                 run->dump_period_ = atof(tokens[2].c_str());
                 dump_written = 1;
-                cout << "dump: " << tokens[1] << " " << run->dump_period_ << "\n";
+                // cout << "dump: " << tokens[1] << " " << run->dump_period_ << "\n";
             }
         }
         else if (tokens[0] == "log") {
@@ -476,7 +481,7 @@ int LoadConf(string filename, Run * run) {
             }
             run->log_period_ = atof(tokens[1].c_str());
             log_screen_written = 1;
-            cout << "log: " << run->log_period_ << "\n";
+            // cout << "log: " << run->log_period_ << "\n";
         }
         else if (tokens[0] == "s0") {
             if (tokens.size() != 2) {
@@ -493,8 +498,7 @@ int LoadConf(string filename, Run * run) {
                 cell->s0_ = avg_s0;
             }
             s0_written = 1;
-            // cout << "s0: " << run->interface_->s0_ << endl;
-            cout << "Average s0: " << avg_s0 << "\n";
+            // cout << "Average s0: " << avg_s0 << "\n";
 
         }
         else if (tokens[0] == "Lth") {
@@ -520,7 +524,7 @@ int LoadConf(string filename, Run * run) {
                 }
             }
             Lth_written = 1;
-            cout << "Lth: " << run->reconnection_->Lth_ << " verbose: " << run->reconnection_->verbose_ << "\n";
+            // cout << "Lth: " << run->reconnection_->Lth_ << " verbose: " << run->reconnection_->verbose_ << "\n";
         }
         else if (tokens[0] == "T") {
             if (tokens.size() != 2) {
@@ -533,7 +537,7 @@ int LoadConf(string filename, Run * run) {
             }
             run->temperature_ = atof(tokens[1].c_str());
             temperature_written = 1;
-            cout << "temperature: " << run->temperature_ << "\n";
+            // cout << "temperature: " << run->temperature_ << "\n";
         }
         else if (tokens[0] == "kv") {
             if (tokens.size() != 2) {
@@ -546,7 +550,7 @@ int LoadConf(string filename, Run * run) {
             }
             run->volume_->kv_ = atof(tokens[1].c_str());
             kv_written = 1;
-            cout << "kv: " << run->volume_->kv_ << "\n";
+            // cout << "kv: " << run->volume_->kv_ << "\n";
         }
         else if (tokens[0] == "box") {
             if (tokens.size() != 7) {
@@ -582,8 +586,8 @@ int LoadConf(string filename, Run * run) {
                 }
             }
             box_written = 1;
-            cout << "box: " << run->box_->size_[0] << " " << run->box_->size_[1] << " " << run->box_->size_[2] << " ";
-            cout << "periodic boundary condition: " << run->box_->boundaryCondition_[0] << " " << run->box_->boundaryCondition_[1] << " " << run->box_->boundaryCondition_[2] << "\n";
+            // cout << "box: " << run->box_->size_[0] << " " << run->box_->size_[1] << " " << run->box_->size_[2] << " ";
+            // cout << "periodic boundary condition: " << run->box_->boundaryCondition_[0] << " " << run->box_->boundaryCondition_[1] << " " << run->box_->boundaryCondition_[2] << "\n";
         }
         else {
             cerr << "conf file error: ";
