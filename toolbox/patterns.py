@@ -170,31 +170,33 @@ class Patterns(Training):
     
 
     def clamp_target_cells(self,clamping_tolerance = 1e-3, max_iters = 20):
-        for _ in range(max_iters):
+        correction_factor = 10
+        for iter in range(max_iters):
+            print("Clamping iteration {}".format(iter))
             self.calculate_max_shear_stresses()
-            clamping_success = True
+            needs_clamping = []
             for cellID in self._target_cells:
                 cell = self._config.cells_[cellID]
                 current_stress = cell.max_shear_stress_
                 print("Cell: {}, Max shear stress: {}, s0: {}, surface area:{}".format(cellID,cell.max_shear_stress_, cell.s0_, cell.surface_area_))
                 if abs(current_stress - self._target_stress) > clamping_tolerance:
-                    clamping_success = False
-                    break
-            if clamping_success:
+                    needs_clamping.append(cellID)
+            if not len(needs_clamping):
                 print("Clamping successful to tolerance")
-                break
-            for cellID in self._target_cells:
+                return
+
+            for cellID in needs_clamping:
                 cell = self._config.cells_[cellID]
                 current_stress = cell.max_shear_stress_
                 # The target stress should be an overshoot/undershoot of self._target_stress
-                target_stress_correction_factor = 10*(self._target_stress - cell.max_shear_stress_)
-                target_stress = self._target_stress * (1 + target_stress_correction_factor)
-                print("Target stress: ", target_stress)
+                target_stress = self._target_stress * (1 + correction_factor * (self._target_stress - current_stress))
+                print("Cell {}, Target stress {} ".format(cellID, target_stress))
                 # Desired change in stress:
-                del_stress = self._lambda * (target_stress - cell.max_shear_stress_)
+                del_stress = self._lambda * (target_stress - current_stress)
                 upper_bound = 5.6
                 lower_bound = 4.8
                 stress_change = 0
+                # Binary search for s0 that produces the right stress change
                 while abs(stress_change - del_stress) > self._tolerance:
                     cell.s0_ = (upper_bound + lower_bound) / 2
                     stress = stressTensor.calculate_stress_tensor_COM_center(self._config,cellID)
