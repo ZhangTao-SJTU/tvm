@@ -36,8 +36,14 @@ public:
     double center_[3];
     double area_;
     double tension_;
+    double emptyTension_;
     double volumeForce_[3];
     double interfaceForce_[3];
+    double interfaceEmptyForce_[3];
+    double contactForce_[3];
+    bool   link_;
+    bool   pull_;
+    int    type_;
     std::vector<Edge *> edges_;
     std::vector<Vertex *> vertices_;
     std::vector<Cell *> cells_;
@@ -51,6 +57,8 @@ public:
     int shrink(Edge *);
     int expand(Edge *);
     int logEdges(std::string);
+    bool checkAngle();
+    bool checkShape();
 private:
     Run * run_;
 };

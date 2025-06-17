@@ -53,7 +53,7 @@ int     Box::resetPosition(double * r) {
     }
     for (int i = 0; i < 3; i++) {
         if (boundaryCondition_[i]) {
-            r[i] = r[i] - size_[i] * floor(r[i] / size_[i]);
+            r[i] = r[i] - size_[i] * floor((r[i] + size_[i] / 2.0) / size_[i]);
         }
     }
 
@@ -73,4 +73,16 @@ int     Box::resetDistance(double * dx) {
     }
 
     return 0;
+}
+
+bool Box::crossBoundary(double *x1, double *x0) {
+    for (int i = 0; i < 3; i++) {
+        if (boundaryCondition_[i]) {
+            if (fabs(x1[i] - x0[i]) > run_->box_->size_[i]/2.0) {
+                return true;
+            }
+        }
+    }
+
+    return false;
 }

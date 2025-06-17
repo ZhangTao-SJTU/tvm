@@ -44,10 +44,14 @@ Cell::Cell(Run * run, long int id) {
     volume_ = 0.;
     pressure_ = 0.;
     shapeIndex_ = 0.;
+    type_ = 0;
+    pull_ = false;
+    link_ = false;
 }
 
 int Cell::updatePolygonDirections() {
     // compute direction of polygons
+//    std::unordered_map<long int, bool> polygonDirectionsPrev = polygonDirections_;
     polygonDirections_.clear();
 
 //    for (auto polygon : polygons_) {
@@ -163,48 +167,70 @@ int Cell::updatePolygonDirections() {
     }
     edgeDirections.clear();
 
-    // use cell volume to adjust the sign of polygonDirections_
-    volume_ = 0.;
-    for (auto polygon : polygons_) {
-        // the first vertex in the first polygon is the reference point
-        double cc[3];   // the vector pointing from the first vertex in the first polygon to polygon center
-        for (int m = 0; m < 3; m++) {
-            cc[m] = polygon->center_[m] - polygons_[0]->vertices_[0]->position_[m];
-//            cc[m] = polygon->center_[m];
-        }
-        run_->box_->resetDistance(cc);
-        for (int i = 0; i < polygon->vertices_.size(); i++) {
-            double cv[2][3];   // the vectors pointing from polygon center to edge vertices
-            for (int k = 0; k < 2; k++) {
-                Vertex * vertex = polygon->vertices_[(i + k)%polygon->vertices_.size()];
-                for (int m = 0; m < 3; m++) {
-                    cv[k][m] = vertex->position_[m] - polygon->center_[m];
-                }
-                run_->box_->resetDistance(cv[k]);
-            }
-            // compute the volume of the tetrahedron formed by origin, polygon center, and edge vertices
-            double cP[3];
-            double dP = 0.;
-            cP[0] = cv[0][1]*cv[1][2] - cv[1][1]*cv[0][2];
-            cP[1] = cv[1][0]*cv[0][2] - cv[0][0]*cv[1][2];
-            cP[2] = cv[0][0]*cv[1][1] - cv[1][0]*cv[0][1];
-            for (int m = 0; m < 3; m++) {
-                dP += cc[m]*cP[m];
-            }
-            if (polygonDirections_[polygon->id_]) {
-                volume_ += 1.0/6.0*dP;
-            } else {
-                volume_ -= 1.0/6.0*dP;
-            }
-        }
-    }
-
-    if (volume_ < 0.) {
-        volume_ = fabs(volume_);
-        for (auto polygon : polygons_) {
-            polygonDirections_[polygon->id_] = (!polygonDirections_[polygon->id_]);
-        }
-    }
+//    if (polygonDirectionsPrev.size() == 0) {
+//        // use cell volume to adjust the sign of polygonDirections_
+//        volume_ = 0.;
+//        for (auto polygon: polygons_) {
+//            // the first vertex in the first polygon is the reference point
+//            double cc[3];   // the vector pointing from the first vertex in the first polygon to polygon center
+//            for (int m = 0; m < 3; m++) {
+//                cc[m] = polygon->center_[m] - polygons_[0]->vertices_[0]->position_[m];
+////            cc[m] = polygon->center_[m];
+//            }
+//            run_->box_->resetDistance(cc);
+//            for (int i = 0; i < polygon->vertices_.size(); i++) {
+//                double cv[2][3];   // the vectors pointing from polygon center to edge vertices
+//                for (int k = 0; k < 2; k++) {
+//                    Vertex *vertex = polygon->vertices_[(i + k) % polygon->vertices_.size()];
+//                    for (int m = 0; m < 3; m++) {
+//                        cv[k][m] = vertex->position_[m] - polygon->center_[m];
+//                    }
+//                    run_->box_->resetDistance(cv[k]);
+//                }
+//                // compute the volume of the tetrahedron formed by origin, polygon center, and edge vertices
+//                double cP[3];
+//                double dP = 0.;
+//                cP[0] = cv[0][1] * cv[1][2] - cv[1][1] * cv[0][2];
+//                cP[1] = cv[1][0] * cv[0][2] - cv[0][0] * cv[1][2];
+//                cP[2] = cv[0][0] * cv[1][1] - cv[1][0] * cv[0][1];
+//                for (int m = 0; m < 3; m++) {
+//                    dP += cc[m] * cP[m];
+//                }
+//                if (polygonDirections_[polygon->id_]) {
+//                    volume_ += 1.0 / 6.0 * dP;
+//                } else {
+//                    volume_ -= 1.0 / 6.0 * dP;
+//                }
+//            }
+//        }
+//
+//        if (volume_ < 0.) {
+//            volume_ = fabs(volume_);
+//            for (auto polygon: polygons_) {
+//                polygonDirections_[polygon->id_] = (!polygonDirections_[polygon->id_]);
+//            }
+//        }
+//    } else {
+//        bool flip = false;
+//        for (auto pair : polygonDirections_) {
+//            long int polygonID = pair.first;
+//            bool polygonDirection = pair.second;
+//            if (polygonDirectionsPrev.find(polygonID) != polygonDirectionsPrev.end()) {
+//                bool polygonDirectionPrev = polygonDirectionsPrev[polygonID];
+//                if (polygonDirectionPrev != polygonDirection) {
+//                    flip = true;
+//                }
+//                break;
+//            }
+//        }
+//        if (flip) {
+//            for (auto polygon: polygons_) {
+//                polygonDirections_[polygon->id_] = (!polygonDirections_[polygon->id_]);
+//            }
+////            cout << "flipped" << endl;
+//        }
+//    }
+//    polygonDirectionsPrev.clear();
 
     return 0;
 }

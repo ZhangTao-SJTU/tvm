@@ -46,8 +46,12 @@ Vertex::Vertex(Run * run, long int id) {
         volumeForce_[i] = 0.;
         interfaceForce_[i] = 0.;
         pullingForce_[i] = 0.;
+        linkForce_[i] = 0.;
+        contactForce_[i] = 0.;
         velocity_[i] = 0.;
     }
+    pull_ = false;
+    type_ = 0;
 }
 
 int Vertex::logCells(std::string name) {

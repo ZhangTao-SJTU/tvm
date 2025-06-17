@@ -41,14 +41,15 @@ using namespace std;
 Interface::Interface(Run * run) {
     run_ = run;
     s0_ = 5.40; // 0~5.82
+    kL_ = 1.0;
     energy_ = 0.;
 }
 
 int     Interface::updateForces() {
     // reset all interfaceForce values in vertices
-    for (long int i = 0; i < run_->vertices_.size(); i++) {
-        for (int j = 0; j < 3; j++) {
-            run_->vertices_[i]->interfaceForce_[j] = 0.;
+    for (auto vertex : run_->vertices_) {
+        for (int m = 0; m < 3; m++) {
+            vertex->interfaceForce_[m] = 0.;
         }
     }
 
@@ -61,8 +62,8 @@ int     Interface::updateForces() {
     updateTension();
 
     // update interfaceForce values
-    for (long int i = 0; i < run_->polygons_.size(); i++) {
-        updatePolygonForces(run_->polygons_[i]);
+    for (auto polygon : run_->polygons_) {
+        updatePolygonForces(polygon);
     }
 
     return 0;
@@ -72,8 +73,8 @@ int Interface::updatePolygonForces(Polygon *polygon) {
     // reset interfaceForce values of the polygon center
     for (int m = 0; m < 3; m++) {
         polygon->interfaceForce_[m] = 0.;
+        polygon->interfaceEmptyForce_[m] = 0.;
     }
-    double tension = polygon->tension_;
 
     // the polygon center is the reference point
     for (int i = 0; i < polygon->edges_.size(); i++) {
@@ -106,20 +107,62 @@ int Interface::updatePolygonForces(Polygon *polygon) {
         double Fcv0[3];
         double Fcv1[3];
         double Fvv[3];
-        Fvv[0] = tension*(nv[1]*vv[2] - vv[1]*nv[2]);
-        Fvv[1] = tension*(vv[0]*nv[2] - nv[0]*vv[2]);
-        Fvv[2] = tension*(nv[0]*vv[1] - vv[0]*nv[1]);
-        Fcv0[0] = tension*(nv[1]*cv[0][2] - cv[0][1]*nv[2]);
-        Fcv0[1] = tension*(cv[0][0]*nv[2] - nv[0]*cv[0][2]);
-        Fcv0[2] = tension*(nv[0]*cv[0][1] - cv[0][0]*nv[1]);
-        Fcv1[0] = tension*(cv[1][1]*nv[2] - nv[1]*cv[1][2]);
-        Fcv1[1] = tension*(nv[0]*cv[1][2] - cv[1][0]*nv[2]);
-        Fcv1[2] = tension*(cv[1][0]*nv[1] - nv[0]*cv[1][1]);
+        Fvv[0] = nv[1]*vv[2] - vv[1]*nv[2];
+        Fvv[1] = vv[0]*nv[2] - nv[0]*vv[2];
+        Fvv[2] = nv[0]*vv[1] - vv[0]*nv[1];
+        Fcv0[0] = nv[1]*cv[0][2] - cv[0][1]*nv[2];
+        Fcv0[1] = cv[0][0]*nv[2] - nv[0]*cv[0][2];
+        Fcv0[2] = nv[0]*cv[0][1] - cv[0][0]*nv[1];
+        Fcv1[0] = cv[1][1]*nv[2] - nv[1]*cv[1][2];
+        Fcv1[1] = nv[0]*cv[1][2] - cv[1][0]*nv[2];
+        Fcv1[2] = cv[1][0]*nv[1] - nv[0]*cv[1][1];
         // update interfaceForces
-        for (int m = 0; m < 3; m++) {
-            edge->vertices_[0]->interfaceForce_[m] = edge->vertices_[0]->interfaceForce_[m] + 0.5*(Fcv0[m]+Fvv[m]);
-            edge->vertices_[1]->interfaceForce_[m] = edge->vertices_[1]->interfaceForce_[m] + 0.5*(Fcv1[m]+Fvv[m]);
-            polygon->interfaceForce_[m] = polygon->interfaceForce_[m] + 0.5*(Fcv0[m]+Fcv1[m]);
+        //**EMPTY CELL CHECK**//
+        if (polygon->type_ == 0) {
+            if (edge->vertices_[0]->type_ < 3) {
+                for (int m = 0; m < 3; m++) {
+                    edge->vertices_[0]->interfaceForce_[m] = edge->vertices_[0]->interfaceForce_[m] + 0.5*polygon->emptyTension_*(Fcv0[m]+Fvv[m]);
+                }
+            }
+            if (edge->vertices_[1]->type_ < 3) {
+                for (int m = 0; m < 3; m++) {
+                    edge->vertices_[1]->interfaceForce_[m] = edge->vertices_[1]->interfaceForce_[m] + 0.5*polygon->emptyTension_*(Fcv1[m]+Fvv[m]);
+                }
+            }
+            for (int m = 0; m < 3; m++) {
+                polygon->interfaceEmptyForce_[m] = polygon->interfaceEmptyForce_[m] + 0.5*polygon->emptyTension_*(Fcv0[m]+Fcv1[m]);
+            }
+        } else if (polygon->type_ == 2) {
+            if (edge->vertices_[0]->type_ < 3) {
+                for (int m = 0; m < 3; m++) {
+                    edge->vertices_[0]->interfaceForce_[m] = edge->vertices_[0]->interfaceForce_[m] + 0.5*(polygon->tension_+polygon->emptyTension_)*(Fcv0[m]+Fvv[m]);
+                }
+            } else {
+                for (int m = 0; m < 3; m++) {
+                    edge->vertices_[0]->interfaceForce_[m] = edge->vertices_[0]->interfaceForce_[m] + 0.5*polygon->tension_*(Fcv0[m]+Fvv[m]);
+                }
+            }
+            if (edge->vertices_[1]->type_ < 3) {
+                for (int m = 0; m < 3; m++) {
+                    edge->vertices_[1]->interfaceForce_[m] = edge->vertices_[1]->interfaceForce_[m] + 0.5*(polygon->tension_+polygon->emptyTension_)*(Fcv1[m]+Fvv[m]);
+                }
+            } else {
+                for (int m = 0; m < 3; m++) {
+                    edge->vertices_[1]->interfaceForce_[m] = edge->vertices_[1]->interfaceForce_[m] + 0.5*polygon->tension_*(Fcv1[m]+Fvv[m]);
+                }
+            }
+            for (int m = 0; m < 3; m++) {
+                polygon->interfaceForce_[m] = polygon->interfaceForce_[m] + 0.5*polygon->tension_*(Fcv0[m]+Fcv1[m]);
+                polygon->interfaceEmptyForce_[m] = polygon->interfaceEmptyForce_[m] + 0.5*polygon->emptyTension_*(Fcv0[m]+Fcv1[m]);
+            }
+        } else {
+            for (int m = 0; m < 3; m++) {
+                edge->vertices_[0]->interfaceForce_[m] =
+                        edge->vertices_[0]->interfaceForce_[m] + 0.5 * polygon->tension_*(Fcv0[m] + Fvv[m]);
+                edge->vertices_[1]->interfaceForce_[m] =
+                        edge->vertices_[1]->interfaceForce_[m] + 0.5 * polygon->tension_*(Fcv1[m] + Fvv[m]);
+                polygon->interfaceForce_[m] = polygon->interfaceForce_[m] + 0.5 * polygon->tension_*(Fcv0[m] + Fcv1[m]);
+            }
         }
     }
 
@@ -132,8 +175,28 @@ int Interface::updatePolygonForces(Polygon *polygon) {
         double weight = polygon->edges_[i]->length_/sum_l;
         for (int k = 0; k < 2; k++) {
             Vertex *vertex = polygon->edges_[i]->vertices_[k];
-            for (int m = 0; m < 3; m++) {
-                vertex->interfaceForce_[m] = vertex->interfaceForce_[m] + 0.5*weight*polygon->interfaceForce_[m];
+            //**EMPTY CELL CHECK**//
+            if (polygon->type_ == 0) {
+                if (vertex->type_ < 3) {
+                    for (int m = 0; m < 3; m++) {
+                        vertex->interfaceForce_[m] =
+                                vertex->interfaceForce_[m] + 0.5 * weight * polygon->interfaceEmptyForce_[m];
+                    }
+                }
+            } else if (polygon->type_ == 2) {
+                for (int m = 0; m < 3; m++) {
+                    vertex->interfaceForce_[m] = vertex->interfaceForce_[m] + 0.5*weight*polygon->interfaceForce_[m];
+                }
+                if (vertex->type_ < 3) {
+                    for (int m = 0; m < 3; m++) {
+                        vertex->interfaceForce_[m] =
+                                vertex->interfaceForce_[m] + 0.5 * weight * polygon->interfaceEmptyForce_[m];
+                    }
+                }
+            } else {
+                for (int m = 0; m < 3; m++) {
+                    vertex->interfaceForce_[m] = vertex->interfaceForce_[m] + 0.5*weight*polygon->interfaceForce_[m];
+                }
             }
         }
     }
@@ -144,14 +207,36 @@ int Interface::updatePolygonForces(Polygon *polygon) {
 int Interface::updateTension() {
     for (auto polygon : run_->polygons_) {
         polygon->tension_ = 0.;
+        polygon->emptyTension_ = 0.;
     }
     for (auto cell : run_->cells_) {
+        if (cell->type_ < 0) {
+            continue;
+        }
         double s = 0.;
         for (auto polygon : cell->polygons_) {
             s += polygon->area_;
         }
-        for (auto polygon : cell->polygons_) {
-            polygon->tension_ += 2.0*(s - s0_);
+        //**EMPTY CELL CHECK**//
+        if (cell->type_ == 0) {
+            for (auto polygon : cell->polygons_) {
+                polygon->emptyTension_ += 2.0 * (s - 5.6);
+            }
+        } else {
+            for (auto polygon: cell->polygons_) {
+                polygon->tension_ += 2.0 * (s - s0_);
+            }
+        }
+    }
+    // set interface tension with empty cells
+    for (auto polygon : run_->polygons_) {
+        if (polygon->type_ == 2) {
+            polygon->tension_ += kL_;
+        }
+        if (polygon->type_ == 0) {
+            if (polygon->cells_[0]->type_ < 0 || polygon->cells_[1]->type_ < 0) {
+                polygon->emptyTension_ += kL_;
+            }
         }
     }
 
@@ -161,6 +246,10 @@ int Interface::updateTension() {
 int Interface::updateEnergy() {
     energy_ = 0.;
     for (auto cell : run_->cells_) {
+        //**EMPTY CELL CHECK**//
+        if (cell->type_ <= 0) {
+            continue;
+        }
         double s = 0.;
         for (auto polygon : cell->polygons_) {
             s += polygon->area_;

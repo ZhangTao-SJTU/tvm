@@ -22,37 +22,26 @@
  * ---------------------------------------------------------------------------------
  */
 
-#ifndef EDGE_H_INCLUDED
-#define EDGE_H_INCLUDED
+#ifndef FIBERELASTICITY_H_INCLUDED
+#define FIBERELASTICITY_H_INCLUDED
 
-class Edge;
+class FiberElasticity;
 #include "../Run/Run.h"
-#include "../Cell/Cell.h"
 
-class Edge {
+class FiberElasticity {
 public:
-    long int id_;
-    double vv_[3];  // the vector pointing from vertex 0 to 1
-    double center_[3];
-    double length_;
-    int    type_;
-    bool candidate_;    // reconnection candidate edge, length shorter than Lth
-    int triangle_count_;
-    bool markToDelete_;
-    // 0: connected to no triangle
-    // 1: connected to 1 triangle
-    // 2: connected to 2 triangles
-    // 3: connected to 3 triangles
+    double ks_;
+    double l0_;
+    double kb_;
+    double stretchEnergy_;
+    double bendEnergy_;
 
-    std::vector<Vertex *> vertices_;
-    std::vector<Cell *> cells_;
-    explicit Edge(Run *, long int);
+    explicit FiberElasticity(Run *);
 
-    bool crossBoundary();
-    int update();
-    bool checkI();
-    bool checkH();
-    Vertex * otherVertex(Vertex *);
+    int updateForces();
+    int updateStretchForces(Node *, Node *);
+    int updateBendForces(Node *, Node *, Node *);
+    int updateEnergy();
 private:
     Run * run_;
 };

@@ -34,16 +34,27 @@ class Run;
 #include "../Energy/Volume.h"
 #include "../Energy/Interface.h"
 #include "../Reconnection/Reconnection.h"
+#include "../ECM/Node.h"
+#include "../ECM/Fiber.h"
+#include "../ECM/Link.h"
+#include "../Energy/FiberElasticity.h"
+#include "../Energy/FiberLink.h"
+//#include "../Contact/Contact.h"
 #include "Box.h"
 
 class Run {
   public:
     double  dt_;    // integration time step
     double  dtr_;   // time interval of network reconnection
+    double  dte_;   // time interval of updating empty cells dynamics
     double  mu_;   // inverse damping coefficient of vertex
     double  kB_;
     double  temperature_;
     int     NCell_;
+    double pullForce_;
+    double pullxMax_;
+    double pullStartTime_;
+    double pullxSelect_;
     double  simulation_time_;
     double   t_start_;
     double   t_end_;
@@ -56,8 +67,12 @@ class Run {
     long int count_edges_;
     long int count_polygons_;
     long int count_cells_;
+    Cell * emptySpace_;
     Volume * volume_;
     Interface * interface_;
+    FiberElasticity * fiberElasticity_;
+    FiberLink * fiberLink_;
+//    Contact * contact_;
     Reconnection * reconnection_;
     Box * box_;
     std::stringstream verboseReconnection_;
@@ -66,6 +81,11 @@ class Run {
     std::vector<Edge *> edges_;
     std::vector<Polygon *> polygons_;
     std::vector<Cell *> cells_;
+    std::vector<Node *> nodes_;
+    std::vector<Fiber *> fibers_;
+    std::vector<Link *> links_;
+    std::vector<Polygon *> boundaryPolygons_;
+    std::vector<Edge *> boundaryEdges_;
 
     Run();
     int     start();
@@ -75,9 +95,16 @@ class Run {
     int     updateCellShapeIndex();
     int     updateVertexEdges();
     int     updateVertexCells();
+    int     updateEdgeCells();
     int     updateGeoinfo();
+    int     updateEmptyCells();
     int     updateVerticesVelocity();
     int     updateVerticesPosition();
+    int     updateNodesVelocity();
+    int     updateNodesPosition();
+    int     initializeLinks();
+    int     checkLinks();
+    int     updateLinks();
     int     deleteVertex(Vertex *);
     int     deleteEdge(Edge *);
     int     deletePolygon(Polygon *);
@@ -86,8 +113,11 @@ class Run {
     int     dumpCellCenter();
     int     dumpCellShapeIndex();
     int     dumpCellVolume();
+    int     dumpLinkInfo();
+    int     dumpVertexForce();
     int     dumpTopo();
     int     dumpReconnection();
+    int     dumpSpheroidShape();
 };
 
 #endif

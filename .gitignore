@@ -1,5 +1,13 @@
-build-windows
-cmake-build-debug
+cmake-build-debug*
 .idea
 .gitignore
 .DS_Store
+build/
+data/
+graphs/
+samples/
+archive/
+__pycache__/
+.mypy_cache/
+.tool-versions
+.travis.yml

@@ -106,7 +106,6 @@ int InitializeAll(Run * run) {
     bool edgesFlag = false;
     bool polygonsFlag = false;
     bool cellsFlag = false;
-    bool emptyCellsFlag = false;
     for (int i = 0; i < lines.size(); i++) {
         tokens = lines[i];
         if (tokens[0] == "vertices") {
@@ -120,9 +119,6 @@ int InitializeAll(Run * run) {
         } else if (tokens[0] == "cells") {
             polygonsFlag = false;
             cellsFlag = true;
-        } else if (tokens[0] == "virtual" && tokens[1] == "cells") {
-            cellsFlag = false;
-            emptyCellsFlag = true;
         } else {
             if (verticesFlag) {
                 tmp_id = atol(tokens[0].c_str());
@@ -163,7 +159,7 @@ int InitializeAll(Run * run) {
             if (cellsFlag) {
                 tmp_id = atol(tokens[0].c_str());
                 Cell * cell = new Cell(run, tmp_id);
-                for (int j = 1; j < tokens.size(); j++) {
+                for (int j = 1; j < tokens.size() - 1; j++) {
                     tmp_id = atol(tokens[j].c_str());
                     for (auto polygon : run->polygons_) {
                         if (polygon->id_ == tmp_id) {
@@ -172,6 +168,7 @@ int InitializeAll(Run * run) {
                         }
                     }
                 }
+                cell->type_ = atoi(tokens[tokens.size() - 1].c_str());
                 run->cells_.push_back(cell);
             }
         }
@@ -192,9 +189,13 @@ int InitializeAll(Run * run) {
             run->count_polygons_ = polygon->id_ + 1;
         }
     }
+    int nEmptyCells = 0;
     for (auto cell : run->cells_) {
         if (run->count_cells_ < cell->id_ + 1) {
             run->count_cells_ = cell->id_ + 1;
+        }
+        if (cell->type_ == 0) {
+            nEmptyCells++;
         }
     }
     cout << "Number of vertices: " << run->vertices_.size() << endl;
@@ -203,22 +204,111 @@ int InitializeAll(Run * run) {
     cout << "Maximum edge ID: " << run->count_edges_ - 1 << endl;
     cout << "Number of polygons: " << run->polygons_.size() << endl;
     cout << "Maximum polygon ID: " << run->count_polygons_ - 1 << endl;
-    cout << "Number of cells: " << run->cells_.size() << endl;
+    cout << "Number of all cells: " << run->cells_.size() << endl;
+    cout << "Number of empty cells: " << nEmptyCells << endl;
     cout << "Maximum cell ID: " << run->count_cells_ - 1 << endl;
 
+    // create emptySpace and assign component polgons
+    Cell * emptySpace = new Cell(run, -1);
+    emptySpace->type_ = (-1);
     run->updatePolygonCells();
     long int nPolygon2N = 0;
     for (auto polygon : run->polygons_) {
-        if (polygon->cells_.size() == 2) {
+        if (polygon->cells_.size() < 2) {
+            emptySpace->polygons_.push_back(polygon);
+        } else {
             nPolygon2N++;
         }
     }
     cout << "Number of polygons with two neighboring cells: " << nPolygon2N << "/" << run->polygons_.size() << endl;
+    run->cells_.push_back(emptySpace);
+    run->emptySpace_ = emptySpace;
+    // assign emptySpace to vertices
+    run->updateCellVertices();
+    for (auto vertex : emptySpace->vertices_) {
+        vertex->cells_.push_back(emptySpace);
+    }
+
+    // load initial ECM configuration
+    ifstream ECMtopofile("ECM.topo");
+    if (!topofile.is_open()) {
+        cout << "Error opening ECM topo file" << endl;
+        exit(1);
+    }
+    tokens.clear();
+    lines.clear();
+    while (getline(ECMtopofile, buffer))
+    {
+        pos = buffer.find((char)13);
+        if (pos != string::npos) {
+            buffer = buffer.substr(0, pos);
+        }
+        if (buffer.length() == 0) continue;
+
+        tokens.clear();
+        while ((pos = buffer.find(delimiter)) != string::npos) {
+            string token = buffer.substr(0, pos);
+            if (token.length() > 0) {
+                tokens.push_back(token);
+            }
+            buffer.erase(0, pos + delimiter.length());
+        }
+        if (buffer.length() > 0) {
+            tokens.push_back(buffer);
+        }
+        lines.push_back(tokens);
+    }
+    bool nodesFlag = false;
+    bool fibersFlag = false;
+    for (int i = 0; i < lines.size(); i++) {
+        tokens = lines[i];
+        if (tokens[0] == "nodes") {
+            nodesFlag = true;
+        } else if (tokens[0] == "fibers") {
+            nodesFlag = false;
+            fibersFlag = true;
+        } else {
+            if (nodesFlag) {
+                tmp_id = atol(tokens[0].c_str());
+                Node * node = new Node(run, tmp_id);
+                for (int j = 1; j < tokens.size() - 1; j++) {
+                    node->position_[j - 1] = atof(tokens[j].c_str());
+                }
+                if (atol(tokens[tokens.size() - 1].c_str()) > 0) {
+                    node->link_ = true;
+                }
+                run->nodes_.push_back(node);
+            }
+            if (fibersFlag) {
+                tmp_id = atol(tokens[0].c_str());
+                Fiber * fiber = new Fiber(run, tmp_id);
+                for (int j = 1; j < tokens.size(); j++) {
+                    tmp_id = atol(tokens[j].c_str());
+                    for (auto node : run->nodes_) {
+                        if (node->id_ == tmp_id) {
+                            fiber->nodes_.push_back(node);
+                            node->fibers_.push_back(fiber);
+                            break;
+                        }
+                    }
+                }
+                run->fibers_.push_back(fiber);
+            }
+        }
+    }
+    cout << "Number of nodes: " << run->nodes_.size() << endl;
+    cout << "Number of fibers: " << run->fibers_.size() << endl;
 
     // initialize volume object
     run->volume_ = new Volume(run);
     // initialize interface object
     run->interface_ = new Interface(run);
+    // initialize fiberElasticity object
+    run->fiberElasticity_ = new FiberElasticity(run);
+    // initialize fiberLink object
+    run->fiberLink_ = new FiberLink(run);
+//    // initialize contact object
+//    run->contact_ = new Contact(run);
     // initialize reconnection object
     run->reconnection_ = new Reconnection(run);
 
@@ -227,7 +317,9 @@ int InitializeAll(Run * run) {
     // update geometry and topology information
     run->updateGeoinfo();
     run->updateVertexCells();
+    run->updateEdgeCells();
     run->volume_->updatePolygonDirections();
+    run->updateEmptyCells();
 
     return 0;
 }
@@ -254,6 +346,8 @@ int LoadConf(string filename, Run * run) {
     int temperature_written = 0;
     int kv_written = 0;
     int box_written = 0;
+    int fiber_written = 0;
+    int link_written = 0;
 
     while (getline(conf, buffer))
     {
@@ -292,6 +386,7 @@ int LoadConf(string filename, Run * run) {
             run->t_end_ = atof(tokens[2].c_str());
             run->dt_ = atof(tokens[3].c_str());
             run->dtr_ = 10*run->dt_;
+            run->dte_ = 5*run->dt_;
             time_written = 1;
             cout << "time: " << run->t_start_ << " ~ " << run->t_end_ << " ~ " << run->dt_ << " ~ " << run->dtr_ << endl;
         }
@@ -324,7 +419,7 @@ int LoadConf(string filename, Run * run) {
             cout << "log: " << run->log_period_ << endl;
         }
         else if (tokens[0] == "s0") {
-            if (tokens.size() != 2) {
+            if (tokens.size() != 3) {
                 cerr << "conf file error: ";
                 for (int j = 0; j < tokens.size(); j++) {
                     cerr << tokens[j] << " ";
@@ -333,8 +428,9 @@ int LoadConf(string filename, Run * run) {
                 exit(1);
             }
             run->interface_->s0_ = atof(tokens[1].c_str());
+            run->interface_->kL_ = atof(tokens[2].c_str());
             s0_written = 1;
-            cout << "s0: " << run->interface_->s0_ << endl;
+            cout << "s0: " << run->interface_->s0_ << "kL: " << run->interface_->kL_ << endl;
         }
         else if (tokens[0] == "Lth") {
             if (tokens.size() != 2 && tokens.size() != 3) {
@@ -386,6 +482,44 @@ int LoadConf(string filename, Run * run) {
             run->volume_->kv_ = atof(tokens[1].c_str());
             kv_written = 1;
             cout << "kv: " << run->volume_->kv_ << endl;
+        }
+        else if (tokens[0] == "fiber") {
+            if (tokens.size() != 4) {
+                cerr << "conf file error: ";
+                for (int j = 0; j < tokens.size(); j++) {
+                    cerr << tokens[j] << " ";
+                }
+                cerr << endl;
+                exit(1);
+            }
+            run->fiberElasticity_->ks_ = atof(tokens[1].c_str());
+            run->fiberElasticity_->l0_ = atof(tokens[2].c_str());
+            run->fiberElasticity_->kb_ = atof(tokens[3].c_str());
+            fiber_written = 1;
+            cout << "fiber ks: " << run->fiberElasticity_->ks_ << " l0: " << run->fiberElasticity_->l0_ << " kb: " << run->fiberElasticity_->kb_ << endl;
+        }
+        else if (tokens[0] == "link") {
+            if (tokens.size() != 7) {
+                cerr << "conf file error: ";
+                for (int j = 0; j < tokens.size(); j++) {
+                    cerr << tokens[j] << " ";
+                }
+                cerr << endl;
+                exit(1);
+            }
+            run->fiberLink_->N_ = atoi(tokens[1].c_str());
+            run->fiberLink_->ks_ = atof(tokens[2].c_str());
+            run->fiberLink_->l0_ = atof(tokens[3].c_str());
+            run->fiberLink_->l1_ = atof(tokens[4].c_str());
+            run->fiberLink_->shrinkSpeed_ = atof(tokens[5].c_str());
+            run->fiberLink_->shrinkStartTime_ = atof(tokens[6].c_str());
+            link_written = 1;
+            cout << "N: " << run->fiberLink_->N_
+            << " link ks: " << run->fiberLink_->ks_
+            << " l0: " << run->fiberLink_->l0_
+            << " l1: " << run->fiberLink_->l1_
+            << " shrink start time: " << run->fiberLink_->shrinkStartTime_
+            << " shrink speed: " << run->fiberLink_->shrinkSpeed_ << endl;
         }
         else if (tokens[0] == "box") {
             if (tokens.size() != 7) {
@@ -476,6 +610,16 @@ int LoadConf(string filename, Run * run) {
 
     if (box_written == 0) {
         cout << "conf file error: box" << endl;
+        exit(1);
+    }
+
+    if (fiber_written == 0) {
+        cout << "conf file error: fiber" << endl;
+        exit(1);
+    }
+
+    if (link_written == 0) {
+        cout << "conf file error: link" << endl;
         exit(1);
     }
 

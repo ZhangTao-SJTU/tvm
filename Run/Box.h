@@ -38,6 +38,7 @@ class Box {
     Box(Run * run);
     int     resetPosition(double *);
     int     resetDistance(double *);
+    bool    crossBoundary(double *, double*);
 };
 
 #endif

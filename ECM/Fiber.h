@@ -22,37 +22,18 @@
  * ---------------------------------------------------------------------------------
  */
 
-#ifndef EDGE_H_INCLUDED
-#define EDGE_H_INCLUDED
+#ifndef FIBER_H_INCLUDED
+#define FIBER_H_INCLUDED
 
-class Edge;
+class Fiber;
 #include "../Run/Run.h"
-#include "../Cell/Cell.h"
 
-class Edge {
+class Fiber {
 public:
     long int id_;
-    double vv_[3];  // the vector pointing from vertex 0 to 1
-    double center_[3];
-    double length_;
-    int    type_;
-    bool candidate_;    // reconnection candidate edge, length shorter than Lth
-    int triangle_count_;
-    bool markToDelete_;
-    // 0: connected to no triangle
-    // 1: connected to 1 triangle
-    // 2: connected to 2 triangles
-    // 3: connected to 3 triangles
 
-    std::vector<Vertex *> vertices_;
-    std::vector<Cell *> cells_;
-    explicit Edge(Run *, long int);
-
-    bool crossBoundary();
-    int update();
-    bool checkI();
-    bool checkH();
-    Vertex * otherVertex(Vertex *);
+    std::vector<Node *> nodes_;
+    explicit Fiber(Run *, long int);
 private:
     Run * run_;
 };

@@ -38,7 +38,11 @@ public:
     double volumeForce_[3];
     double interfaceForce_[3];
     double pullingForce_[3];
+    double linkForce_[3];
+    double contactForce_[3];
     double velocity_[3];
+    bool   pull_;
+    int    type_;
     std::vector<Edge *> edges_;
     std::vector<Cell *> cells_;
     explicit Vertex(Run *, long int);

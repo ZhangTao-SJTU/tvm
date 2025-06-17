@@ -22,37 +22,30 @@
  * ---------------------------------------------------------------------------------
  */
 
-#ifndef EDGE_H_INCLUDED
-#define EDGE_H_INCLUDED
+#ifndef FIBERLINK_H_INCLUDED
+#define FIBERLINK_H_INCLUDED
 
-class Edge;
+class FiberLink;
 #include "../Run/Run.h"
-#include "../Cell/Cell.h"
 
-class Edge {
+class FiberLink {
 public:
-    long int id_;
-    double vv_[3];  // the vector pointing from vertex 0 to 1
-    double center_[3];
-    double length_;
-    int    type_;
-    bool candidate_;    // reconnection candidate edge, length shorter than Lth
-    int triangle_count_;
-    bool markToDelete_;
-    // 0: connected to no triangle
-    // 1: connected to 1 triangle
-    // 2: connected to 2 triangles
-    // 3: connected to 3 triangles
+    double ks_;
+    double l0_;
+    double l1_;
+    int N_;
+    double stretchEnergy_;
+    double minArea_;
+    double minEdgeLength_;
+    double maxEdgeLength_;
+    long int nFormedLinks_;
+    double shrinkSpeed_;
+    double shrinkStartTime_;
 
-    std::vector<Vertex *> vertices_;
-    std::vector<Cell *> cells_;
-    explicit Edge(Run *, long int);
+    explicit FiberLink(Run *);
 
-    bool crossBoundary();
-    int update();
-    bool checkI();
-    bool checkH();
-    Vertex * otherVertex(Vertex *);
+    int updateForces();
+    int updateEnergy();
 private:
     Run * run_;
 };

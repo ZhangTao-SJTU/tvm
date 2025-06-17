@@ -33,6 +33,7 @@
 #include <cmath>
 #include <chrono>
 #include <unordered_map>
+#include <deque>
 
 #include "Volume.h"
 
@@ -47,9 +48,9 @@ Volume::Volume(Run * run) {
 
 int     Volume::updateForces() {
     // reset all volumeForce values in vertices
-    for (long int i = 0; i < run_->vertices_.size(); i++) {
-        for (int j = 0; j < 3; j++) {
-            run_->vertices_[i]->volumeForce_[j] = 0.;
+    for (auto vertex : run_->vertices_) {
+        for (int m = 0; m < 3; m++) {
+            vertex->volumeForce_[m] = 0.;
         }
     }
 
@@ -60,9 +61,12 @@ int     Volume::updateForces() {
     updatePressure();
 
     // update volumeForce values
-    for (long int i = 0; i < run_->cells_.size(); i++) {
-        for (int j = 0; j < run_->cells_[i]->polygons_.size(); j++) {
-            updatePolygonForces(run_->cells_[i], run_->cells_[i]->polygons_[j]);
+    for (auto cell : run_->cells_) {
+        if (cell->type_ < 0) {
+            continue;
+        }
+        for (auto polygon : cell->polygons_) {
+            updatePolygonForces(cell, polygon);
         }
     }
 
@@ -73,7 +77,67 @@ int Volume::updatePolygonDirections() {
     run_->updatePolygonVertices();
     run_->updatePolygonCells();
     for (auto cell : run_->cells_) {
+        if (cell->type_ < 0) {
+            continue;
+        }
         cell->updatePolygonDirections();
+    }
+    // adjust polygon directions of each cell, so that one polygon's directions in two cells are opposite
+    std::deque<Cell *> queneCells;
+    std::unordered_map<long int, bool> visited;
+    for (auto cell : run_->cells_) {
+        if (cell->type_ < 0) {
+            visited[cell->id_] = true;;
+        } else {
+            visited[cell->id_] = false;
+        }
+    }
+    visited[run_->cells_[0]->id_] = true;
+    queneCells.push_back(run_->cells_[0]);
+    while (queneCells.size() > 0) {
+        Cell * cell = queneCells[0];
+        queneCells.pop_front();
+        for (auto polygon : cell->polygons_) {
+            Cell * nextCell = polygon->cells_[0];
+            if (nextCell->id_ == cell->id_) {
+                nextCell = polygon->cells_[1];
+                if (nextCell->id_ == cell->id_) {
+                    cout << "bullshit" <<endl;
+                    exit(1);
+                }
+            }
+            if (!visited[nextCell->id_]) {
+                visited[nextCell->id_] = true;
+                queneCells.push_back(nextCell);
+                if (cell->polygonDirections_[polygon->id_] == nextCell->polygonDirections_[polygon->id_]) {
+                    for (auto p: nextCell->polygons_) {
+                        nextCell->polygonDirections_[p->id_] = (!nextCell->polygonDirections_[p->id_]);
+                    }
+                }
+            }
+        }
+    }
+    // depend on total volume of the system, flip all cell polygon directions
+    updateVolume();
+    if (totalVolume_ < 0) {
+        for (auto cell : run_->cells_) {
+            if (cell->type_ < 0) {
+                continue;
+            }
+            for (auto polygon: cell->polygons_) {
+                cell->polygonDirections_[polygon->id_] = (!cell->polygonDirections_[polygon->id_]);
+            }
+        }
+//        cout << "flipped" << endl;
+    }
+
+    // update polygonDirections of emptySpace_
+    for (auto polygon: run_->emptySpace_->polygons_) {
+        Cell * cell = polygon->cells_[0];
+        if (cell->type_ < 0) {
+            cell = polygon->cells_[1];
+        }
+        run_->emptySpace_->polygonDirections_[polygon->id_] = (!cell->polygonDirections_[polygon->id_]);
     }
 
     return 0;
@@ -83,10 +147,10 @@ int Volume::updateVolume() {
     // update cell volume
     totalVolume_ = 0.;
     for (auto cell : run_->cells_) {
+        if (cell->type_ < 0) {
+            continue;
+        }
         cell->updateVolume();
-//        if (run_->simulation_time_ < run_->t_start_+0.01*run_->dt_) {
-//            printf("%6f\n", cell->volume_);
-//        }
         totalVolume_ += cell->volume_;
     }
 
@@ -95,7 +159,15 @@ int Volume::updateVolume() {
 
 int Volume::updatePressure() {
     for (auto cell : run_->cells_) {
-        cell->pressure_ = (-1.0)*2.0*kv_*(cell->volume_-1.0);
+        if (cell->type_ < 0) {
+            continue;
+        }
+        //**EMPTY CELL CHECK**//
+        if (cell->type_ == 0) {
+            cell->pressure_ = (-1.0) * 2.0 * kv_ * (cell->volume_ - 1.0);
+        } else {
+            cell->pressure_ = (-1.0) * 2.0 * kv_ * (cell->volume_ - 1.0);
+        }
     }
 
     return 0;
@@ -133,10 +205,27 @@ int Volume::updatePolygonForces(Cell *cell, Polygon *polygon) {
         // update volumeForces
         Vertex * v0 = polygon->vertices_[i];
         Vertex * v1 = polygon->vertices_[j];
-        for (int m = 0; m < 3; m++) {
-            v0->volumeForce_[m] = v0->volumeForce_[m] + 1.0/3.0*pressure*interface[m];
-            v1->volumeForce_[m] = v1->volumeForce_[m] + 1.0/3.0*pressure*interface[m];
-            polygon->volumeForce_[m] = polygon->volumeForce_[m] + 1.0/3.0*pressure*interface[m];
+        //**EMPTY CELL CHECK**//
+        if (cell->type_ == 0) {
+            if (v0->type_ < 3) {
+                for (int m = 0; m < 3; m++) {
+                    v0->volumeForce_[m] = v0->volumeForce_[m] + 1.0/3.0*pressure*interface[m];
+                }
+            }
+            if (v1->type_ < 3) {
+                for (int m = 0; m < 3; m++) {
+                    v1->volumeForce_[m] = v1->volumeForce_[m] + 1.0/3.0*pressure*interface[m];
+                }
+            }
+            for (int m = 0; m < 3; m++) {
+                polygon->volumeForce_[m] = polygon->volumeForce_[m] + 1.0/3.0*pressure*interface[m];
+            }
+        } else {
+            for (int m = 0; m < 3; m++) {
+                v0->volumeForce_[m] = v0->volumeForce_[m] + 1.0 / 3.0 * pressure * interface[m];
+                v1->volumeForce_[m] = v1->volumeForce_[m] + 1.0 / 3.0 * pressure * interface[m];
+                polygon->volumeForce_[m] = polygon->volumeForce_[m] + 1.0 / 3.0 * pressure * interface[m];
+            }
         }
     }
 
@@ -149,6 +238,10 @@ int Volume::updatePolygonForces(Cell *cell, Polygon *polygon) {
         double weight = polygon->edges_[i]->length_/sum_l;
         for (int k = 0; k < 2; k++) {
             Vertex *vertex = polygon->edges_[i]->vertices_[k];
+            //**EMPTY CELL CHECK**//
+            if (cell->type_ == 0 && vertex->type_ >= 3) {
+                continue;
+            }
             for (int m = 0; m < 3; m++) {
                 vertex->volumeForce_[m] = vertex->volumeForce_[m] + 0.5*weight*polygon->volumeForce_[m];
             }
@@ -161,6 +254,10 @@ int Volume::updatePolygonForces(Cell *cell, Polygon *polygon) {
 int Volume::updateEnergy() {
     energy_ = 0.;
     for (auto cell : run_->cells_) {
+        //**EMPTY CELL CHECK**//
+        if (cell->type_ <= 0) {
+            continue;
+        }
         energy_ += kv_*pow(cell->volume_-1.0, 2.0);
     }
 

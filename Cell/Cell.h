@@ -35,6 +35,9 @@ public:
     double volume_;
     double pressure_;
     double shapeIndex_;
+    int type_;
+    bool pull_;
+    bool link_;
     std::vector<Polygon *> polygons_;
     std::vector<Vertex *> vertices_;
     std::unordered_map<long int, bool> polygonDirections_;

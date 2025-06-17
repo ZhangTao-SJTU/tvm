@@ -45,9 +45,14 @@ Polygon::Polygon(Run * run, long int id) {
         center_[i] = 0.;
         volumeForce_[i]  = 0.;
         interfaceForce_[i]  = 0.;
+        interfaceEmptyForce_[i]  = 0.;
     }
     area_ = 0.;
     tension_ = 0.;
+    emptyTension_ = 0.;
+    link_ = false;
+    pull_ = false;
+    type_ = 0;
 }
 
 int Polygon::updateVertices() {
@@ -214,4 +219,79 @@ int Polygon::logEdges(std::string name) {
     printf("\n");
 
     return 0;
+}
+
+bool Polygon::checkAngle() {
+    // the polygon center is the reference point
+    for (auto edge : edges_) {
+        // the edge vectors
+        double vv[2][3];
+        for (int m = 0; m < 3; m++) {
+            vv[0][m] = edge->vertices_[0]->position_[m] - edge->vertices_[1]->position_[m];
+            vv[1][m] = edge->vertices_[1]->position_[m] - edge->vertices_[0]->position_[m];
+        }
+        run_->box_->resetDistance(vv[0]);
+        run_->box_->resetDistance(vv[1]);
+        double norm_vv0 = sqrt(vv[0][0] * vv[0][0] + vv[0][1] * vv[0][1] + vv[0][2] * vv[0][2]);
+        double norm_vv1 = sqrt(vv[1][0] * vv[1][0] + vv[1][1] * vv[1][1] + vv[1][2] * vv[1][2]);
+        for (int m = 0; m < 3; m++) {
+            vv[0][m] = vv[0][m] / norm_vv0;
+            vv[1][m] = vv[1][m] / norm_vv1;
+        }
+        // the vectors pointing from polygon center to edge vertices
+        double cv[2][3];
+        for (int k = 0; k < 2; k++) {
+            Vertex *vertex = edge->vertices_[k];
+            for (int m = 0; m < 3; m++) {
+                cv[k][m] = vertex->position_[m] - center_[m];
+            }
+            run_->box_->resetDistance(cv[k]);
+        }
+        double norm_cv0 = sqrt(cv[0][0] * cv[0][0] + cv[0][1] * cv[0][1] + cv[0][2] * cv[0][2]);
+        double norm_cv1 = sqrt(cv[1][0] * cv[1][0] + cv[1][1] * cv[1][1] + cv[1][2] * cv[1][2]);
+        for (int m = 0; m < 3; m++) {
+            cv[0][m] = cv[0][m] / norm_cv0;
+            cv[1][m] = cv[1][m] / norm_cv1;
+        }
+        // check angle to see if it is greater than 5 degrees
+        double dP0 = vv[0][0] * cv[0][0] + vv[0][1] * cv[0][1] + vv[0][2] * cv[0][2];
+        double dP1 = vv[1][0] * cv[1][0] + vv[1][1] * cv[1][1] + vv[1][2] * cv[1][2];
+        if (dP0 > 0.999) {
+            return false;
+        }
+        if (dP1 > 0.999) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool Polygon::checkShape() {
+    updateCenter();
+    updateArea();
+    if (area_ < run_->fiberLink_->minArea_) {
+        return false;
+    }
+    if (!checkAngle()) {
+        return false;
+    }
+    double minL = 1000.;
+    double maxL = 0.;
+    for (auto edge : edges_) {
+        if (edge->length_ < minL) {
+            minL = edge->length_;
+        }
+        if (edge->length_ > maxL) {
+            maxL = edge->length_;
+        }
+    }
+    if (minL < run_->fiberLink_->minEdgeLength_) {
+        return false;
+    }
+    if (maxL > run_->fiberLink_->maxEdgeLength_) {
+        return false;
+    }
+
+    return true;
 }
