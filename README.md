@@ -1,5 +1,8 @@
 # TVM [![Build Status][1]][2] [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
+[1]: https://travis-ci.com/ZhangTao-SJTU/tvm.svg?token=YPqm5yHsQT7PD3VM6WG5&branch=main
+[2]: https://travis-ci.com/ZhangTao-SJTU/tvm
+
 ## Authors
 - Tao Zhang @ Shanghai Jiao Tong University, zhangtao.scholar@sjtu.edu.cn
 - Shabeeb Ameen @ Syracuse University, mameen@syr.edu
@@ -14,18 +17,18 @@ The network topology adheres to the following conditions:
 3. **EXTRA RULE** Two polyhedral cells never share two or more polygonal faces simultaneously.
 
 The codebase is organized into several modules:
-- `Cell`: Manages individual cell properties, volume, and constituent polygons.
+- `Cell`: Manages individual cell properties (e.g., volume) and their constituent polygons.
 - `Edge`: Defines the edges connecting vertices, including their length and type.
 - `Polygon`: Represents the polygonal faces of cells, managing their area, tension, and constituent edges/vertices.
 - `Vertex`: Represents the points where edges meet, handling forces and movement.
-- `Run`: Orchestrates the simulation, loading configurations, managing time steps, and coordinating updates across components.
-- `Energy`: Calculates various energy contributions, including volume constraints, interface tensions, and ECM interactions (e.g., fiber elasticity, fiber-link interactions).
-- `Reconnection`: Handles topological changes in the cellular network, such as T1 transitions (I_H and H_I processes).
-- `ECM`: Models the Extracellular Matrix, including nodes, fibers, and links, and their mechanical properties.
+- `Run`: Orchestrates the simulation, loading configurations, managing time steps, and coordinating updates across components like vertices, edges, polygons, and cells. It also handles dumping simulation data.
+- `Energy`: Calculates various energy contributions, including volume constraints (`Volume.cpp`, `Volume.h`), interface tensions (`Interface.cpp`, `Interface.h`), and ECM interactions (e.g., fiber elasticity in `FiberElasticity.cpp`, `FiberElasticity.h`, and fiber-link interactions in `FiberLink.cpp`, `FiberLink.h`).
+- `Reconnection`: Handles topological changes in the cellular network, such as T1 transitions (I_H and H_I processes detailed in `Reconnection.cpp` and `Reconnection.h`).
+- `ECM`: Models the Extracellular Matrix, including nodes (`Node.cpp`, `Node.h`), fibers (`Fiber.cpp`, `Fiber.h`), and links (`Link.cpp`, `Link.h`), and their mechanical properties.
 
-Initial configurations can be generated using scripts in the `scripts` folder, which may utilize libraries like `voro++` for Voronoi tessellation.
+Initial configurations can be generated using scripts in the `scripts/tvm/` folder (e.g., `main.py`), which may utilize libraries like `voro++` for Voronoi tessellation to create `sample.topo`.
 
-The current version of the code is primarily designed for bulk systems with periodic boundary conditions.
+The current version of the code is primarily designed for bulk systems with periodic boundary conditions, managed by the `Box` component within the `Run` module.
 
 Should you encounter any warning prompts, please reach out to the authors as we work towards making the code more robust for more general geometries, deformations, and energy functionals.
 
@@ -87,4 +90,4 @@ The simulation typically outputs `.vtk` files that can be visualized using softw
 
 [GNU GPL v3 License](./LICENSE.md)
 
-Copyright 2021-2023 Tao Zhang
+Copyright 2021-2023 Tao Zhang, Shabeeb Ameen
