@@ -72,11 +72,21 @@ class Sample:
                 test.pop(0)
         del result[-1]
         return result
+    def set_config_dir(self,dir):
+        self.config_dir_ = dir
     def set_file(self,file):
         if not os.path.isfile(self.config_dir_ + file):
             raise ValueError("Error in tissueSample.Sample: file must exist in self._config_dir")
         self.file_ = self.config_dir_ + file
-   
+    def set_origin(self,origin):
+        for _, vertex in self.vertices_.items():
+            vertex.position_ = np.subtract(vertex.position_, origin)
+        self.calculate_cell_centers()
+        self.calculate_polygon_centers_and_perimeters()
+        self.calculate_polygon_areas()
+        self.calculate_cell_volumes()
+        self.calculate_cell_surface_areas()
+        self.calculate_cell_shape_indices()
     def load_config(self):
         if self.file_ is None:
             print("self.file_ not set. If you are loading info from topo.txt,")
@@ -395,7 +405,7 @@ class Sample:
         single_cell.kv_ = self.kv_
         return single_cell
 
-    def write_cell_collection_vtk(self,cells_array,filename):
+    def write_cell_collection_vtk(self,cells_array,filename,use_scalar = False):
         vertices = []
         polygons = []  
         for cellID in cells_array:
@@ -435,6 +445,14 @@ class Sample:
                 for vertexID in polygon.vertices_:
                     f.write("{} ".format(v_map[vertexID]))
                 f.write("\n")
+            if not use_scalar:
+                return
+            f.write("CELL_DATA {}\n".format(len(polygons)))
+            f.write("SCALARS scalar_1 double\n")
+            f.write("LOOKUP_TABLE default\n")
+            for polygonID in polygons:
+                polygon = self.polygons_[polygonID]
+                f.write("{}\n".format(polygon.vtk_scalar_))
 
 # class SingleCell:
 #     def __init__(self,vertices,edges,polygons,cell):

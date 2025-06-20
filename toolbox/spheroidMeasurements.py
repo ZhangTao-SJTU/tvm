@@ -3,9 +3,8 @@ import numpy as np
 from scipy import stats
 from toolbox.spheroid import Spheroid
 from toolbox import functions
-from toolbox import stressTensor
-from toolbox import cellAspectRatio
-from toolbox import momentOfInertia
+from toolbox import stress
+from toolbox import shape
 from toolbox import overlap
 
 class SpheroidMeasurements:
@@ -62,57 +61,69 @@ class SpheroidMeasurements:
                     continue
                 sample.evaluate_cell_neighbors(sample)
         print("Cell neighbors evaluated.")
+    # def writeCellAttributes(self) -> None:
+    #     if not len(self._timevals):
+    #         print("Use SpheroidMeasurements.setTimevals(timevals:list[int])")
+    #         raise ValueError("self._timearray is empty.")
+    #     else:
+    #         print("Writing (in separate files) cell volumes and shape indices for times: ", self._timevals)
+    #     for time in self._timevals:
+    #         print("Processing for time value: ", time)
+    #         filename = self._outputDir + "CellAttributes_{}.csv".format(time)
+    #         print("results to be written to: ", filename)
+    #         with open(filename,"w") as file:
+    #             file.write("{},{}\n".format("cellVolume","cellShape"))
+    #             for dir in self._dirList:
+    #                 if not os.path.isfile(dir + "{:07d}.cellInfo.txt".format(time)):
+    #                     functions.writeTimeCellInfo(dir,time)
+    #                 with open(dir + "{:07d}.cellInfo.txt".format(time),"r") as cellInfoFile:
+    #                     lines = cellInfoFile.readlines()
+    #                     for i, line in enumerate(lines):
+    #                         if i == 0 or len(line.split()) == 0:
+    #                             continue
+    #                         cellVolume = float(line.split()[-2])
+    #                         cellShape = float(line.split()[-1])
+    #                         file.write("{},{}\n".format(cellVolume,cellShape))
+    #     return
     def writeCellAttributes(self) -> None:
         if not len(self._timevals):
             print("Use SpheroidMeasurements.setTimevals(timevals:list[int])")
             raise ValueError("self._timearray is empty.")
         else:
-            print("Writing (in separate files) cell volumes and shape indices for times: ", self._timevals)
+            print("Writing cell attributes for all spheroids at times: ", self._timevals)
         for time in self._timevals:
-            print("Processing for time value: ", time)
             filename = self._outputDir + "CellAttributes_{}.csv".format(time)
-            print("results to be written to: ", filename)
             with open(filename,"w") as file:
-                file.write("{},{}\n".format("cellVolume","cellShape"))
-                for dir in self._dirList:
-                    if not os.path.isfile(dir + "{:07d}.cellInfo.txt".format(time)):
-                        functions.writeTimeCellInfo(dir,time)
-                    with open(dir + "{:07d}.cellInfo.txt".format(time),"r") as cellInfoFile:
-                        lines = cellInfoFile.readlines()
-                        for i, line in enumerate(lines):
-                            if i == 0 or len(line.split()) == 0:
-                                continue
-                            cellVolume = float(line.split()[-2])
-                            cellShape = float(line.split()[-1])
-                            file.write("{},{}\n".format(cellVolume,cellShape))
-        return
-    
-    def writeCellStressTensor(self) -> None:
-        # Write stress tensor in voigt form 
-        if not self._timevals:
-            print("Use SpheroidMeasurements.setTimevals(timevals:list[int])")
-            raise ValueError("self._timearray is empty.")
-        elif not self._spheroidsEvaluated:
-            print("Use SpheroidMeasurements.EvalSpheroids() to evaluate spheroids")
-            raise ValueError("self._spheroidsEvaluated == False")
-        else:
-            print("Writing (separate files) cell.is_surface_, |sigma.rhat| for times: ",self._timevals)
-
-        for time in self._timevals:
-            filename = self._outputDir + "CellStressTensor_{}.csv".format(time)
-            with open(filename,"w") as file:
-                file.write("isSurface,xx,yy,zz\n")
+                file.write("{},{},{},{},{},{},{},{},{},{}\n".format(
+                    "cellID",
+                    "isSurface",
+                    "x",
+                    "y",
+                    "z",
+                    "volume",
+                    "shapeIndex",
+                    "shear",
+                    "anisotropy",
+                    "stressShapeProjection"))
                 for dir in self._dirList:
                     sample = self._dirToSpheroids[dir][time]
                     for cellID,cell in sample.cells_.items():
-                        if cell.type_:
-                            cell.stress_tensor_ = stressTensor.calculate_stress_tensor(sample,cellID)
-                            normal = np.subtract(cell.center_,sample.sample_center_)
-                            normal = normal / np.linalg.norm(normal)
-                            normalStress = np.dot(cell.stress_tensor_, normal)
-                            file.write("{},{}\n".format(int(cell.is_surface_),np.linalg.norm(normalStress)))
-        return
-    
+                        if not cell.type_:
+                            continue
+                        _,stress_egvecs = np.linalg.eigh(stress.calculate_stress_tensor(sample,cellID))
+                        _,shape_egvecs = np.linalg.eigh(shape.calculate_shape_tensor(sample,cellID))
+                        file.write("{},{},{},{},{},{},{},{},{},{}\n".format(
+                            cellID,
+                            cell.is_surface_,
+                            cell.center_[0]-sample.spheroid_center_[0],
+                            cell.center_[1]-sample.spheroid_center_[1],
+                            cell.center_[2]-sample.spheroid_center_[2],
+                            cell.volume_,
+                            cell.shape_index_,
+                            cell.max_shear_stress_,
+                            cell.anisotropy_,
+                            abs(np.dot(shape_egvecs[-1],stress_egvecs[-1]))))
+              
     def writeCellAspectRatios(self) -> None:
         if not self._timevals:
             print("Use SpheroidMeasurements.setTimevals(timevals:list[int])")
@@ -130,8 +141,7 @@ class SpheroidMeasurements:
                         if cell.type_:
                             file.write("{}\n".format(
                                 cellAspectRatio.calculate_aspect_ratio(sample,cellID)))
-        return
-    
+        return    
     def writeCellAspectRatios_shape_tensor(self) -> None:
         if not self._timevals:
             print("Use SpheroidMeasurements.setTimevals(timevals:list[int])")
@@ -151,8 +161,7 @@ class SpheroidMeasurements:
                             file.write("{}\n".format(
                                 cellAspectRatio.calculate_aspect_ratio_from_shape_tensor(
                                     sample,cellID)))
-        return
-    
+        return    
     def writeStressShapeProjections(self) -> None:
         if not self._timevals:
             print("Use SpheroidMeasurements.setTimevals(timevals:list[int])")
@@ -169,7 +178,7 @@ class SpheroidMeasurements:
                     for cellID,cell in sample.cells_.items():
                         if cell.type_:
                             shape = cellAspectRatio.calculate_shape_tensor(sample,cellID)
-                            stress = stressTensor.calculate_stress_tensor(sample,cellID)
+                            stress = stress.calculate_stress_tensor(sample,cellID)
                             _, shape_egvecs = np.linalg.eigh(shape)
                             stress_egvals, stress_egvecs = np.linalg.eigh(stress)
                             file.write("{},{},{}\n".format(
@@ -252,7 +261,6 @@ class SpheroidMeasurements:
                     stats.sem(dispArray)))            
         return
 
-
     def calculateAverageOverlap(self,is_chain_overlap = False) -> None:
         if not self._timevals:
             print("Use SpheroidMeasurements.setTimevals(timevals:list[int])")
@@ -298,7 +306,7 @@ class SpheroidMeasurements:
                 for cellID,cell in sample.cells_.items():
                     if not cell.type_:
                         continue
-                    stress = stressTensor.calculate_stress_tensor(sample,cellID)
+                    stress = stress.calculate_stress_tensor(sample,cellID)
                     shape = cellAspectRatio.calculate_shape_tensor(sample,cellID)
                     _, shape_egvecs = np.linalg.eigh(shape)
                     _, stress_egvecs = np.linalg.eigh(stress)
@@ -306,53 +314,74 @@ class SpheroidMeasurements:
                         cell.is_in_chain_ = True
         return
     
-    def writeMaxShearStress(self):
-        time_to_max_shear_stress = {time:[] for time in self._timevals}
+    def eval_shear_stresses(self):
         for dir in self._dirList:
             for time in self._timevals:
                 sample = self._dirToSpheroids[dir][time]
                 for cellID,cell in sample.cells_.items():
                     if not cell.type_:
                         continue
-                    if cell.is_surface_:
+                    if cell.max_shear_stress_:
                         continue
-                    if not cell.max_shear_stress_:
-                        stress = stressTensor.calculate_stress_tensor(sample,cellID)
-                        egvals = np.linalg.eigvalsh(stress)
-                        cell.max_shear_stress_ = 0.5 * (egvals[-1] - egvals[0])
-                    time_to_max_shear_stress[time].append(cell.max_shear_stress_)
-        for time in self._timevals:
-            filename = self._outputDir + "MaxShearStress_{}.csv".format(time)
-            with open(filename,"w") as file:
-                file.write("maxShearStress\n")
-                for stress in time_to_max_shear_stress[time]:
-                    file.write("{}\n".format(stress))
-    
-    def writeDistanceToShear(self):
-        time = self._timevals[-1]
-        filename = self._outputDir + "DistanceToShear.csv"
-        rBins = np.linspace(0,4,17)
-        distanceToStress = {r:[] for r in rBins}
+                    cell.max_shear_stress_ = stress.calculate_max_shear_stress(sample,cellID)
+
+    def eval_anisotropies(self):
         for dir in self._dirList:
-            sample = self._dirToSpheroids[dir][time]
-            for cellID,cell in sample.cells_.items():
-                if not cell.type_:
-                    continue
-                if cell.is_surface_:
-                    continue
-                radial_distance = np.linalg.norm(np.subtract(cell.center_,sample.spheroid_center_))
-                bin = min(rBins, key = lambda x: abs(x - radial_distance))
-                if not cell.max_shear_stress_:
-                    stress = stressTensor.calculate_stress_tensor(sample,cellID)
-                    egvals = np.linalg.eigvalsh(stress)
-                    cell.max_shear_stress_ = 0.5 * (egvals[-1] - egvals[0])
-                distanceToStress[bin].append(cell.max_shear_stress_)
-        with open(filename,"w") as file:
-            file.write("radius,avgMaxShearStress,sem,samplesize\n")
-            for r,stresses in distanceToStress.items():
-                if len(stresses) < 2:
-                    continue
-                file.write("{},{},{},{}\n".format(r,np.mean(stresses),stats.sem(stresses),len(stresses)))
+            for time in self._timevals:
+                sample = self._dirToSpheroids[dir][time]
+                for cellID,cell in sample.cells_.items():
+                    if not cell.type_:
+                        continue
+                    if cell.anisotropy_:
+                        continue
+                    cell.anisotropy_ = shape.calculate_anisotropy(sample,cellID)
+    # def writeMaxShearStress(self):
+    #     time_to_max_shear_stress = {time:[] for time in self._timevals}
+    #     for dir in self._dirList:
+    #         for time in self._timevals:
+    #             sample = self._dirToSpheroids[dir][time]
+    #             for cellID,cell in sample.cells_.items():
+    #                 if not cell.type_:
+    #                     continue
+    #                 # if cell.is_surface_:
+    #                 #     continue
+    #                 if not cell.max_shear_stress_:
+    #                     stress = stress.calculate_stress_tensor(sample,cellID)
+    #                     egvals = np.linalg.eigvalsh(stress)
+    #                     cell.max_shear_stress_ = 0.5 * (egvals[-1] - egvals[0])
+    #                 time_to_max_shear_stress[time].append(cell.max_shear_stress_)
+        # for time in self._timevals:
+        #     filename = self._outputDir + "MaxShearStress_{}.csv".format(time)
+        #     with open(filename,"w") as file:
+        #         file.write("maxShearStress\n")
+        #         for stress in time_to_max_shear_stress[time]:
+        #             file.write("{}\n".format(stress))
+    
+    # def writeDistanceToShear(self):
+    #     time = self._timevals[-1]
+    #     filename = self._outputDir + "DistanceToShear.csv"
+    #     rBins = np.linspace(0,4,17)
+    #     distanceToStress = {r:[] for r in rBins}
+    #     for dir in self._dirList:
+    #         sample = self._dirToSpheroids[dir][time]
+    #         for cellID,cell in sample.cells_.items():
+    #             if not cell.type_:
+    #                 continue
+    #             if cell.is_surface_:
+    #                 continue
+    #             radial_distance = np.linalg.norm(np.subtract(cell.center_,sample.spheroid_center_))
+    #             bin = min(rBins, key = lambda x: abs(x - radial_distance))
+    #             if not cell.max_shear_stress_:
+    #                 stress = stress.calculate_stress_tensor(sample,cellID)
+    #                 egvals = np.linalg.eigvalsh(stress)
+    #                 cell.max_shear_stress_ = 0.5 * (egvals[-1] - egvals[0])
+    #             distanceToStress[bin].append(cell.max_shear_stress_)
+    #     with open(filename,"w") as file:
+    #         file.write("radius,avgMaxShearStress,sem,samplesize\n")
+    #         for r,stresses in distanceToStress.items():
+    #             if len(stresses) < 2:
+    #                 continue
+    #             file.write("{},{},{},{}\n".format(r,np.mean(stresses),stats.sem(stresses),len(stresses)))
                 
     def write_high_stress_cell_overlaps(self):
         shear_stresses = []
@@ -365,7 +394,7 @@ class SpheroidMeasurements:
                     if cell.is_surface_:
                         continue
                     if not cell.max_shear_stress_:
-                        stress = stressTensor.calculate_stress_tensor(sample,cellID)
+                        stress = stress.calculate_stress_tensor(sample,cellID)
                         egvals = np.linalg.eigvalsh(stress)
                         cell.max_shear_stress_ = 0.5 * (egvals[-1] - egvals[0])
                     shear_stresses.append(cell.max_shear_stress_)

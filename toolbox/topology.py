@@ -90,6 +90,7 @@ class Cell:
         self.center_ = None
         self.inertia_tensor_ = None
         self.stress_tensor_ = None
+        self.anisotropy_ = None
         self.max_shear_stress_ = None
         self.type_:int = 0
         self.is_mother_ = False
@@ -97,6 +98,7 @@ class Cell:
         self.is_in_chain_ = False
         self.mother_id_ = None
         self.is_fixed_ = False
+        self.vtk_scalar_ = None
         return
     
     def addPolygon(self, polygon):

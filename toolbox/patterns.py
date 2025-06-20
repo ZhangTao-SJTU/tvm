@@ -1,5 +1,5 @@
 from toolbox.training import Training
-from toolbox import stressTensor
+from toolbox import stress
 import numpy as np
 import os
 import random
@@ -95,7 +95,7 @@ class Patterns(Training):
     def calculate_max_shear_stresses(self):
         for cellID in self._target_cells:
             cell = self._config.cells_[cellID]
-            stress = stressTensor.calculate_stress_tensor_COM_center(self._config,cellID)
+            stress = stress.calculate_stress_tensor_COM_center(self._config,cellID)
             egvals = np.linalg.eigvalsh(stress)
             max_shear = 0.5 * abs(egvals[-1] - egvals[0])
             cell.max_shear_stress_ = max_shear
@@ -199,7 +199,7 @@ class Patterns(Training):
                 # Binary search for s0 that produces the right stress change
                 while abs(stress_change - del_stress) > self._tolerance:
                     cell.s0_ = (upper_bound + lower_bound) / 2
-                    stress = stressTensor.calculate_stress_tensor_COM_center(self._config,cellID)
+                    stress = stress.calculate_stress_tensor_COM_center(self._config,cellID)
                     egvals = np.linalg.eigvalsh(stress)
                     max_shear = 0.5 * abs(egvals[-1] - egvals[0])
                     stress_change = max_shear - current_stress
