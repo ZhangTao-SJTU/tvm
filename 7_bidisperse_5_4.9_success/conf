@@ -1,0 +1,8 @@
+time 0 2000 0.005
+dump vtk 100
+log 100
+s0 5
+Lth 0.02
+T 1e-04
+kv 1
+box 7 7 7 p p p
