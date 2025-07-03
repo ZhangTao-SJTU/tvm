@@ -1,0 +1,19 @@
+figure.figsize:     15, 15
+figure.labelsize:   48
+axes.linewidth:     5       # spine line width
+axes.labelsize:     48
+axes.titlesize:     48
+axes.titlepad:      20
+axes.labelpad:      20
+legend.fontsize:    44
+xtick.direction:    in
+xtick.major.size:   10
+xtick.major.width:  5
+xtick.major.pad:    20 
+ytick.direction:    in
+ytick.major.size:   10
+ytick.major.width:  5
+ytick.major.pad:    20
+xtick.labelsize:    48
+ytick.labelsize:    48
+lines.linewidth:    7       # line width in points
