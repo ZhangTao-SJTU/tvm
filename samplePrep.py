@@ -17,10 +17,10 @@ def make_bidisperse_sample():
     tissue = PeriodicTissue.from_config(dir,file)
     training_instance = Patterns.periodic_tissue(tissue)
     for cellID,cell in training_instance._config.cells_.items():
-        if not cellID%4:
+        if cellID%4:
             cell.s0_ = 5
         else:
-            cell.s0_ = 5.2
+            cell.s0_ = 4.9
     training_instance.write_cell_parameters()
     training_instance.minimize_config()
 
