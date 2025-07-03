@@ -7,7 +7,7 @@ import os
 import numpy as np
 
 def make_bidisperse_sample():
-    test_sample = "7_bidisperse_1"
+    test_sample = "7_1/"
     if os.path.isdir(test_sample):
         os.system("rm -r {}".format(test_sample))
     os.system("cp -r init/{} {}".format(test_sample,test_sample))
@@ -18,9 +18,11 @@ def make_bidisperse_sample():
     training_instance = Patterns.periodic_tissue(tissue)
     for cellID,cell in training_instance._config.cells_.items():
         if not cellID%4:
-            cell.s0_ = 5.6
+            cell.s0_ = 5
+        else:
+            cell.s0_ = 5.2
     training_instance.write_cell_parameters()
     training_instance.minimize_config()
 
 if __name__ == "__main__":
-    pass
+    make_bidisperse_sample()
