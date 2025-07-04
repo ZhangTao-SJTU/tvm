@@ -1,34 +1,39 @@
+from toolbox.cSection import makeSampleCrossSection
 from toolbox.patterns import Patterns
 from toolbox.periodic import PeriodicTissue
+from toolbox import stress
 import matplotlib.pyplot as plt
-import numpy as np
+from toolbox import stress
 import os
-if os.path.isdir("7_test"):
-    os.system("rm -r 7_test")
-os.system("cp -r init/7_test/ 7_test/")
-dir = "7_test/"
-file = "minimized.txt"
+import numpy as np
 
-tissue = PeriodicTissue.from_config(dir,file)
-# tr.minimize_config()
-# tr._config.load_periodic_tissue_cell_properties()
+def train_random_cells(test_sample, alpha, n_cells, tolerance):
+    if os.path.isdir(test_sample):
+        os.system("rm -r {}".format(test_sample))
+    os.system("cp -r init/{} {}".format(test_sample,test_sample))
+    dir = test_sample
+    file = "minimized.txt"
+    tissue = PeriodicTissue.from_config(dir,file)
+    training_instance = Patterns.periodic_tissue(tissue)
+    training_instance.minimize_config()
+    training_instance.set_tolerance(tolerance)
+    training_instance.set_random_target_cells(n_cells=n_cells)
 
-# tr.set_target_cells_spheroid(spheroid_radius=0.65)
-# tr.calculate_max_shear_stresses()
-# for cellID in tr._target_cells:
-#     cell = tr._config.cells_[cellID]
-#     print(cellID, cell.max_shear_stress_)
-# tr.set_target_stress(0.079)
-# tr.run()
+    for cellID in training_instance._target_cell_to_stress:
+        sign = np.random.choice([-1, 1])
+        initial_stress = stress.calculate_max_shear_stress(training_instance._config, cellID)
+        training_instance._target_cell_to_stress[cellID] = np.round((1+sign*alpha) * initial_stress,3)
+        # training_instance._target_cell_to_stress[cellID] = alpha
+        print("Initial stress for cell {}: {}".format(cellID, initial_stress))
+    print(training_instance._target_cell_to_stress)
+    training_instance.run()
 
+def main():
+    test_sample = "7_bidisperse_5_4.9/"
+    alpha = 0.02
+    n_cells = 3
+    tolerance = 1e-5
+    train_random_cells(test_sample, alpha, n_cells, tolerance)
 
-# for cellID,cell in tr._config.cells_.items():
-#     if cell.crossBoundary_:
-#         continue
-#     shear.append(cell.max_shear_stress_)
-#     for polygonID in cell.polygons_:
-#         polygon = tr._config.polygons_[polygonID]
-#         polygon.vtk_scalar_ = cell.max_shear_stress_
-# tr._config.write_periodic_vtk("test.vtk",use_scalar=True)
-# plt.hist(shear, bins = 10)
-# print(tr._target_cells)
+if __name__ == "__main__":
+    main()

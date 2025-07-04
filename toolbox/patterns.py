@@ -54,6 +54,9 @@ class Patterns(Training):
 
     def set_random_target_cells(self, n_cells = 1):
         self._target_cell_to_stress = {}
+        
+        for polygonID,polygon in self._config.polygons_.items():
+            polygon.vtk_scalar_ = 0
         while len(self._target_cell_to_stress)<n_cells:
             cellID = random.choice(list(self._config.cells_.keys()))
             cell = self._config.cells_[cellID]
@@ -62,16 +65,27 @@ class Patterns(Training):
             if cellID in self._target_cell_to_stress:
                 continue
             self._target_cell_to_stress[cellID] = None
-            if len(self._target_cell_to_stress) == n_cells:
-                break
-        # For checking the above functionality with vtk:
-        for polygonID,polygon in self._config.polygons_.items():
-            polygon.vtk_scalar_ = 0
-        for cellID in self._target_cell_to_stress:
-            cell = self._config.cells_[cellID]
+            targets_share_polygons = False
+            for polygonID in cell.polygons_:
+                polygon = self._config.polygons_[polygonID]
+                if polygon.vtk_scalar_ == 1:
+                    targets_share_polygons = True
+                    break    
+            if targets_share_polygons:
+                continue
             for polygonID in cell.polygons_:
                 polygon = self._config.polygons_[polygonID]
                 polygon.vtk_scalar_ = 1
+            if len(self._target_cell_to_stress) == n_cells:
+                break
+        # # For checking the above functionality with vtk:
+        # for polygonID,polygon in self._config.polygons_.items():
+        #     polygon.vtk_scalar_ = 0
+        for cellID in self._target_cell_to_stress:
+            cell = self._config.cells_[cellID]
+            # for polygonID in cell.polygons_:
+            #     polygon = self._config.polygons_[polygonID]
+            #     polygon.vtk_scalar_ = 1
         self._config.write_periodic_vtk(filename = "target_cells.vtk", use_scalar=True)
                 
     def calculate_max_shear_stresses(self):
@@ -88,7 +102,7 @@ class Patterns(Training):
             cost += multiplier * (cell.max_shear_stress_ - target_stress) ** 2
         return cost
     
-    def single_iteration(self,clamp_tol = None):
+    def single_iteration(self, correction_factor = 10, clamp_tol = None, FIRE_only_clamping = True):
         if not len(self._target_cell_to_stress):
             print("No target cells, iteration terminated.")
             return
@@ -109,7 +123,7 @@ class Patterns(Training):
 
         print("\n\n-------------------------------------")
         print("Step 2: CLAMPING")
-        self.clamp_target_cells(clamping_tolerance = clamp_tol)
+        self.clamp_target_cells(correction_factor = correction_factor, clamping_tolerance = clamp_tol, FIRE_only = FIRE_only_clamping)
 
         print("\n\n-------------------------------------")
         print("Step 3: Use the clamped state areas to update all learning degrees of freedom.")
@@ -146,8 +160,7 @@ class Patterns(Training):
     # such that stress overshoots/undershoots the target stress and energy minimize the config at each iteration.
     
     # Minimizing changes the surface area and hence the stress, so process is repeated.
-    def clamp_target_cells(self,correction_factor = 10,clamping_tolerance = 1e-3, max_iters = 10):
-
+    def clamp_target_cells(self, correction_factor, FIRE_only = True, clamping_tolerance = 1e-3, max_iters = 10):
         for iter in range(max_iters):
             print("Clamping iteration {}".format(iter))
             needs_clamping = []
@@ -178,8 +191,9 @@ class Patterns(Training):
                 #     cellID, final_target_stress, temp_target_stress, current_stress, cell.s0_))
             self.write_cell_parameters()
             # TESTING
-            self.minimize_config(FIRE_only = True)
-            # self.minimize_config()
+            # self.minimize_config(FIRE_only = True)
+            
+            self.minimize_config(FIRE_only = FIRE_only)
 
     # Binary search for s0 that produces the right stress        
     def solve_cell_s0_for_target_stress(self, cellID, target_stress):
@@ -201,6 +215,7 @@ class Patterns(Training):
     def run(self):
         #store initial cell parameters
         os.system("cp {}cellParameters.input {}cellParameters.init.input".format(self._dir,self._dir))
+        os.system("cp {}minimized.txt {}init_config.txt".format(self._dir,self._dir))
         self._cost_values = []
         cost = self.evaluate_cost()
         self._cost_values.append(cost)
@@ -213,22 +228,24 @@ class Patterns(Training):
         # df.to_csv("{}target_cells.csv".format(self._dir), index=False)
         print("Initial Cost: {:.2e}".format(cost))
         while cost > self._tolerance:
-            self.single_iteration(clamp_tol = cost * 1)
+            self.single_iteration(clamp_tol = cost * 1, correction_factor=10)
             cost = self.evaluate_cost()
             self._cost_values.append(cost)
             print("Iteration: {:d}, Cost: {:.2e}".format(self._iter_counter,cost))
             self._iter_counter += 1
+            # Rewrite costs.txt
+            np.savetxt("{}costs.txt".format(self._dir), self._cost_values, fmt='%.2e')
+            # Rewrite stresses.csv
+            final_stresses = []
+            for cellID in self._target_cell_to_stress:
+                cell = self._config.cells_[cellID]
+                final_stresses.append(cell.max_shear_stress_)
+            results = {"CellID": list(self._target_cell_to_stress.keys()),
+                    "Target": list(self._target_cell_to_stress.values()),
+                    "Initial": initial_stresses,
+                    "Final": final_stresses}
+            df = pd.DataFrame(results)
+            df.to_csv("{}stresses.csv".format(self._dir), index=False)
+
         print("Optimization finished at iteration: {:d}".format(self._iter_counter-1))
         print("Final cost: {:.2e}".format(cost))
-        np.savetxt("{}costs.txt".format(self._dir), self._cost_values, fmt='%.2e')
-        final_stresses = []
-        self.calculate_max_shear_stresses()
-        for cellID in self._target_cell_to_stress:
-            cell = self._config.cells_[cellID]
-            final_stresses.append(cell.max_shear_stress_)
-        results = {"CellID": list(self._target_cell_to_stress.keys()),
-                   "Target": list(self._target_cell_to_stress.values()),
-                   "Initial": initial_stresses,
-                   "Final": final_stresses}
-        df = pd.DataFrame(results)
-        df.to_csv("{}stresses.csv".format(self._dir), index=False)
