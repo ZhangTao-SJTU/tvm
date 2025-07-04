@@ -59,18 +59,18 @@ class FIREminimization:
                     file.write(" {:6d}".format(polygonID))
                 file.write("\n")
 
-    def load_cell_parameters(self):
-        if not os.path.isfile("{}cellParameters.input".format(self._dir)):
-            print("cellParameters.input does not exist")
+    def load_cell_parameters(self, filename = "cellParameters.input"):
+        if not os.path.isfile("{}{}".format(self._dir,filename)):
+            print("{} does not exist".format(filename))
             return
         self._modified_cells = []
-        with open("{}cellParameters.input".format(self._dir),"r") as f:
+        with open("{}{}".format(self._dir,filename),"r") as f:
             lines = f.readlines()
             for line in lines:
                 if not len(line.split()):
                     continue
                 if not len(line.split()) == 4:
-                    print("Error in {}cellParameters.input".format(self._dir))
+                    print("Error in {}{}".format(self._dir,filename))
                     return
                 tmp_id = int(line.split()[0])
                 tmp_v0 = float(line.split()[1])
