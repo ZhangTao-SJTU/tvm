@@ -30,7 +30,7 @@ def train_random_cells(test_sample, alpha, n_cells, tolerance):
 
 def main():
     test_sample = "7_bidisperse_5_4.9/"
-    alpha = 0.02
+    alpha = 0.05
     n_cells = 3
     tolerance = 1e-5
     train_random_cells(test_sample, alpha, n_cells, tolerance)
