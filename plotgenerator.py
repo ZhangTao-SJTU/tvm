@@ -7,9 +7,9 @@ import numpy as np
 
 def s0_histogram(dir, final_iter):
     plotter = manuscriptPlots.plot()
-    plotter.set_ylim(0,15)
-    plotter.set_xlim(4,6)
-    plotter.set_xticks([0.5*i for i in range(150)])
+    plotter.set_ylim(0,40)
+    plotter.set_xlim(4.5,5)
+    plotter.set_xticks([0.25*i for i in range(150)])
     plotter.set_yticks([5*i for i in range(1,100)])
     plotter.set_xlabel(r"$s_0$")
     plotter.set_yScaled()
@@ -20,9 +20,9 @@ def s0_histogram(dir, final_iter):
 
 def combined_stress_histogram(dir, final_iter):
     plotter = manuscriptPlots.plot()
-    plotter.set_ylim(0,10)
-    plotter.set_xlim(0,1)
-    plotter.set_xticks([0.5*i for i in range(150)])
+    plotter.set_ylim(0,7.5)
+    plotter.set_xlim(0,0.75)
+    plotter.set_xticks([0.25*i for i in range(150)])
     plotter.set_yticks([5*i for i in range(1,100)])
     plotter.set_xlabel(r"$\sigma_{shear}$")
     plotter.set_yScaled()
@@ -57,7 +57,7 @@ def cost_plot(dir):
     plotter = manuscriptPlots.plot()
     plotter.set_ylim(0,1)
     plotter.set_xlim(0,40)
-    plotter.set_xticks([5*i for i in range(150)])
+    plotter.set_xticks([20*i for i in range(150)])
     plotter.set_yticks([.5*i for i in range(1,100)])
     plotter.set_xlabel("Epochs")
     plotter.set_ylabel("Normalized Cost")
@@ -70,8 +70,9 @@ def cost_plot(dir):
     plotter.save_fig("{}/cost.png".format(dir))
 
 def main():
-    dir = "7_bidisperse_5_4.9/"
-    final_iter = 9
+    # dir = "2_cells_bidisperse_0.05/"
+    dir = "7_bidisperse_5_4.9_0.5_increase/"
+    final_iter =40
     s0_histogram(dir, final_iter)
     combined_stress_histogram(dir, final_iter)
     cost_plot(dir)
