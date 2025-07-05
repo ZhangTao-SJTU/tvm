@@ -160,7 +160,7 @@ class Patterns(Training):
     # such that stress overshoots/undershoots the target stress and energy minimize the config at each iteration.
     
     # Minimizing changes the surface area and hence the stress, so process is repeated.
-    def clamp_target_cells(self, correction_factor, FIRE_only = True, clamping_tolerance = 1e-3, max_iters = 10):
+    def clamp_target_cells(self, correction_factor, FIRE_only = True, clamping_tolerance = 1e-3, max_iters = 5):
         for iter in range(max_iters):
             print("Clamping iteration {}".format(iter))
             needs_clamping = []
