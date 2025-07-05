@@ -11,12 +11,16 @@ class Patterns(Training):
         # self._target_cells = None
         # self._target_stress = None
         self._target_cell_to_stress = None
+        self._clamping_max_iters = 2 #try 10
+        self._clamping_correction_factor = 20 #try 10
+        self._clamping_FIRE_only = True
     @classmethod
     def periodic_tissue(cls,tissue):
         inst = super().periodic_tissue(tissue)
         inst._modified_cells = list(inst._config.cells_.keys())
         return inst
-    
+    def set_clamping_FIRE_only(self, clamping_FIRE_only):
+        self._clamping_FIRE_only = clamping_FIRE_only
     def set_target_cell_to_stress(self,target_cell_to_stress):
         self._target_cell_to_stress = target_cell_to_stress
         # For checking the above functionality with vtk:
@@ -102,7 +106,7 @@ class Patterns(Training):
             cost += multiplier * (cell.max_shear_stress_ - target_stress) ** 2
         return cost
     
-    def single_iteration(self, correction_factor = 10, clamp_tol = None, FIRE_only_clamping = True):
+    def single_iteration(self, clamp_tol = None):
         if not len(self._target_cell_to_stress):
             print("No target cells, iteration terminated.")
             return
@@ -123,7 +127,7 @@ class Patterns(Training):
 
         print("\n\n-------------------------------------")
         print("Step 2: CLAMPING")
-        self.clamp_target_cells(correction_factor = correction_factor, clamping_tolerance = clamp_tol, FIRE_only = FIRE_only_clamping)
+        self.clamp_target_cells(clamping_tolerance = clamp_tol)
 
         print("\n\n-------------------------------------")
         print("Step 3: Use the clamped state areas to update all learning degrees of freedom.")
@@ -142,9 +146,7 @@ class Patterns(Training):
             cell = self._config.cells_[cellID]
             cell.s0_ = self._config.s0_
         self.write_cell_parameters()
-        # TESTING: Minimize the config with FIRE
         self.minimize_config()
-        # self.minimize_config(FIRE_only = True)
         # Step 5: Logging, etc
         self.write_configuration(filename = "{}.bulk.txt".format(self._iter_counter))
         for cellID,cell in self._config.cells_.items():
@@ -160,8 +162,8 @@ class Patterns(Training):
     # such that stress overshoots/undershoots the target stress and energy minimize the config at each iteration.
     
     # Minimizing changes the surface area and hence the stress, so process is repeated.
-    def clamp_target_cells(self, correction_factor, FIRE_only = True, clamping_tolerance = 1e-3, max_iters = 5):
-        for iter in range(max_iters):
+    def clamp_target_cells(self, clamping_tolerance = 1e-3):
+        for iter in range(self._clamping_max_iters):
             print("Clamping iteration {}".format(iter))
             needs_clamping = []
             for cellID, final_target_stress in self._target_cell_to_stress.items():
@@ -178,7 +180,7 @@ class Patterns(Training):
                 final_target_stress = self._target_cell_to_stress[cellID]
                 current_stress = stress.calculate_max_shear_stress(self._config, cellID)
                 # The temporary target stress to be solved for should be an overshoot/undershoot of self._target_stress
-                temp_target_stress = final_target_stress * (1 + correction_factor * (final_target_stress - current_stress))
+                temp_target_stress = final_target_stress * (1 + self._clamping_correction_factor * (final_target_stress - current_stress))
                 # The temporary target stress should be positive, 
                 # so we take the absolute value in case we hit a really small number
                 temp_target_stress = abs(temp_target_stress)
@@ -190,10 +192,7 @@ class Patterns(Training):
                 # print("Cell: {}, Final Target Stress: {} Temporary Target Stress: {}, Current stress: {}, s0: {}".format(
                 #     cellID, final_target_stress, temp_target_stress, current_stress, cell.s0_))
             self.write_cell_parameters()
-            # TESTING
-            # self.minimize_config(FIRE_only = True)
-            
-            self.minimize_config(FIRE_only = FIRE_only)
+            self.minimize_config(FIRE_only = self._clamping_FIRE_only)
 
     # Binary search for s0 that produces the right stress        
     def solve_cell_s0_for_target_stress(self, cellID, target_stress):
@@ -212,7 +211,7 @@ class Patterns(Training):
 
 
 
-    def run(self, FIRE_only_clamping = True):
+    def run(self):
         #store initial cell parameters
         os.system("cp {}cellParameters.input {}cellParameters.init.input".format(self._dir,self._dir))
         os.system("cp {}minimized.txt {}init_config.txt".format(self._dir,self._dir))
@@ -228,7 +227,7 @@ class Patterns(Training):
         # df.to_csv("{}target_cells.csv".format(self._dir), index=False)
         print("Initial Cost: {:.2e}".format(cost))
         while cost > self._tolerance:
-            self.single_iteration(clamp_tol = cost * 1, correction_factor=10,FIRE_only_clamping = FIRE_only_clamping)
+            self.single_iteration(clamp_tol = cost * 1)
             cost = self.evaluate_cost()
             self._cost_values.append(cost)
             print("Iteration: {:d}, Cost: {:.2e}".format(self._iter_counter,cost))

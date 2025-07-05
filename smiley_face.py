@@ -21,5 +21,6 @@ training_instance.set_target_cell_to_stress({
     494:0.20,
     166:0.13,
     378:0.20})
+training_instance.set_clamping_FIRE_only(True)
 training_instance.set_tolerance(1e-4)
-training_instance.run(FIRE_only_clamping = False)
+training_instance.run()
