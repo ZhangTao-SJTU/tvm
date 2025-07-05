@@ -11,9 +11,10 @@ class Patterns(Training):
         # self._target_cells = None
         # self._target_stress = None
         self._target_cell_to_stress = None
-        self._clamping_max_iters = 2 #try 10
-        self._clamping_correction_factor = 20 #try 10
+        self._clamping_max_iters = 10 #try 10
+        self._clamping_correction_factor = 10 #try 10
         self._clamping_FIRE_only = True
+        
     @classmethod
     def periodic_tissue(cls,tissue):
         inst = super().periodic_tissue(tissue)
@@ -21,6 +22,10 @@ class Patterns(Training):
         return inst
     def set_clamping_FIRE_only(self, clamping_FIRE_only):
         self._clamping_FIRE_only = clamping_FIRE_only
+    def set_clamping_max_iters(self, clamping_max_iters):
+        self._clamping_max_iters = clamping_max_iters
+    def set_clamping_correction_factor(self, clamping_correction_factor):
+        self._clamping_correction_factor = clamping_correction_factor
     def set_target_cell_to_stress(self,target_cell_to_stress):
         self._target_cell_to_stress = target_cell_to_stress
         # For checking the above functionality with vtk:
