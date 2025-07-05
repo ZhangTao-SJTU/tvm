@@ -16,10 +16,10 @@ training_instance = Patterns.periodic_tissue(tissue)
 # training_instance.edit_conf(kv = 10)
 training_instance.minimize_config()
 training_instance.set_target_cell_to_stress({
-    11:0.06,
-    157:0.13,
-    494:0.08,
-    166:0.05,
-    378:0.09})
+    11:0.12,
+    157:0.28,
+    494:0.20,
+    166:0.14,
+    378:0.20})
 training_instance.set_tolerance(1e-4)
-training_instance.run(FIRE_only_clamping= False)
+training_instance.run(FIRE_only_clamping = True)
