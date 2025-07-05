@@ -212,7 +212,7 @@ class Patterns(Training):
 
 
 
-    def run(self):
+    def run(self, FIRE_only_clamping = True):
         #store initial cell parameters
         os.system("cp {}cellParameters.input {}cellParameters.init.input".format(self._dir,self._dir))
         os.system("cp {}minimized.txt {}init_config.txt".format(self._dir,self._dir))
@@ -228,7 +228,7 @@ class Patterns(Training):
         # df.to_csv("{}target_cells.csv".format(self._dir), index=False)
         print("Initial Cost: {:.2e}".format(cost))
         while cost > self._tolerance:
-            self.single_iteration(clamp_tol = cost * 1, correction_factor=10)
+            self.single_iteration(clamp_tol = cost * 1, correction_factor=10,FIRE_only_clamping = FIRE_only_clamping)
             cost = self.evaluate_cost()
             self._cost_values.append(cost)
             print("Iteration: {:d}, Cost: {:.2e}".format(self._iter_counter,cost))

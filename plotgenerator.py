@@ -64,26 +64,14 @@ def cost_plot(dir):
     plotter.set_yScaled()
     plotter.initialize_figure()
     array = np.loadtxt("{}costs.txt".format(dir))
-    array/=array.max()
+    array/=array[0]
     iters = np.arange(len(array))
     plotter.plot_xy(iters, array, color = "blue", label = "_final")
     plotter.save_fig("{}/cost.png".format(dir))
 
 def main():
-    dir = "2_cells_0.05/"
-    final_iter = 27
-    s0_histogram(dir, final_iter)
-    combined_stress_histogram(dir, final_iter)
-    cost_plot(dir)
-
-    dir = "2_cells_bidisperse_0.05/"
-    final_iter = 69
-    s0_histogram(dir, final_iter)
-    combined_stress_histogram(dir, final_iter)
-    cost_plot(dir)
-
-    dir = "2_cells_0.05_high_tol/"
-    final_iter = 44
+    dir = "7_bidisperse_5_4.9/"
+    final_iter = 9
     s0_histogram(dir, final_iter)
     combined_stress_histogram(dir, final_iter)
     cost_plot(dir)
