@@ -97,6 +97,8 @@ class Training(FIREminimization):
         kv = None
         box_l = None
         box_periodic = None
+        
+        # Load existing conf file
         with open("{}conf".format(self._dir),"r") as f:
             lines = f.readlines()
             for line in lines:

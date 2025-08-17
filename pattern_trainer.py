@@ -20,7 +20,8 @@ def train_random_cells(test_sample, alpha, n_cells, tolerance):
     training_instance.set_random_target_cells(n_cells=n_cells)
 
     for cellID in training_instance._target_cell_to_stress:
-        sign = np.random.choice([-1, 1])
+        # sign = np.random.choice([-1, 1])
+        sign = 1
         initial_stress = stress.calculate_max_shear_stress(training_instance._config, cellID)
         training_instance._target_cell_to_stress[cellID] = np.round((1+sign*alpha) * initial_stress,3)
         # training_instance._target_cell_to_stress[cellID] = alpha
@@ -31,7 +32,7 @@ def train_random_cells(test_sample, alpha, n_cells, tolerance):
 def main():
     test_sample = "7_0/"
     alpha = 0.025
-    n_cells = 3
+    n_cells = 2
     tolerance = 1e-5
     train_random_cells(test_sample, alpha, n_cells, tolerance)
 

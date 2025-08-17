@@ -3,7 +3,7 @@ import numpy as np
 import pyvtk
 import os
 
-def makeSampleCrossSection(sample, center:np.ndarray = np.array([0,0,0]), normal:np.ndarray = np.array([1,0,0]),out_folder = "cSections/"):
+def makeSampleCrossSection(sample, center:np.ndarray = np.array([0,0,0]), normal:np.ndarray = np.array([1,0,0]),out_folder = "cSections/",filename = "cross_section.vtk"):
     #####################################################################
     # Step 0: Create output dir, if it doesnt exist.     
     #####################################################################
@@ -248,7 +248,7 @@ def makeSampleCrossSection(sample, center:np.ndarray = np.array([0,0,0]), normal
         pyvtk.Scalars(cellscalars,
                 name = 'cell_scalars'))
     vtk = pyvtk.VtkData(structure,celldata)
-    vtk.tofile(output_dir + "{:07d}.triangles.vtk".format(sample.time_),'ascii')
+    # vtk.tofile(output_dir + "{:07d}.triangles.vtk".format(sample.time_),'ascii')
 
     Points_=[]
     Polygons_=[]
@@ -264,5 +264,7 @@ def makeSampleCrossSection(sample, center:np.ndarray = np.array([0,0,0]), normal
         pyvtk.Scalars(cellscalars,
                 name='cell_scalars'))
     vtk = pyvtk.VtkData(structure,celldata)
-    vtk.tofile(output_dir+"{:07d}.crossSection.vtk".format(sample.time_),'ascii')
+    # vtk.tofile(output_dir+"{:07d}.crossSection.vtk".format(sample.time_),'ascii')
+    vtk.tofile(output_dir + filename,'ascii')
+
     return

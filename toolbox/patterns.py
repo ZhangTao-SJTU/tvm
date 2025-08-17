@@ -8,12 +8,11 @@ import pandas as pd
 class Patterns(Training):
     def __init__(self):
         super().__init__()
-        # self._target_cells = None
-        # self._target_stress = None
         self._target_cell_to_stress = None
         self._clamping_max_iters = 10 #try 10
         self._clamping_correction_factor = 10 #try 10
         self._clamping_FIRE_only = True
+        self._clamping_tolerance = 1e-3
         
     @classmethod
     def periodic_tissue(cls,tissue):
@@ -26,6 +25,8 @@ class Patterns(Training):
         self._clamping_max_iters = clamping_max_iters
     def set_clamping_correction_factor(self, clamping_correction_factor):
         self._clamping_correction_factor = clamping_correction_factor
+    def set_clamping_tolerance(self, tol):
+        self._clamping_tolerance = tol
     def set_target_cell_to_stress(self,target_cell_to_stress):
         self._target_cell_to_stress = target_cell_to_stress
         # For checking the above functionality with vtk:
@@ -44,7 +45,6 @@ class Patterns(Training):
         for cellID,cell in self._config.cells_.items():
             if cell.crossBoundary_:
                 continue
-
             r = np.subtract(cell.center_,self._config.sample_center_)
             r = np.linalg.norm(r)
             if r<r_lim:
@@ -63,7 +63,6 @@ class Patterns(Training):
 
     def set_random_target_cells(self, n_cells = 1):
         self._target_cell_to_stress = {}
-        
         for polygonID,polygon in self._config.polygons_.items():
             polygon.vtk_scalar_ = 0
         while len(self._target_cell_to_stress)<n_cells:
@@ -111,7 +110,7 @@ class Patterns(Training):
             cost += multiplier * (cell.max_shear_stress_ - target_stress) ** 2
         return cost
     
-    def single_iteration(self, clamp_tol = None):
+    def single_iteration(self):
         if not len(self._target_cell_to_stress):
             print("No target cells, iteration terminated.")
             return
@@ -132,7 +131,7 @@ class Patterns(Training):
 
         print("\n\n-------------------------------------")
         print("Step 2: CLAMPING")
-        self.clamp_target_cells(clamping_tolerance = clamp_tol)
+        self.clamp_target_cells()
 
         print("\n\n-------------------------------------")
         print("Step 3: Use the clamped state areas to update all learning degrees of freedom.")
@@ -164,17 +163,16 @@ class Patterns(Training):
     # The goal of clamping is to ensure that the target cells reach the final target stress as
     # in self._target_cell_to_stress, upto clamping tolerance.
     # Holding the configuration fixed, we iteratively adjust s0 of the target cells 
-    # such that stress overshoots/undershoots the target stress and energy minimize the config at each iteration.
-    
+    # such that stress overshoots/undershoots the target stress and energy minimize the config at each iteration.    
     # Minimizing changes the surface area and hence the stress, so process is repeated.
-    def clamp_target_cells(self, clamping_tolerance = 1e-3):
+    def clamp_target_cells(self):
         for iter in range(self._clamping_max_iters):
             print("Clamping iteration {}".format(iter))
             needs_clamping = []
             for cellID, final_target_stress in self._target_cell_to_stress.items():
                 cell = self._config.cells_[cellID]
                 current_stress = stress.calculate_max_shear_stress(self._config, cellID)
-                if abs(current_stress - final_target_stress) > clamping_tolerance:
+                if abs(current_stress - final_target_stress) > self._clamping_tolerance:
                     needs_clamping.append(cellID)
             if not len(needs_clamping):
                 print("Clamping successful to tolerance")
@@ -191,11 +189,9 @@ class Patterns(Training):
                 temp_target_stress = abs(temp_target_stress)
                 print("Cell: {}, Final Target Stress: {} Temporary Target Stress: {}, Current stress: {}, s0: {}".format(
                     cellID, final_target_stress, temp_target_stress, current_stress, cell.s0_))
-                # target_stress = final_target_stress * (1 + np.sign(final_target_stress - current_stress) * correction_factor)            
                 self.solve_cell_s0_for_target_stress(cellID, temp_target_stress)
                 current_stress = stress.calculate_max_shear_stress(self._config, cellID)
-                # print("Cell: {}, Final Target Stress: {} Temporary Target Stress: {}, Current stress: {}, s0: {}".format(
-                #     cellID, final_target_stress, temp_target_stress, current_stress, cell.s0_))
+
             self.write_cell_parameters()
             self.minimize_config(FIRE_only = self._clamping_FIRE_only)
 
@@ -214,8 +210,6 @@ class Patterns(Training):
         cell.s0_ = init_guess
         return
 
-
-
     def run(self):
         #store initial cell parameters
         os.system("cp {}cellParameters.input {}cellParameters.init.input".format(self._dir,self._dir))
@@ -232,11 +226,11 @@ class Patterns(Training):
         # df.to_csv("{}target_cells.csv".format(self._dir), index=False)
         print("Initial Cost: {:.2e}".format(cost))
         while cost > self._tolerance:
-            self.single_iteration(clamp_tol = cost * 1)
+            self.set_clamping_tolerance(cost * 1)
+            self.single_iteration()
             cost = self.evaluate_cost()
             self._cost_values.append(cost)
             print("Iteration: {:d}, Cost: {:.2e}".format(self._iter_counter,cost))
-            self._iter_counter += 1
             # Rewrite costs.txt
             np.savetxt("{}costs.txt".format(self._dir), self._cost_values, fmt='%.2e')
             # Rewrite stresses.csv
@@ -249,7 +243,7 @@ class Patterns(Training):
                     "Initial": initial_stresses,
                     "Final": final_stresses}
             df = pd.DataFrame(results)
-            df.to_csv("{}stresses.csv".format(self._dir), index=False)
-
+            df.to_csv("{}{}.stresses.csv".format(self._dir, self._iter_counter), index=False)
+            self._iter_counter += 1
         print("Optimization finished at iteration: {:d}".format(self._iter_counter-1))
         print("Final cost: {:.2e}".format(cost))

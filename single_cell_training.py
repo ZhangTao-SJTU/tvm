@@ -7,6 +7,8 @@ from toolbox import stress
 import os
 import numpy as np
 
+##
+
 def train_random_cells(test_sample, alpha, n_cells, tolerance):
     if os.path.isdir(test_sample):
         os.system("rm -r {}".format(test_sample))
