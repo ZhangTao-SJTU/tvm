@@ -8,7 +8,7 @@ import numpy as np
 def s0_histogram(dir, final_iter):
     plotter = manuscriptPlots.plot()
     plotter.set_ylim(0,40)
-    plotter.set_xlim(4.5,5)
+    plotter.set_xlim(4.5,5.4)
     plotter.set_xticks([0.25*i for i in range(150)])
     plotter.set_yticks([5*i for i in range(1,100)])
     plotter.set_xlabel(r"$s_0$")
@@ -71,8 +71,8 @@ def cost_plot(dir):
 
 def main():
     # dir = "2_cells_bidisperse_0.05/"
-    dir = "7_bidisperse_5_4.9_0.5_increase/"
-    final_iter =40
+    dir = "patternA/"
+    final_iter = 16
     s0_histogram(dir, final_iter)
     combined_stress_histogram(dir, final_iter)
     cost_plot(dir)
