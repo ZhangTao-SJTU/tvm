@@ -70,9 +70,14 @@ def calculate_parameter_space_distance(patternA, patternB):
 def main():
     dirA = "patternA/"
     dirB = "patternB/"
+    for folder in [dirA, dirB]:
+        if not os.path.isdir(folder):
+            os.system("cp -r tests/{} {}".format(folder, folder))
     tolerance = 1e-5
     patternA = initialize_pattern(dirA, tolerance)
+    patternA.set_iter_counter(17)
     patternB = initialize_pattern(dirB, tolerance)
+    patternB.set_iter_counter(3)
     print("Initial distance:", calculate_parameter_space_distance(patternA, patternB))
     single_iteration(patternA, patternB)
     print("Final distance:", calculate_parameter_space_distance(patternA, patternB))
