@@ -32,7 +32,7 @@ def train_random_cells(test_sample, alpha, n_cells, tolerance):
 def main():
     test_sample = "7_0/"
     alpha = 0.025
-    n_cells = 2
+    n_cells = 1
     tolerance = 1e-5
     train_random_cells(test_sample, alpha, n_cells, tolerance)
 

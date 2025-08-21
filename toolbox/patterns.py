@@ -152,12 +152,12 @@ class Patterns(Training):
         self.write_cell_parameters()
         self.minimize_config()
         # Step 5: Logging, etc
-        self.write_configuration(filename = "{}.bulk.txt".format(self._iter_counter))
+        self.write_configuration(filename = "{:04d}.bulk.txt".format(self._iter_counter))
         for cellID,cell in self._config.cells_.items():
             for polygonID in cell.polygons_:
                 self._config.polygons_[polygonID].vtk_scalar_ = cell.s0_
-        self._config.write_periodic_vtk(filename = "{}.bulk.vtk".format(self._iter_counter),use_scalar=True)
-        os.system("cp {}cellParameters.input {}cellParameters.{}.input".format(
+        # self._config.write_periodic_vtk(filename = "{:04d}.bulk.vtk".format(self._iter_counter),use_scalar=True)
+        os.system("cp {}cellParameters.input {}{:04d}.cellParameters.input".format(
             self._dir,self._dir,self._iter_counter))
 
     # The goal of clamping is to ensure that the target cells reach the final target stress as
@@ -243,7 +243,7 @@ class Patterns(Training):
                     "Initial": initial_stresses,
                     "Final": final_stresses}
             df = pd.DataFrame(results)
-            df.to_csv("{}{}.stresses.csv".format(self._dir, self._iter_counter), index=False)
+            df.to_csv("{}{:04d}.stresses.csv".format(self._dir, self._iter_counter), index=False)
             self._iter_counter += 1
         print("Optimization finished at iteration: {:d}".format(self._iter_counter-1))
         print("Final cost: {:.2e}".format(cost))

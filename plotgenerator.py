@@ -71,8 +71,8 @@ def cost_plot(dir):
 
 def main():
     # dir = "2_cells_bidisperse_0.05/"
-    dir = "patternA/"
-    final_iter = 16
+    dir = "patternB/"
+    final_iter = 2
     s0_histogram(dir, final_iter)
     combined_stress_histogram(dir, final_iter)
     cost_plot(dir)
