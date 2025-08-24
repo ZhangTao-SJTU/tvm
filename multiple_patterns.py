@@ -61,8 +61,8 @@ def calculate_parameter_space_distance(patternA, patternB):
     return distance
 
 def initialize_patterns(parent_dir):
-    alpha = 0.05
-    n_cells = 1
+    alpha = 0.025
+    n_cells = 2
     tolerance = 1e-5
     patterns = {"patternA/":None, "patternB/":None}
     for dir in patterns:
@@ -103,7 +103,7 @@ def main():
     out_dir = "patterns/"
     if not os.path.isdir(out_dir):
         os.makedirs(out_dir)
-    n_iters = 10
+    n_iters = 20
     distances = []
     patterns = initialize_patterns("7_0/")
     # patterns = initialize_patterns_from_dirs(["patternA/", "patternB/"])
