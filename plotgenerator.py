@@ -5,6 +5,19 @@ from toolbox import stress
 import pandas as pd
 import numpy as np
 
+# def s0_histogram(dir, final_iter):
+#     plotter = manuscriptPlots.plot()
+#     plotter.set_ylim(0,40)
+#     plotter.set_xlim(4.5,5.4)
+#     plotter.set_xticks([0.25*i for i in range(150)])
+#     plotter.set_yticks([5*i for i in range(1,100)])
+#     plotter.set_xlabel(r"$s_0$")
+#     plotter.set_yScaled()
+#     plotter.initialize_figure()
+#     df = pd.read_csv("{}cellParameters.{}.input".format(dir,final_iter), sep=" ",header=None)
+#     plotter.histogram_from_dataframe(df[2],color = "blue", bins = 20, label = "_final")
+#     plotter.save_fig("{}/s0_histogram.png".format(dir))
+
 def s0_histogram(dir, final_iter):
     plotter = manuscriptPlots.plot()
     plotter.set_ylim(0,40)
@@ -14,9 +27,44 @@ def s0_histogram(dir, final_iter):
     plotter.set_xlabel(r"$s_0$")
     plotter.set_yScaled()
     plotter.initialize_figure()
-    df = pd.read_csv("{}cellParameters.{}.input".format(dir,final_iter), sep=" ",header=None)
+    df = pd.read_csv("{}{:04d}.cellParameters.input".format(dir,final_iter), sep=" ",header=None)
     plotter.histogram_from_dataframe(df[2],color = "blue", bins = 20, label = "_final")
-    plotter.save_fig("{}/s0_histogram.png".format(dir))
+    plotter.save_fig("{}s0_histogram.png".format(dir))
+
+# def combined_stress_histogram(dir, final_iter):
+#     plotter = manuscriptPlots.plot()
+#     plotter.set_ylim(0,7.5)
+#     plotter.set_xlim(0,0.75)
+#     plotter.set_xticks([0.25*i for i in range(150)])
+#     plotter.set_yticks([5*i for i in range(1,100)])
+#     plotter.set_xlabel(r"$\sigma_{shear}$")
+#     plotter.set_yScaled()
+#     plotter.initialize_figure()
+
+#     #init
+#     file = "init_config.txt"
+#     sample = PeriodicTissue.from_config(dir, file)
+#     min = FIREminimization.periodic_tissue(sample)
+#     min.load_cell_parameters("cellParameters.init.input")
+#     stresses = []
+#     for cellID,cell in sample.cells_.items():
+#         cell.max_shear_stress_ = stress.calculate_max_shear_stress(sample,cellID)
+#         stresses.append(cell.max_shear_stress_)
+#     df = pd.DataFrame({"stress": stresses})
+#     plotter.histogram_from_dataframe(df["stress"],color = "red", bins = 20, label = "initial")
+
+#     #final
+#     file = "{}.bulk.txt".format(final_iter)
+#     sample = PeriodicTissue.from_config(dir, file)
+#     min = FIREminimization.periodic_tissue(sample)
+#     min.load_cell_parameters("cellParameters.{}.input".format(final_iter))
+#     stresses = []
+#     for cellID,cell in sample.cells_.items():
+#         cell.max_shear_stress_ = stress.calculate_max_shear_stress(sample,cellID)
+#         stresses.append(cell.max_shear_stress_)
+#     df = pd.DataFrame({"stress": stresses})
+#     plotter.histogram_from_dataframe(df["stress"],color = "blue", bins = 20, label = "final")
+#     plotter.save_fig("{}stress_histogram.png".format(dir))
 
 def combined_stress_histogram(dir, final_iter):
     plotter = manuscriptPlots.plot()
@@ -41,10 +89,10 @@ def combined_stress_histogram(dir, final_iter):
     plotter.histogram_from_dataframe(df["stress"],color = "red", bins = 20, label = "initial")
 
     #final
-    file = "{}.bulk.txt".format(final_iter)
+    file = "{:04d}.bulk.txt".format(final_iter)
     sample = PeriodicTissue.from_config(dir, file)
     min = FIREminimization.periodic_tissue(sample)
-    min.load_cell_parameters("cellParameters.{}.input".format(final_iter))
+    min.load_cell_parameters("{:04d}.cellParameters.input".format(final_iter))
     stresses = []
     for cellID,cell in sample.cells_.items():
         cell.max_shear_stress_ = stress.calculate_max_shear_stress(sample,cellID)
@@ -64,15 +112,17 @@ def cost_plot(dir):
     plotter.set_yScaled()
     plotter.initialize_figure()
     array = np.loadtxt("{}costs.txt".format(dir))
-    array/=array[0]
+    array/=max(array)
     iters = np.arange(len(array))
     plotter.plot_xy(iters, array, color = "blue", label = "_final")
-    plotter.save_fig("{}/cost.png".format(dir))
+    plotter.save_fig("{}cost.png".format(dir))
 
 def main():
     # dir = "2_cells_bidisperse_0.05/"
-    dir = "patternB/"
-    final_iter = 2
+    dir = "patternA/"
+    cost = np.loadtxt("{}costs.txt".format(dir))
+    final_iter = len(cost)-1
+    print("Final iteration:", final_iter)
     s0_histogram(dir, final_iter)
     combined_stress_histogram(dir, final_iter)
     cost_plot(dir)

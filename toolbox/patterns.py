@@ -201,7 +201,6 @@ class Patterns(Training):
         upper_limit = 5.3
         lower_limit = 4.6
         s0_guesses = {i:None for i in np.linspace(lower_limit, upper_limit, 1000)}
-        
         for s0 in s0_guesses:
             cell.s0_ = s0
             current_stress = stress.calculate_max_shear_stress(self._config, cellID)
@@ -209,22 +208,63 @@ class Patterns(Training):
         init_guess = min(s0_guesses, key=lambda x: abs(s0_guesses[x] - target_stress))
         cell.s0_ = init_guess
         return
-
-    def run(self):
-        #store initial cell parameters
+    def initialize(self):
         os.system("cp {}cellParameters.input {}cellParameters.init.input".format(self._dir,self._dir))
         os.system("cp {}minimized.txt {}init_config.txt".format(self._dir,self._dir))
-        self._cost_values = []
-        cost = self.evaluate_cost()
-        self._cost_values.append(cost)
-        initial_stresses = []
+        
+        cost = [self.evaluate_cost()]
+        np.savetxt("{}initial_cost.txt".format(self._dir), cost, fmt='%.2e')
+
+        initial_stresses = {}
         self.calculate_max_shear_stresses()
         for cellID in self._target_cell_to_stress:
             cell = self._config.cells_[cellID]
-            initial_stresses.append(cell.max_shear_stress_)
+            initial_stresses[cellID] = cell.max_shear_stress_
+        df = pd.DataFrame(list(initial_stresses.items()), columns=['cellID', 'Stress'])        
         # df = pd.DataFrame(self._target_cell_to_stress.items(), columns=['cellID', 'target_stress'])
-        # df.to_csv("{}target_cells.csv".format(self._dir), index=False)
-        print("Initial Cost: {:.2e}".format(cost))
+        df.to_csv("{}initial_stress.csv".format(self._dir), index=False)
+        # print("Initial Cost: {:.2e}".format(cost))
+        self._cost_values = []
+
+    def run_to_max_iters(self,max_iters=2):
+        cost = self.evaluate_cost()
+        for _ in range(max_iters):
+            self.set_clamping_tolerance(cost * 1)
+            self.single_iteration()
+            cost = self.evaluate_cost()
+            self._cost_values.append(cost)
+            print("Iteration: {:d}, Cost: {:.2e}".format(self._iter_counter,cost))
+            # Rewrite costs.txt
+            np.savetxt("{}costs.txt".format(self._dir), self._cost_values, fmt='%.2e')
+            # Rewrite stresses.csv
+            current_stresses = []
+            for cellID in self._target_cell_to_stress:
+                cell = self._config.cells_[cellID]
+                current_stresses.append(cell.max_shear_stress_)
+            results = {"CellID": list(self._target_cell_to_stress.keys()),
+                    "Target": list(self._target_cell_to_stress.values()),
+                    "Current": current_stresses}
+            df = pd.DataFrame(results)
+            df.to_csv("{}{:04d}.stresses.csv".format(self._dir, self._iter_counter), index=False)
+            self._iter_counter += 1
+        print("Optimization finished at iteration: {:d}".format(self._iter_counter-1))
+        print("Final cost: {:.2e}".format(cost))        
+    def run(self):
+        # #store initial cell parameters
+        # os.system("cp {}cellParameters.input {}cellParameters.init.input".format(self._dir,self._dir))
+        # os.system("cp {}minimized.txt {}init_config.txt".format(self._dir,self._dir))
+        # self._cost_values = []
+        cost = self.evaluate_cost()
+        # self._cost_values.append(cost)
+        # initial_stresses = []
+        # self.calculate_max_shear_stresses()
+        # for cellID in self._target_cell_to_stress:
+        #     cell = self._config.cells_[cellID]
+        #     initial_stresses.append(cell.max_shear_stress_)
+        
+        # # df = pd.DataFrame(self._target_cell_to_stress.items(), columns=['cellID', 'target_stress'])
+        # # df.to_csv("{}target_cells.csv".format(self._dir), index=False)
+        # print("Initial Cost: {:.2e}".format(cost))
         while cost > self._tolerance:
             self.set_clamping_tolerance(cost * 1)
             self.single_iteration()
@@ -234,14 +274,13 @@ class Patterns(Training):
             # Rewrite costs.txt
             np.savetxt("{}costs.txt".format(self._dir), self._cost_values, fmt='%.2e')
             # Rewrite stresses.csv
-            final_stresses = []
+            current_stresses = []
             for cellID in self._target_cell_to_stress:
                 cell = self._config.cells_[cellID]
-                final_stresses.append(cell.max_shear_stress_)
+                current_stresses.append(cell.max_shear_stress_)
             results = {"CellID": list(self._target_cell_to_stress.keys()),
                     "Target": list(self._target_cell_to_stress.values()),
-                    "Initial": initial_stresses,
-                    "Final": final_stresses}
+                    "Current": current_stresses}
             df = pd.DataFrame(results)
             df.to_csv("{}{:04d}.stresses.csv".format(self._dir, self._iter_counter), index=False)
             self._iter_counter += 1

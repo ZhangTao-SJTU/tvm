@@ -7,17 +7,16 @@ from toolbox import stress
 import os
 import numpy as np
 
-def train_random_cells(test_sample, alpha, n_cells, tolerance):
-    if os.path.isdir(test_sample):
-        os.system("rm -r {}".format(test_sample))
-    os.system("cp -r init/{} {}".format(test_sample,test_sample))
-    dir = test_sample
+def train_random_cells(sample_dir,run_dir, alpha, n_cells, tolerance):
+    if os.path.isdir(run_dir):
+        os.system("rm -r {}".format(run_dir))
+    os.system("cp -r init/{} {}".format(sample_dir,run_dir))
     file = "minimized.txt"
-    tissue = PeriodicTissue.from_config(dir,file)
+    tissue = PeriodicTissue.from_config(run_dir,file)
     training_instance = Patterns.periodic_tissue(tissue)
     training_instance.minimize_config()
     training_instance.set_tolerance(tolerance)
-    training_instance.set_random_target_cells(n_cells=n_cells)
+    training_instance.set_random_target_cells(n_cells = n_cells)
 
     for cellID in training_instance._target_cell_to_stress:
         # sign = np.random.choice([-1, 1])
@@ -27,14 +26,18 @@ def train_random_cells(test_sample, alpha, n_cells, tolerance):
         # training_instance._target_cell_to_stress[cellID] = alpha
         print("Initial stress for cell {}: {}".format(cellID, initial_stress))
     print(training_instance._target_cell_to_stress)
+    training_instance.initialize()
     training_instance.run()
+    return training_instance
 
 def main():
-    test_sample = "7_0/"
+    sample_dir = "7_0/"
+    run_dir = "two_cells_test/"
     alpha = 0.025
-    n_cells = 1
-    tolerance = 1e-5
-    train_random_cells(test_sample, alpha, n_cells, tolerance)
+    n_cells = 2
+    tolerance = 1e-6
+
+    train_random_cells(sample_dir,run_dir, alpha, n_cells, tolerance)
 
 if __name__ == "__main__":
     main()

@@ -1,6 +1,6 @@
 from toolbox.periodic import PeriodicTissue
 import os
-
+import copy
 class FIREminimization:
     def __init__(self):
         self._config = None
@@ -13,7 +13,8 @@ class FIREminimization:
         sample._dir = tissue.config_dir_
         # sample.minimize_config()
         return sample
-    
+    def set_config(self, tissue:PeriodicTissue):
+        self._config = copy.deepcopy(tissue)
     def minimize_config(self, FIRE_only = False):
         self.write_configuration("sample.topo")
         # tvm produces a new minimized.txt in self._dir

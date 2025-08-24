@@ -1,5 +1,7 @@
 import random
+import copy
 from toolbox.minimization import FIREminimization
+
 class Training(FIREminimization):
     def __init__(self):
         super().__init__()
