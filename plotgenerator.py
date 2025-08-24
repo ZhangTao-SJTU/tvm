@@ -80,7 +80,7 @@ def combined_stress_histogram(dir, final_iter):
     file = "init_config.txt"
     sample = PeriodicTissue.from_config(dir, file)
     min = FIREminimization.periodic_tissue(sample)
-    min.load_cell_parameters("cellParameters.init.input")
+    # min.load_cell_parameters("0.cellParameters.input")
     stresses = []
     for cellID,cell in sample.cells_.items():
         cell.max_shear_stress_ = stress.calculate_max_shear_stress(sample,cellID)
@@ -104,7 +104,7 @@ def combined_stress_histogram(dir, final_iter):
 def cost_plot(dir):
     plotter = manuscriptPlots.plot()
     plotter.set_ylim(0,1)
-    plotter.set_xlim(0,40)
+    plotter.set_xlim(0,np.ceil(len(np.loadtxt("{}costs.txt".format(dir)))/10)*10)
     plotter.set_xticks([20*i for i in range(150)])
     plotter.set_yticks([.5*i for i in range(1,100)])
     plotter.set_xlabel("Epochs")
@@ -117,15 +117,76 @@ def cost_plot(dir):
     plotter.plot_xy(iters, array, color = "blue", label = "_final")
     plotter.save_fig("{}cost.png".format(dir))
 
+def distance_plot(dir):
+    plotter = manuscriptPlots.plot()
+    plotter.set_ylim(0,1)
+    plotter.set_xlim(0,np.ceil(len(np.loadtxt("{}distances.txt".format(dir)))/10)*10)
+    plotter.set_xticks([20*i for i in range(150)])
+    plotter.set_yticks([.5*i for i in range(1,100)])
+    plotter.set_xlabel("Epochs")
+    plotter.set_ylabel("Parameter Space Distance (normalized)")
+    plotter.set_yScaled()
+    plotter.initialize_figure()
+    array = np.loadtxt("{}distances.txt".format(dir))
+    array/=max(array)
+    iters = np.arange(len(array))
+    plotter.plot_xy(iters, array, color = "blue", label = "_final")
+    plotter.save_fig("{}pattern_distances.png".format(dir))
+
+def calculate_parameter_space_distance(cellParametersA, cellParametersB):
+    df = pd.read_csv(cellParametersA, sep=" ",header=None)
+    cellID_to_s0 = {int(i): [float(s0)] for i, s0 in zip(df[0].to_numpy(), df[2].to_numpy())}
+    df = pd.read_csv(cellParametersB, sep=" ",header=None)
+    for i, row in df.iterrows():
+        cellID = row[0]
+        s0 = row[2]
+        if cellID in cellID_to_s0:
+            cellID_to_s0[cellID].append(s0)
+        else:
+            raise ValueError("CellID {} not found in first pattern".format(cellID))
+    distance = 0
+    for cellID, s0s in cellID_to_s0.items():
+        # print("CellID: {}, s0s: {}".format(cellID, s0s))
+        distance += (s0s[0] - s0s[1])**2
+    distance = distance**0.5
+    # print(distance)
+    return distance
+def self_distance_plot(dir):
+    plotter = manuscriptPlots.plot()
+    plotter.set_ylim(0,1.1)
+    plotter.set_xlim(0,np.ceil(len(np.loadtxt("{}costs.txt".format(dir)))/10)*10)
+    plotter.set_xticks([20*i for i in range(150)])
+    plotter.set_yticks([.5*i for i in range(1,100)])
+    plotter.set_xlabel("Epochs")
+    plotter.set_ylabel("Parameter Space Distance (normalized)")
+    plotter.set_yScaled()
+    plotter.initialize_figure()
+    distances = []
+    iters = []
+    initial_file = "{:04d}.cellParameters.input".format(0)
+    for i in range(len(np.loadtxt("{}costs.txt".format(dir)))):
+        final_file = "{:04d}.cellParameters.input".format(i)
+        distance = calculate_parameter_space_distance("{}/{}".format(dir,initial_file), "{}/{}".format(dir,final_file))
+        distances.append(distance)
+        iters.append(i)
+    distances = np.array(distances)
+    distances /= max(distances)
+    iters = np.array(iters)
+    plotter.plot_xy(iters, distances, color = "blue", label = "_final")
+    plotter.save_fig("{}self_distance.png".format(dir))
 def main():
     # dir = "2_cells_bidisperse_0.05/"
-    dir = "patternA/"
-    cost = np.loadtxt("{}costs.txt".format(dir))
-    final_iter = len(cost)-1
+    # dir = "two_cells_test/"
+    dir = "patterns_success/"
+    # cost = np.loadtxt("{}costs.txt".format(dir))
+    distances = np.loadtxt("{}distances.txt".format(dir))
+    final_iter = len(distances)-1
+    # self_distance_plot(dir)
     print("Final iteration:", final_iter)
-    s0_histogram(dir, final_iter)
-    combined_stress_histogram(dir, final_iter)
-    cost_plot(dir)
+    # s0_histogram(dir, final_iter)
+    # combined_stress_histogram(dir, final_iter)
+    # cost_plot(dir)
+    distance_plot(dir)
 
 
 if __name__ == "__main__":
