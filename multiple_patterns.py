@@ -69,6 +69,7 @@ def initialize_patterns(parent_dir):
         os.system("cp -r init/{} {}".format(parent_dir, dir))
         patterns[dir] = train_random_cells(parent_dir, dir, alpha, n_cells, tolerance)
     return patterns
+
 def initialize_patterns_from_dirs(pattern_dirs):
 
     tolerance = 1e-5
@@ -105,8 +106,8 @@ def main():
         os.makedirs(out_dir)
     n_iters = 20
     distances = []
-    patterns = initialize_patterns("7_0/")
-    # patterns = initialize_patterns_from_dirs(["patternA/", "patternB/"])
+    # patterns = initialize_patterns("7_1/")
+    patterns = initialize_patterns_from_dirs(["patternA/", "patternB/"])
     patternA = patterns["patternA/"]
     patternB = patterns["patternB/"]
 
