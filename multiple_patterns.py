@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 import glob
 
+
 def copy_config(source_dir,destination_dir):
     # os.system("cp {}minimized.txt {}minimized.txt".format(source_dir, destination_dir))
     source_file = sorted(glob.glob("{}*.cellParameters.input".format(source_dir)))[-1]
@@ -105,20 +106,23 @@ def main():
     if not os.path.isdir(out_dir):
         os.makedirs(out_dir)
     n_iters = 20
-    distances = []
+    distances_array = []
+    if os.path.isfile("{}distances.txt".format(out_dir)):
+        distances_array = list(np.loadtxt("{}distances.txt".format(out_dir)))
     # patterns = initialize_patterns("7_1/")
     patterns = initialize_patterns_from_dirs(["patternA/", "patternB/"])
     patternA = patterns["patternA/"]
     patternB = patterns["patternB/"]
 
     distance = [calculate_parameter_space_distance(patternA, patternB)]
-    np.savetxt("{}initial_distances.txt".format(out_dir), distance, fmt='%.5f')
+    if not os.path.isfile("{}initial_distances.txt".format(out_dir)):
+        np.savetxt("{}initial_distances.txt".format(out_dir), distance, fmt='%.12e')
     # print("Initial distance:", distance)
     for iteration in range(n_iters):
         single_iteration(patternA, patternB)
         distance = calculate_parameter_space_distance(patternA, patternB)
-        distances.append(distance)
-        np.savetxt("{}distances.txt".format(out_dir), distances, fmt='%.5f')
+        distances_array.append(distance)
+        np.savetxt("{}distances.txt".format(out_dir), distances_array, fmt='%.12e')
         for pattern in patterns:
             os.system("cp -r {} {}".format(pattern, out_dir))
         if distance < 1e-9:
