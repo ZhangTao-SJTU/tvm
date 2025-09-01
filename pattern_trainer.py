@@ -14,6 +14,7 @@ def train_random_cells(sample_dir,run_dir, alpha, n_cells, tolerance):
     file = "minimized.txt"
     tissue = PeriodicTissue.from_config(run_dir,file)
     training_instance = Patterns.periodic_tissue(tissue)
+    training_instance.set_cpp_executable_dir("/home/shabeeb/Projects/tvm-fire/build/")
     training_instance.minimize_config()
     training_instance.set_tolerance(tolerance)
     training_instance.set_random_target_cells(n_cells = n_cells)
@@ -29,15 +30,3 @@ def train_random_cells(sample_dir,run_dir, alpha, n_cells, tolerance):
     training_instance.initialize()
     training_instance.run()
     return training_instance
-
-def main():
-    sample_dir = "7_0/"
-    run_dir = "two_cells_test/"
-    alpha = 0.025
-    n_cells = 2
-    tolerance = 1e-6
-
-    train_random_cells(sample_dir,run_dir, alpha, n_cells, tolerance)
-
-if __name__ == "__main__":
-    main()

@@ -5,6 +5,7 @@ class FIREminimization:
     def __init__(self):
         self._config = None
         self._dir = None
+        self._cpp_executable_dir = None
         self._modified_cells = []
     @classmethod
     def periodic_tissue(cls, tissue:PeriodicTissue):
@@ -13,6 +14,8 @@ class FIREminimization:
         sample._dir = tissue.config_dir_
         # sample.minimize_config()
         return sample
+    def set_cpp_executable_dir(self, cpp_executable_dir:str):
+        self._cpp_executable_dir = cpp_executable_dir
     def set_config(self, tissue:PeriodicTissue):
         self._config = copy.deepcopy(tissue)
     def minimize_config(self, FIRE_only = False):
@@ -22,10 +25,14 @@ class FIREminimization:
         # Otherwise, tvm will append to the existing file.
         if os.path.isfile("{}minimized.txt".format(self._dir)):
             os.remove("{}minimized.txt".format(self._dir))
+        # if FIRE_only:
+        #     os.system("cd {} && ../build/tvm FIRE_only".format(self._dir))
+        # else:
+        #     os.system("cd {} && ../build/tvm".format(self._dir))
         if FIRE_only:
-            os.system("cd {} && ../build/tvm FIRE_only".format(self._dir))
+            os.system("cd {} && {}tvm FIRE_only".format(self._dir,self._cpp_executable_dir))
         else:
-            os.system("cd {} && ../build/tvm".format(self._dir))
+            os.system("cd {} && {}tvm".format(self._dir,self._cpp_executable_dir))
         self._config.load_periodic_tissue_from_file("minimized.txt")
         # self._config.set_file("minimized.txt")
         # self._config = tissueSample.Sample.periodic_tissue(self._dir,"minimized.txt")
