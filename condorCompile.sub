@@ -1,0 +1,13 @@
+Notify_user=mameen@syr.edu
+
+executable = /home/mameen/examples/singularity_wrapper.sh
+arguments  = /home/mameen/examples/ubuntu18_povray_paula.img compile.sh 
+output     = output.txt
+error      = error.txt
+log        = log.txt
+getenv     = True
+
+request_cpus = 1
+request_memory = 4 GB
+
+queue 

@@ -61,10 +61,15 @@ class Patterns(Training):
                 polygon.vtk_scalar_ = 1
         self._config.write_periodic_vtk(filename = "target_cells.vtk", use_scalar=True)
 
-    def set_random_target_cells(self, n_cells = 1):
+    def set_random_target_cells(self, n_cells = 1, average_cells_only = False, exclude_cells = []):
         self._target_cell_to_stress = {}
         for polygonID,polygon in self._config.polygons_.items():
             polygon.vtk_scalar_ = 0
+        if average_cells_only:
+            for cellID,cell in self._config.cells_.items():
+                cell.max_shear_stress_ = stress.calculate_max_shear_stress(self._config, cellID)
+            avg_stress = np.mean([cell.max_shear_stress_ for cellID,cell in self._config.cells_.items()])
+            std_stress = np.std([cell.max_shear_stress_ for cellID,cell in self._config.cells_.items()])
         while len(self._target_cell_to_stress)<n_cells:
             cellID = random.choice(list(self._config.cells_.keys()))
             cell = self._config.cells_[cellID]
@@ -72,6 +77,18 @@ class Patterns(Training):
                 continue
             if cellID in self._target_cell_to_stress:
                 continue
+            if average_cells_only:
+                lower_limit = avg_stress - std_stress
+                if lower_limit < 0:
+                    continue
+                upper_limit = avg_stress + std_stress
+                if (cell.max_shear_stress_ < lower_limit):
+                    continue
+                if (cell.max_shear_stress_ > upper_limit):
+                    continue
+            if len(exclude_cells):
+                if cellID in exclude_cells:
+                    continue
             self._target_cell_to_stress[cellID] = None
             targets_share_polygons = False
             for polygonID in cell.polygons_:
@@ -226,7 +243,7 @@ class Patterns(Training):
         # print("Initial Cost: {:.2e}".format(cost))
         self._cost_values = []
 
-    def run_to_max_iters(self,max_iters=2):
+    def run_to_max_iters(self,max_iters=100):
         cost = self.evaluate_cost()
         for _ in range(max_iters):
             self.set_clamping_tolerance(cost * 1)
@@ -247,6 +264,8 @@ class Patterns(Training):
             df = pd.DataFrame(results)
             df.to_csv("{}{:04d}.stresses.csv".format(self._dir, self._iter_counter), index=False)
             self._iter_counter += 1
+            if cost <= self._tolerance:
+                break
         print("Optimization finished at iteration: {:d}".format(self._iter_counter-1))
         print("Final cost: {:.2e}".format(cost))        
     def run(self):

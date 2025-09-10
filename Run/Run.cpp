@@ -148,8 +148,6 @@ int     Run::FIREminimize(){
     double FIRE_falpha = 0.99;
     double FIRE_dtmax = 0.005;
     double FIRE_dt = 0.0001;
-    // double FIRE_equilibrium_tolerance = 1e-7;
-    long int FIRE_itermax = 5000;
     int FIRE_n_since_positive = 0;
 
     count_reconnect_ = 0;

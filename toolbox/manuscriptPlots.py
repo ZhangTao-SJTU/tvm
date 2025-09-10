@@ -66,9 +66,9 @@ class plot:
         self.ax.set_xlabel(self.xlabel)
         self.ax.set_ylabel(self.ylabel)
 
-    def plot_xy(self,x_array,y_array, color = "#7d878a", label = "plot"):
-        self.ax.plot(x_array,y_array, color = color, label = label)
-    def histogram_from_dataframe(self, data, from_array = False,  bins = 50, color = "#7d878a", alpha = 0.5, label = "plot"):
+    def plot_xy(self,x_array,y_array, color = "#7d878a", label = "plot",alpha = 0.8):
+        self.ax.plot(x_array,y_array, color = color, label = label,alpha = alpha)
+    def histogram_from_dataframe(self, data, from_array = False,  bins = 50, color = "#7d878a", alpha = 0.8,label = "plot"):
         if from_array:
             data = pd.DataFrame(data, columns = ["data"])
         data.plot(

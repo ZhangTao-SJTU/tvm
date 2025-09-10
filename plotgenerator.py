@@ -121,6 +121,27 @@ def cost_plot(dir):
     plotter.plot_xy(iters, array, color = "blue", label = "_final")
     plotter.save_fig("{}cost.png".format(dir))
 
+def cost_plot(dir):
+    plotter = manuscriptPlots.plot()
+    plotter.set_ylim(0,1)
+    plotter.set_xlim(0,np.ceil(len(np.loadtxt("{}costs.txt".format(dir)))/10)*10)
+    plotter.set_xticks([50*i for i in range(1000)])
+    plotter.set_yticks([.5*i for i in range(1,100)])
+    plotter.set_xlabel("Epochs")
+    plotter.set_ylabel("Normalized Cost")
+    plotter.set_yScaled()
+    plotter.initialize_figure()
+    array = np.loadtxt("{}costs.txt".format(dir))
+    array = list(array)
+    init_cost = np.loadtxt("{}initial_cost.txt".format(dir))
+    array.insert(0, init_cost)
+    array/=max(array)
+    iters = np.arange(len(array))
+    plotter.plot_xy(iters, array, color = "blue", label = "_final")
+    plotter.save_fig("{}cost.png".format(dir))
+
+
+
 def distance_plot(dir):
     plotter = manuscriptPlots.plot()
     plotter.set_ylim(0,1)

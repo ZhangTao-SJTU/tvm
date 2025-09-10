@@ -8,11 +8,16 @@ import os
 import numpy as np
 
 def train_random_cells(run_dir, **kwargs):
+    print("Training random cells in directory:", run_dir)
+
     #default parameters
     cpp_executable_dir = "/home/shabeeb/Projects/tvm-fire/build/"
     alpha = 0.025
     n_cells = 1
+    sign = 1
     tolerance = 1e-6
+    average_cells_only = False
+    exclude_cells = []
     if "cpp_executable_dir" in kwargs:
         cpp_executable_dir = kwargs["cpp_executable_dir"]
     if "n_cells" in kwargs:
@@ -21,17 +26,34 @@ def train_random_cells(run_dir, **kwargs):
         tolerance = kwargs["tolerance"]
     if "alpha" in kwargs:
         alpha = kwargs["alpha"]
+    if "sign" in kwargs:
+        sign = kwargs["sign"]
+    if "average_cells_only" in kwargs:
+        average_cells_only = kwargs["average_cells_only"]
+    if "exclude_cells" in kwargs:
+        exclude_cells = kwargs["exclude_cells"]
+    print("Parameters for training:")
+    print("cpp_executable_dir:", cpp_executable_dir)
+    print("alpha:", alpha)
+    print("n_cells:", n_cells)
+    print("tolerance:", tolerance)
+
     file = "minimized.txt"
+    if os.path.isfile("{}minimized.txt".format(run_dir)):
+        print("File exists:", "{}minimized.txt".format(run_dir))
     tissue = PeriodicTissue.from_config(run_dir,file)
     training_instance = Patterns.periodic_tissue(tissue)
     training_instance.set_cpp_executable_dir(cpp_executable_dir)
     training_instance.minimize_config()
     training_instance.set_tolerance(tolerance)
-    training_instance.set_random_target_cells(n_cells = n_cells)
+    training_instance.set_random_target_cells(
+        n_cells = n_cells, 
+        average_cells_only=average_cells_only,
+        exclude_cells = exclude_cells)
 
     for cellID in training_instance._target_cell_to_stress:
         # sign = np.random.choice([-1, 1])
-        sign = 1
+        
         initial_stress = stress.calculate_max_shear_stress(training_instance._config, cellID)
         training_instance._target_cell_to_stress[cellID] = np.round((1+sign*alpha) * initial_stress,3)
         # training_instance._target_cell_to_stress[cellID] = alpha

@@ -1,0 +1,5 @@
+WARNING: group: unknown groupid 43641
+/bin/bash: line 1: cd: /var/lib/condor/execute/dir_1173570: No such file or directory
+ERROR: Could not install packages due to an OSError: [Errno 2] No such file or directory: '/home/mameen/.local/lib/python3.10/site-packages/toolbox.egg-link'
+
+cp: cannot stat '/home/mameen/sp_5_cell_increase/run_13/cellParameters.input': No such file or directory

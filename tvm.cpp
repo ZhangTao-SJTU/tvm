@@ -49,7 +49,7 @@ int main(int argc, char *argv[]) {
     // InitializeFixed(run);
     LoadCellParameters(run);
     run->updatePolygonVertices();
-    double FIRE_equilibrium_tolerance = 1e-7;
+    // double FIRE_equilibrium_tolerance = 1e-7;
 
     // Check if the system is already in equilibrium. If it is, basically return the system.
     
@@ -81,21 +81,28 @@ int main(int argc, char *argv[]) {
         return 0;
     }
 
-    if (F_rms < FIRE_equilibrium_tolerance) {
+    if (F_rms < run->FIRE_equilibrium_tolerance) {
         cout << "   Minimization terminated:\n"; 
         cout << "   Input is already minimized at FIRE_equilibrium_tolerance: ";
-        cout << FIRE_equilibrium_tolerance << endl;
+        cout << run->FIRE_equilibrium_tolerance << endl;
         run->dumpMinimization();
         return 0;
     }
-    if (F_rms < 1e-4) {
-        cout << "   Since F_rms is low, skip overdamped stage and commence FIRE minimization." << endl;
-        run -> FIREminimize();
-    }
+    // if (F_rms < 1e-4) {
+    //     cout << "   Since F_rms is low, skip overdamped stage and commence FIRE minimization." << endl;
+    //     run -> FIREminimize();
+    // }
     run->overdampedMotion();
     run->FIREminimize();
+    // run->updateGeoinfo();
+    // run->volume_->updateForces();
+    // run->interface_->updateForces();
+    // run->updateVerticesVelocity();
+    // run->FIREupdateForceVelocityProjections();
+    // F_rms = sqrt(run->FIRE_ff/(3 * run->vertices_.size()));
+    cout<<"F_rms: "<< F_rms << endl;
     F_rms = sqrt(run->FIRE_ff/(3 * run->vertices_.size()));
-    if (F_rms > FIRE_equilibrium_tolerance) {
+    if (F_rms > run->FIRE_equilibrium_tolerance) {
         cout << "   FIRE minimization terminated unsuccessfully at max iterations.\n";
         cout << "   Trying overdamping and FIRE minimization again, with no fixed topology..." << endl;
         for (auto cell : run->cells_) {

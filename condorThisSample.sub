@@ -1,0 +1,9 @@
+executable = /home/mameen/examples/singularity_wrapper.sh
+arguments  = /home/mameen/examples/ubuntu18_povray_paula.img /home/mameen/3DVM_executables/embedded/tvm
+output     = output.txt
+error      = error.txt
+log        = log.txt
+getenv     = True
+Requirements = TARGET.vm_name == "its-u20-nfs-20210413" && regexp("CRUSH", TARGET.name)
+
+queue 
