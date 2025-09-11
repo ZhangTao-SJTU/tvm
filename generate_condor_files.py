@@ -38,10 +38,11 @@ def create_exec_file(script,init_dir, run_dir):
     os.system("chmod +x {}run_job.sh".format(run_dir))
     
 def main():
-    for experiment in ["sp_2_cell_increase",
-                       "sp_2_cell_decrease",
-                       "sp_5_cell_decrease"]:
-
+    # for experiment in ["sp_2_cell_increase",
+    #                    "sp_2_cell_decrease",
+    #                    "sp_5_cell_decrease"]:
+    for experiment in ["sp_1_cell_increase/",
+                       "sp_1_cell_decrease/"]:
         head_dir ="/home/mameen/{}/".format(experiment)
         script = "/home/mameen/{}.py".format(experiment)
         os.makedirs(head_dir, exist_ok=True)
@@ -55,26 +56,27 @@ def main():
 
 if __name__ == "__main__":
     main()
-import os
-# for experiment in ["sp_2_cell_increase",
-#                    "sp_2_cell_decrease",
-#                    "sp_5_cell_decrease"]:
-# for experiment in ["sp_5_cell_increase",
-#                    "sp_5_cell_decrease"]:
-for experiment in ["mp_2_cells"]:
-    for i in range(20):
-        dir = "/home/mameen/{}/run_{}/".format(experiment,i)
-        print(dir)
-        if not os.path.isfile(dir + "distances.txt"):
-            continue
-        with open(dir + "distances.txt", "r") as f:
-            lines = f.readlines()
-            print(len(lines), lines[-1])
-        for pattern in ["patternA/", "patternB/"]:
-            if not os.path.isfile(dir + pattern + "costs.txt"):
-                continue
-            with open(dir + pattern + "costs.txt", "r") as f:
-                lines = f.readlines()
-                if len(lines) < 2:
-                    continue
-                print(pattern, len(lines), lines[-1])
+# import os
+# # for experiment in ["sp_2_cell_increase",
+# #                    "sp_2_cell_decrease",
+# #                    "sp_5_cell_decrease"]:
+# # for experiment in ["sp_5_cell_increase",
+# #                    "sp_5_cell_decrease"]:
+# # for experiment in ["mp_2_cells"]:
+# for experiment
+#     for i in range(20):
+#         dir = "/home/mameen/{}/run_{}/".format(experiment,i)
+#         print(dir)
+#         if not os.path.isfile(dir + "distances.txt"):
+#             continue
+#         with open(dir + "distances.txt", "r") as f:
+#             lines = f.readlines()
+#             print(len(lines), lines[-1])
+#         for pattern in ["patternA/", "patternB/"]:
+#             if not os.path.isfile(dir + pattern + "costs.txt"):
+#                 continue
+#             with open(dir + pattern + "costs.txt", "r") as f:
+#                 lines = f.readlines()
+#                 if len(lines) < 2:
+#                     continue
+#                 print(pattern, len(lines), lines[-1])
