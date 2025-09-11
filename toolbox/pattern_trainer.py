@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 from toolbox import stress
 import os
 import numpy as np
+import pandas as pd
 
 def train_random_cells(run_dir, **kwargs):
     print("Training random cells in directory:", run_dir)
@@ -62,3 +63,39 @@ def train_random_cells(run_dir, **kwargs):
     training_instance.initialize()
     training_instance.run()
     return training_instance
+
+def resume_run(run_dir, **kwargs):
+    print("Resuming runs in directory:", run_dir)
+    #default parameters
+    cpp_executable_dir = "/home/shabeeb/Projects/tvm-fire/build/"
+    tolerance = 1e-7
+    max_iters = 10
+    if "cpp_executable_dir" in kwargs:
+        cpp_executable_dir = kwargs["cpp_executable_dir"]
+    if "tolerance" in kwargs:
+        tolerance = kwargs["tolerance"]
+    if "max_iters" in kwargs:
+        max_iters = kwargs["max_iters"]
+    print("Parameters for training:")
+    print("cpp_executable_dir:", cpp_executable_dir)
+    print("tolerance:", tolerance)
+    print("max iters:", max_iters)
+    
+    costs = np.loadtxt("{}costs.txt".format(run_dir))
+    iteration = len(costs)
+    print(iteration)
+    config_file = "{:04d}.bulk.txt".format(iteration-1)
+    print("Loading configuration from: ", config_file)
+    sample = PeriodicTissue.from_config(run_dir,config_file)
+    training_instance = Patterns.periodic_tissue(sample)
+    training_instance._cost_values = list(costs)
+    training_instance.set_cpp_executable_dir(cpp_executable_dir)
+    training_instance.set_tolerance(tolerance)
+    cell_parameters_file = "{:04d}.cellParameters.input".format(iteration-1)
+    print("Loading cell parameters from: ", cell_parameters_file)
+    training_instance.load_cell_parameters(cell_parameters_file)
+    os.system("rm {}cellParameters.input".format(run_dir))
+    training_instance.set_iter_counter(iteration)
+    df = pd.read_csv("{}0000.stresses.csv".format(run_dir))
+    training_instance.set_target_cell_to_stress(dict(zip(df['CellID'], df['Target'])))
+    training_instance.run_to_max_iters(max_iters=100)
