@@ -1,0 +1,12 @@
+executable = /home/mameen/examples/singularity_wrapper.sh
+arguments  = /home/mameen/examples/ubuntu18_povray_paula.img /home/mameen/init_homogeneous/7_4.8/000/minimize_config.sh
+transfer_input_files = /home/mameen/scripts/minimize_config.py, /home/mameen/setup.py, /home/mameen/toolbox 
+should_transfer_files = YES
+output     = output.txt
+error      = error.txt
+log        = log.txt
+getenv     = True
+request_cpus = 1
+request_memory = 100 MB
+Requirements = TARGET.vm_name == "its-u20-nfs-20210413" && regexp("CRUSH", TARGET.name)
+queue 

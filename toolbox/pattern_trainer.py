@@ -10,21 +10,24 @@ import pandas as pd
 
 def train_random_cells(run_dir, **kwargs):
     print("Training random cells in directory:", run_dir)
-
     #default parameters
     cpp_executable_dir = "/home/shabeeb/Projects/tvm-fire/build/"
     alpha = 0.025
     n_cells = 1
     sign = 1
     tolerance = 1e-6
+    max_iters = 100
     average_cells_only = False
     exclude_cells = []
+    target_stress = None
     if "cpp_executable_dir" in kwargs:
         cpp_executable_dir = kwargs["cpp_executable_dir"]
     if "n_cells" in kwargs:
         n_cells = kwargs["n_cells"]
     if "tolerance" in kwargs:
         tolerance = kwargs["tolerance"]
+    if "max_iters" in kwargs:
+        max_iters = kwargs["max_iters"]
     if "alpha" in kwargs:
         alpha = kwargs["alpha"]
     if "sign" in kwargs:
@@ -33,11 +36,14 @@ def train_random_cells(run_dir, **kwargs):
         average_cells_only = kwargs["average_cells_only"]
     if "exclude_cells" in kwargs:
         exclude_cells = kwargs["exclude_cells"]
+    if "target_stress" in kwargs:
+        target_stress = kwargs["target_stress"]
     print("Parameters for training:")
     print("cpp_executable_dir:", cpp_executable_dir)
-    print("alpha:", alpha)
     print("n_cells:", n_cells)
     print("tolerance:", tolerance)
+    print("max_iters:", max_iters)
+    print("target stress:", target_stress)
 
     file = "minimized.txt"
     if os.path.isfile("{}minimized.txt".format(run_dir)):
@@ -54,14 +60,16 @@ def train_random_cells(run_dir, **kwargs):
 
     for cellID in training_instance._target_cell_to_stress:
         # sign = np.random.choice([-1, 1])
-        
         initial_stress = stress.calculate_max_shear_stress(training_instance._config, cellID)
-        training_instance._target_cell_to_stress[cellID] = np.round((1+sign*alpha) * initial_stress,3)
+        if target_stress is None:
+            training_instance._target_cell_to_stress[cellID] = np.round((1+sign*alpha) * initial_stress,3)
+        else:
+            training_instance._target_cell_to_stress[cellID] = target_stress
         # training_instance._target_cell_to_stress[cellID] = alpha
         print("Initial stress for cell {}: {}".format(cellID, initial_stress))
     print(training_instance._target_cell_to_stress)
     training_instance.initialize()
-    training_instance.run()
+    training_instance.run_to_max_iters(max_iters)
     return training_instance
 
 def resume_run(run_dir, **kwargs):

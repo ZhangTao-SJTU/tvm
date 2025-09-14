@@ -125,13 +125,21 @@ class Training(FIREminimization):
                 if line.startswith("box"):
                     box_l = line.split()[1]
                     box_periodic = line.split()[4]
-        for key in kwargs:
-            if key == "s0":
-                s0 = kwargs[key]
-            elif key == "kv":
-                kv = kwargs[key]
-            else:
-                raise ValueError("Invalid key, or not supported yet.")
+
+        if "s0" in kwargs:
+            s0 = kwargs["s0"]
+            print("s0 edited:", s0)
+        if "kv" in kwargs:
+            kv = kwargs["kv"]
+            print("kv edited:", kv)
+
+        if "final_time" in kwargs:
+            final_time = kwargs["final_time"]
+            print("final_time edited:", final_time)
+        if "log" in kwargs:
+            log = kwargs["log"]
+            print("log edited:", log)
+
             
         with open("{}conf".format(self._dir),"w") as f:
             f.write("time {} {} {}\n".format(init_time,final_time,euler_time))

@@ -1,1 +1,0 @@
-/var/lib/condor/execute/dir_596739/condor_exec.exe: line 3: /usr/local/bin/singularity: No such file or directory

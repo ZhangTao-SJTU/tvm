@@ -61,8 +61,8 @@ class Run {
     double   FIRE_fv;
     double   FIRE_vv;
     // FIRE termination
-    double FIRE_equilibrium_tolerance = 1e-7;
-    long int FIRE_itermax = 20000;
+    double FIRE_equilibrium_tolerance = 1e-10;
+    long int FIRE_itermax = 50000;
 
     Volume * volume_;
     Interface * interface_;
