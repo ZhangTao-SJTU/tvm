@@ -27,6 +27,10 @@ class plot:
         self.yScaled = False
         self.fig = None
         self.ax = None
+    def set_xLog(self):
+        self.ax.xscale("log")
+    def set_yLog(self):
+        self.ax.yscale("log")
     def set_xScaled(self,yeah = True):
         self.xScaled = yeah
     def set_yScaled(self,yeah = True):
@@ -68,6 +72,8 @@ class plot:
 
     def plot_xy(self,x_array,y_array, color = "#7d878a", label = "plot",alpha = 0.8):
         self.ax.plot(x_array,y_array, color = color, label = label,alpha = alpha)
+    def plot_errorfill(self,x_array,y_array, err_array,color = "#7d878a", label = "plot",alpha = 0.3):
+        self.ax.fill_between(x_array, y_array-err_array, y_array+err_array,color = color, label = label,alpha = alpha)
     def histogram_from_dataframe(self, data, from_array = False,  bins = 50, color = "#7d878a", alpha = 0.8,label = "plot"):
         if from_array:
             data = pd.DataFrame(data, columns = ["data"])

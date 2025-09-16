@@ -177,7 +177,7 @@ def write_average_error(experiment):
             lines = f.readlines()
             if len(lines) < 2:
                 continue
-            if float(lines[-1]) > 1e-6:
+            if float(lines[-1])>1e-4:
                 continue
         initial_stress = pd.read_csv("{}initial_stress.csv".format(dir))
         init = initial_stress["Stress"].to_numpy()
@@ -189,27 +189,39 @@ def write_average_error(experiment):
             current_stress_file = "{}{:04d}.stresses.csv".format(dir,iter)
             current_stress = pd.read_csv(current_stress_file)
             mean_stress = np.mean(abs((current_stress["Current"].to_numpy() - targets))/current_stress["Current"].to_numpy())
-            print(mean_stress)
             iteration_to_costs[iter+1].append(mean_stress)
     mn = []
-    sd = []
+    sem = []
     for i, array in iteration_to_costs.items():
         if len(array)<3: continue
         mn.append(np.mean(array))
-        sd.append(np.std(array))
+        sem.append(stats.sem(array))
         # sd.append(stats.sem(array))
-    avg_stress = {"mean":mn, "sem":sd}
+    avg_stress = {"mean":mn, "sem":sem}
     df = pd.DataFrame(avg_stress)
     df.to_csv("{}error.csv".format(experiment))
 
+def download(experiment):
+    os.system("scp mameen@smatter-login.syr.edu:/home/mameen/{}error.csv {}error.csv".format(experiment,experiment))
+
+def download_all():
+    s0_vals = [4.8,4.9,5.0,5.1,5.2,5.3]
+    d_list = ["1_cell_increase/", "1_cell_decrease/", "2_cells/","4_cells/"]
+    for d in d_list:
+        os.makedirs(d, exist_ok=True)
+        for s0 in s0_vals:
+            experiment = d+"7_{:.1f}/".format(s0)
+            os.makedirs(experiment,exist_ok=True)
+            download(experiment)
 def main():
     s0_vals = [4.8,4.9,5.0,5.1,5.2,5.3]
     d_list = ["1_cell_increase/", "1_cell_decrease/", "2_cells/","4_cells/"]
     for d in d_list:
         for s0 in s0_vals:
             experiment = d+"7_{:.1f}/".format(s0)
-            write_histogram_data(experiment)
-            write_average_error(experiment) 
+            write_average_error(experiment)
+            # write_histogram_data(experiment)
+
     # write_histogram_data(experiments_list)
     # write_costs(experiments_list)
     
