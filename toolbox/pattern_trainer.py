@@ -55,7 +55,7 @@ def train_random_cells(run_dir, **kwargs):
     training_instance.set_tolerance(tolerance)
     training_instance.set_random_target_cells(
         n_cells = n_cells, 
-        average_cells_only=average_cells_only,
+        average_cells_only = average_cells_only,
         exclude_cells = exclude_cells)
 
     for cellID in training_instance._target_cell_to_stress:

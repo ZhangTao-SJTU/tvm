@@ -68,8 +68,8 @@ class Patterns(Training):
         if average_cells_only:
             for cellID,cell in self._config.cells_.items():
                 cell.max_shear_stress_ = stress.calculate_max_shear_stress(self._config, cellID)
-            avg_stress = np.mean([cell.max_shear_stress_ for cellID,cell in self._config.cells_.items()])
-            std_stress = np.std([cell.max_shear_stress_ for cellID,cell in self._config.cells_.items()])
+            avg_stress = np.mean([cell.max_shear_stress_ for _,cell in self._config.cells_.items()])
+            std_stress = np.std([cell.max_shear_stress_ for _,cell in self._config.cells_.items()])
         while len(self._target_cell_to_stress)<n_cells:
             cellID = random.choice(list(self._config.cells_.keys()))
             cell = self._config.cells_[cellID]

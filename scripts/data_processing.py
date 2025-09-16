@@ -217,18 +217,6 @@ def main():
     # write_histogram_data(experiments_list)
     # write_costs(experiments_list)
     write_distances(experiments_list)
+    
 if __name__ == "__main__":
     main()
-
-import numpy as np
-import os
-experiment = "sp_1_cell_increase"
-for i in range(20):
-    dir = "/home/mameen/{}/run_{}/".format(experiment,i)
-    if not os.path.isfile(dir + "costs.txt"):
-        print(dir, " has no costs! rerun this.\n\n\n")
-        continue
-    costs = np.loadtxt(dir + "costs.txt")
-    if costs[-1]<1e-6:
-        continue
-    print(dir, len(costs), costs[-1])

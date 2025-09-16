@@ -32,28 +32,32 @@
 # 5.2_0, 5.2_1, ... 5.2_9
 
 import os
-# import glob
-# import numpy as np
-
+import glob
+import numpy as np
+import time
 # This function creates a conf file in the input directory "dir"
 # with the given parameters.
 # The intended use is within the makeSamplesSubDir() function.
-def makeConfFile(s0 = 5.7, dir = "samples/"):
+def makeConfFile(dir = "samples/", **kwargs):
     initTime = 0
-    finalTime = 2000
+    finalTime = 50000
     eulerStep = 0.005
     dumpTime = 100
-    logTime = 100
+    logTime = 200
+    s0 = 5.7
     Lth = 0.02
     T = 1e-4
     kv = 1
-    xRange = 8
-    yRange = 8
-    zRange = 8
+    xRange = 7
+    yRange = 7
+    zRange = 7
     xPeriodicity = "p"
     yPeriodicity = "p"
     zPeriodicity = "p"
     confContent = ""
+    if "s0" in kwargs:
+        s0 = kwargs["s0"]
+
     # Initial time, final time, Euler step
     confContent += "time {} {} {}\n".format(initTime, finalTime, eulerStep)
     # Dump vtk interval
@@ -80,6 +84,33 @@ def makeConfFile(s0 = 5.7, dir = "samples/"):
         f.close()
     return
 
+def write_scripts(output_dir):
+    lines_sub = []
+    lines_sub.append("executable = /home/mameen/examples/singularity_wrapper.sh\n")
+    lines_sub.append("arguments  = /home/mameen/examples/ubuntu18_povray_paula.img /home/mameen/{}single_pattern.sh\n".format(output_dir))
+    lines_sub.append("transfer_input_files = /home/mameen/scripts/single_pattern.py, /home/mameen/setup.py, /home/mameen/toolbox\n")
+    lines_sub.append("should_transfer_files = YES\n")
+    lines_sub.append("output     = output.txt\n")
+    lines_sub.append("error      = error.txt\n")
+    lines_sub.append("log        = log.txt\n")
+    lines_sub.append("getenv     = True\n")
+    lines_sub.append("request_cpus = 1\n")
+    lines_sub.append("request_memory = 100 MB\n")
+    lines_sub.append('Requirements = TARGET.vm_name == "its-u20-nfs-20210413" && regexp("CRUSH", TARGET.name)\n')
+    lines_sub.append("queue")
+    with open("{}single_pattern.sub".format(output_dir), "w") as f:
+        for line in lines_sub:
+            f.write(line)
+
+    lines_sh = []
+    lines_sh.append("#!/bin/bash\n")
+    lines_sh.append("source /home/mameen/.bashrc\n")
+    lines_sh.append("pip install --user -e .\n")
+    lines_sh.append("python /home/mameen/scripts/single_pattern.py /home/mameen/{}\n".format(output_dir))
+    with open("{}single_pattern.sh".format(output_dir), "w") as f:
+        for line in lines_sh:
+            f.write(line)
+    os.system("chmod +x {}single_pattern.sh".format(output_dir))
 # This function creates and populates a subdirectory in the input directory "dir"
 # with a conf file and an initial configuration file called sample.topo.
 
@@ -114,21 +145,53 @@ def makeSamplesSubDir(s0:float = 5.2,
         return
 
 def main():
-    # create the directory "samples/" if it doesnt exist
-    if not os.path.isdir("samples/"):
-        os.mkdir("samples/")
-    # probability = 0.8
-    # if not os.path.isdir("samples/p_{}/".format(probability)):
-    #     os.mkdir("samples/p_{}/".format(probability))
+    # for s0 in [4.8,4.9,5.0,5.1,5.2,5.3]:
+    #     stresses = np.loadtxt("init_homogeneous/7_{:.1f}/stresses.txt".format(s0))
+    #     mean = np.mean(stresses)
+    #     std = np.std(stresses)
+    #     for exp in ["2_cells/","4_cells/"]:
+    #         np.savetxt("{}7_{:.1f}/target".format(exp,s0),[mean])
+    #     np.savetxt("1_cell_increase/7_{:.1f}/target".format(s0),[mean+2*std])
+    #     np.savetxt("1_cell_decrease/7_{:.1f}/target".format(s0),[mean-2*std])
 
-    # now make subdirectories for the runs
-    s0 = 5.2
-    runID = 1
-    makeSamplesSubDir(
-        s0 = s0,
-        # dir = "samples/{}_{}/".format(s0,runID))
-        dir = "test/")
-    return
+    # experiments = ["1_cell_increase/", "1_cell_decrease/","2_cells/","4_cells/"]
+    experiments = ["2_cells/","4_cells/"]
+
+    # for exp in experiments:
+    #     os.makedirs(exp,exist_ok=True)
+    #     for s0 in [4.8,4.9,5.0,5.1,5.2,5.3]:
+    #         os.makedirs(exp + "7_{:.1f}/".format(s0), exist_ok=True)
+    #         success_dirs = []
+    #         for i in range(100):
+    #             output_dir = "init_homogeneous/7_{:.1f}/{:03d}/".format(s0,i)
+    #             if not os.path.isfile("{}minimized.txt".format(output_dir)):
+    #                 continue
+    #             success_dirs.append(output_dir)
+    #         for k, dir in enumerate(success_dirs):
+    #             os.system("cp -r {} {}7_{:.1f}/{:03d}/".format(dir,exp,s0,k))
+    for exp in experiments:
+        for s0 in [4.8,4.9,5.0,5.1,5.2,5.3]:
+            s0_dir = "{}7_{:.1f}/".format(exp,s0)
+            for dir in [s0_dir +"{:03d}/".format(i) for i in range(100)]:
+                if not os.path.isdir(dir):
+                    continue
+                if os.path.isfile(dir+"log.txt"):
+                    continue
+                # os.system("cp {}n_cells {}".format(exp,dir))
+                # os.system("cp {}tolerance {}".format(exp,dir))
+                # os.system("cp {}target {}".format(s0_dir,dir))
+                # makeConfFile(dir = dir,s0 = s0)
+                # write_scripts(dir)
+                # os.system("rm {}error.txt".format(dir))
+                # os.system("rm {}output.txt".format(dir))
+                # os.system("rm {}log.txt".format(dir))
+                # os.system("rm {}minimize_config.sh".format(dir))
+                # os.system("rm {}minimize_config.sub".format(dir))
+                # os.system("rm {}error.txt".format(dir))
+                # os.system("rm {}error.txt".format(dir))
+                # os.system("rm {}error.txt".format(dir))
+                os.system("cd {} && condor_submit single_pattern.sub".format(dir))
+                time.sleep(5)
 
 if __name__ == "__main__":
     main()
