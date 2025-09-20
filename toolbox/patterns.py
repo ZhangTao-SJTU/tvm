@@ -81,7 +81,8 @@ class Patterns(Training):
                 lower_limit = avg_stress - std_stress
                 if lower_limit < 0:
                     continue
-                upper_limit = avg_stress + std_stress
+                upper_limit = avg_stress
+                # upper_limit = avg_stress + std_stress
                 if (cell.max_shear_stress_ < lower_limit):
                     continue
                 if (cell.max_shear_stress_ > upper_limit):
@@ -137,9 +138,11 @@ class Patterns(Training):
         print("Starting iteration: {:d}".format(self._iter_counter))
         print("\n\n=====================================\n\n")
         print("Number of modifiable cells: {:d}".format(len(self._modified_cells)))
+        
         print("\n\n-------------------------------------")
-
         print("Step 1: Evaluate and store the current (free state) areas of hidden (non-target) cells")
+        print("\n\n-------------------------------------")
+        
         # The stored cell areas will be used to calculate learning DOF changes
         for cellID,cell in self._config.cells_.items():
             if cellID in self._target_cell_to_stress:
@@ -148,10 +151,13 @@ class Patterns(Training):
 
         print("\n\n-------------------------------------")
         print("Step 2: CLAMPING")
+        print("-------------------------------------\n\n")
+
         self.clamp_target_cells()
 
         print("\n\n-------------------------------------")
         print("Step 3: Use the clamped state areas to update all learning degrees of freedom.")
+        print("-------------------------------------\n\n")
 
         for cellID in free_state_areas:
             cell = self._config.cells_[cellID]

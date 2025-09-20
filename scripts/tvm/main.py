@@ -46,7 +46,7 @@ class Cell:
 
 def main():
     # Lx, Ly, Lz = (8, 8, 8)
-    Lx, Ly, Lz = (7, 7, 7)
+    Lx, Ly, Lz = (6, 6, 6)
     # Lx, Ly, Lz = (10, 10, 10)
 
     points = generatePoints(Lx, Ly, Lz)

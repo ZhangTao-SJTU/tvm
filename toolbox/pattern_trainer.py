@@ -77,7 +77,7 @@ def resume_run(run_dir, **kwargs):
     #default parameters
     cpp_executable_dir = "/home/shabeeb/Projects/tvm-fire/build/"
     tolerance = 1e-7
-    max_iters = 10
+    max_iters = 100
     if "cpp_executable_dir" in kwargs:
         cpp_executable_dir = kwargs["cpp_executable_dir"]
     if "tolerance" in kwargs:
@@ -106,4 +106,4 @@ def resume_run(run_dir, **kwargs):
     training_instance.set_iter_counter(iteration)
     df = pd.read_csv("{}0000.stresses.csv".format(run_dir))
     training_instance.set_target_cell_to_stress(dict(zip(df['CellID'], df['Target'])))
-    training_instance.run_to_max_iters(max_iters=100)
+    training_instance.run_to_max_iters(max_iters=max_iters)

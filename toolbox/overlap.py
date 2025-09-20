@@ -9,6 +9,7 @@ import copy
 
 # The neighbors of a cell are defined as cells that share a polygon with it.
 
+'''
 # def find_cell_neighbors(spheroid:Spheroid):
 #     cellID_to_neighbors:dict[int,list] = {}
 #     for cellID,cell in spheroid.cells_.items():
@@ -36,7 +37,7 @@ import copy
 #             continue
 #         else: del edited_cellID_to_neighbors[cellID]
 #     return edited_cellID_to_neighbors
-
+'''
 # This function takes two dicts of the form {cellID: list of neighbor cellIDs}
 # These are intended to be the states of a spheroid at two different times, 
 # with d2 representing the later time.
@@ -100,7 +101,7 @@ def calculate_Q(d1:dict[int,list], d2:dict[int,list]) -> float:
 def calculate_average_overlap(dir_to_time_to_sample:dict[str,dict[int,Spheroid]]):
     timevals = list(dir_to_time_to_sample.values())[0].keys()
     Qn={i:[] for i in timevals}
-    Qn[0]=1
+    Qn[0] = 1
     for _,time_to_sample in dir_to_time_to_sample.items():
         for i,time in enumerate(timevals):
             if time==0:

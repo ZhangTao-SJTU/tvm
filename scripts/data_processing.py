@@ -1,6 +1,7 @@
 from toolbox import stress
 from toolbox.periodic import PeriodicTissue
 from toolbox.minimization import FIREminimization
+from toolbox.overlap import calculate_Q
 import os
 import glob
 import numpy as np
@@ -23,7 +24,7 @@ def write_patterns_histogram_data(experiments_list):
                     lines = f.readlines()
                     if len(lines) < 2:
                         continue
-                    if float(lines[-1]) > 1e-5:
+                    if float(lines[-1]) > 1e-6:
                         continue
                     print(dir)
                 init_file = "init_config.txt"
@@ -109,8 +110,6 @@ def write_distances(experiment_list):
             # print(initial_stress)
 
             distances = np.loadtxt("{}distances.txt".format(dir))
-            print(distances)
-
             for iter, dist in enumerate(distances):
                 iteration_to_distances[iter+1].append(dist)
         mn = []
@@ -166,7 +165,87 @@ def write_histogram_data(experiment):
     data_dict = {"Initial_Stress":init_stresses, "Final_Stress": final_stresses, "Initial_s0": init_s0, "Final_s0": final_s0}
     df = pd.DataFrame(data_dict)
     df.to_csv("{}/histogram_data.csv".format(experiment))
+#write overlap between consecutive epochs. set value at epoch 0 to be 1.
 
+'''
+def write_Q2(dir,**kwargs):
+    intervals = np.arange(0,1000,100)
+    if "intervals" in kwargs:
+        intervals = kwargs["intervals"]
+    if not os.path.isdir(dir):
+        raise ValueError("Dir doesnt exist!")
+    if not os.path.isfile(dir + "costs.txt"):
+        print("No costs.txt: maybe run hasn't started yet.")
+        return
+    costs = np.loadtxt(dir + "costs.txt")
+    init_config = PeriodicTissue.from_config(dir, "init_config.txt") 
+    init_config.evaluate_cell_neighbors()
+    init_cell_neighbors_dict = init_config.cell_neighbors_
+    iter_to_sample = {i:PeriodicTissue.from_config(dir, "{:04d}.bulk.txt".format(i)) for i in intervals}
+    for _,sample in iter_to_sample.items():
+        sample.evaluate_cell_neighbors()
+    
+    iter_to_overlap = {i:[] for i in intervals}
+    # for i,iter in enumerate(intervals):
+    #     current_neighbors_dict = iter_to_sample[iter].cell_neighbors_
+    #     if i == 0:
+    #         iter_to_overlap[iter] = calculate_Q(current_neighbors_dict,init_cell_neighbors_dict)
+    #         continue
+    #     previous_iter = intervals[i-1]
+    #     current_neighbors_dict = iter_to_sample[iter].cell_neighbors_
+    #     previous_neighbors_dict = iter_to_sample[previous_iter].cell_neighbors_
+    #     iter_to_overlap[iter] = calculate_Q(current_neighbors_dict,previous_neighbors_dict)
+    for iter in intervals:
+        current_neighbors_dict = iter_to_sample[iter].cell_neighbors_
+        iter_to_overlap[iter] = calculate_Q(current_neighbors_dict,init_cell_neighbors_dict)
+   
+   
+    df = pd.DataFrame({"iteration":list(iter_to_overlap.keys()),"overlap":list(iter_to_overlap.values())})
+    df.to_csv("{}overlaps.csv".format(dir))
+'''
+
+
+
+def write_Q2(dir):
+    if not os.path.isdir(dir):
+        raise ValueError("Dir doesnt exist!")
+    if not os.path.isfile(dir + "costs.txt"):
+        print("No costs.txt: maybe run hasn't started yet.")
+        return
+    costs = np.loadtxt(dir + "costs.txt")
+    init_config = PeriodicTissue.from_config(dir, "init_config.txt") 
+    init_config.evaluate_cell_neighbors()
+    init_cell_neighbors_dict = init_config.cell_neighbors_
+    samples = [PeriodicTissue.from_config(dir, "{:04d}.bulk.txt".format(i)) for i in range(len(costs))]
+    overlaps = [1]
+    for sample in samples:
+        sample.evaluate_cell_neighbors()
+        overlaps.append(calculate_Q(init_cell_neighbors_dict,sample.cell_neighbors_))
+    np.savetxt("{}overlaps.txt".format(dir),overlaps)
+
+# Write average error - the 0th element being the initial (pretraining) error
+def write_average_error(dir):
+    if not os.path.isdir(dir):
+        raise ValueError("Dir doesnt exist!")
+    errors = []
+    if not os.path.isfile(dir + "costs.txt"):
+        print("No costs.txt: maybe run hasn't started yet.")
+        return
+    costs = np.loadtxt(dir + "costs.txt")
+    initial_stress = pd.read_csv("{}initial_stress.csv".format(dir))
+    init = initial_stress["Stress"].to_numpy()
+    targets = pd.read_csv("{}0000.stresses.csv".format(dir))["Target"].to_numpy()
+    # Append initial (pretraining value).
+    # Note that 0000.stresses.csv has current stresses AFTER the 0th iteration of training...
+    errors.append(np.mean(abs((init - targets))/init))
+    for iter in range(len(costs)):
+        current_stress_file = "{}{:04d}.stresses.csv".format(dir,iter)
+        current_stress = pd.read_csv(current_stress_file)
+        mean_stress = np.mean(abs((current_stress["Current"].to_numpy() - targets))/current_stress["Current"].to_numpy())
+        errors.append(mean_stress)
+    np.savetxt("{}errors.txt".format(dir), errors)
+
+'''
 def write_average_error(experiment):
     iteration_to_costs = {i:[]for i in range(1000)}
     for i in range(100):
@@ -200,7 +279,7 @@ def write_average_error(experiment):
     avg_stress = {"mean":mn, "sem":sem}
     df = pd.DataFrame(avg_stress)
     df.to_csv("{}error.csv".format(experiment))
-
+'''
 def download(experiment):
     os.system("scp mameen@smatter-login.syr.edu:/home/mameen/{}error.csv {}error.csv".format(experiment,experiment))
 
@@ -225,5 +304,5 @@ def main():
     # write_histogram_data(experiments_list)
     # write_costs(experiments_list)
     
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()
