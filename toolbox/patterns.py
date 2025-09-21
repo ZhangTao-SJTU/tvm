@@ -39,80 +39,80 @@ class Patterns(Training):
                 polygon.vtk_scalar_ = 1
         self._config.write_periodic_vtk(filename = "target_cells.vtk", use_scalar=True)
 
-    def set_central_target_cells(self, n_cells = 1):
-        r_lim = 0.9
-        self._target_cell_to_stress = {}
-        for cellID,cell in self._config.cells_.items():
-            if cell.crossBoundary_:
-                continue
-            r = np.subtract(cell.center_,self._config.sample_center_)
-            r = np.linalg.norm(r)
-            if r<r_lim:
-                self._target_cell_to_stress[cellID] = None
-            if len(self._target_cell_to_stress) == n_cells:
-                break
-        # For checking the above functionality with vtk:
-        for polygonID,polygon in self._config.polygons_.items():
-            polygon.vtk_scalar_ = 0
-        for cellID,_ in self._target_cell_to_stress.items():
-            cell = self._config.cells_[cellID]
-            for polygonID in cell.polygons_:
-                polygon = self._config.polygons_[polygonID]
-                polygon.vtk_scalar_ = 1
-        self._config.write_periodic_vtk(filename = "target_cells.vtk", use_scalar=True)
+    # def set_central_target_cells(self, n_cells = 1):
+    #     r_lim = 0.9
+    #     self._target_cell_to_stress = {}
+    #     for cellID,cell in self._config.cells_.items():
+    #         if cell.crossBoundary_:
+    #             continue
+    #         r = np.subtract(cell.center_,self._config.sample_center_)
+    #         r = np.linalg.norm(r)
+    #         if r<r_lim:
+    #             self._target_cell_to_stress[cellID] = None
+    #         if len(self._target_cell_to_stress) == n_cells:
+    #             break
+    #     # For checking the above functionality with vtk:
+    #     for polygonID,polygon in self._config.polygons_.items():
+    #         polygon.vtk_scalar_ = 0
+    #     for cellID,_ in self._target_cell_to_stress.items():
+    #         cell = self._config.cells_[cellID]
+    #         for polygonID in cell.polygons_:
+    #             polygon = self._config.polygons_[polygonID]
+    #             polygon.vtk_scalar_ = 1
+    #     self._config.write_periodic_vtk(filename = "target_cells.vtk", use_scalar=True)
 
-    def set_random_target_cells(self, n_cells = 1, average_cells_only = False, exclude_cells = []):
-        self._target_cell_to_stress = {}
-        for polygonID,polygon in self._config.polygons_.items():
-            polygon.vtk_scalar_ = 0
-        if average_cells_only:
-            for cellID,cell in self._config.cells_.items():
-                cell.max_shear_stress_ = stress.calculate_max_shear_stress(self._config, cellID)
-            avg_stress = np.mean([cell.max_shear_stress_ for _,cell in self._config.cells_.items()])
-            std_stress = np.std([cell.max_shear_stress_ for _,cell in self._config.cells_.items()])
-        while len(self._target_cell_to_stress)<n_cells:
-            cellID = random.choice(list(self._config.cells_.keys()))
-            cell = self._config.cells_[cellID]
-            if cell.crossBoundary_: 
-                continue
-            if cellID in self._target_cell_to_stress:
-                continue
-            if average_cells_only:
-                lower_limit = avg_stress - std_stress
-                if lower_limit < 0:
-                    continue
-                upper_limit = avg_stress
-                # upper_limit = avg_stress + std_stress
-                if (cell.max_shear_stress_ < lower_limit):
-                    continue
-                if (cell.max_shear_stress_ > upper_limit):
-                    continue
-            if len(exclude_cells):
-                if cellID in exclude_cells:
-                    continue
-            self._target_cell_to_stress[cellID] = None
-            targets_share_polygons = False
-            for polygonID in cell.polygons_:
-                polygon = self._config.polygons_[polygonID]
-                if polygon.vtk_scalar_ == 1:
-                    targets_share_polygons = True
-                    break    
-            if targets_share_polygons:
-                continue
-            for polygonID in cell.polygons_:
-                polygon = self._config.polygons_[polygonID]
-                polygon.vtk_scalar_ = 1
-            if len(self._target_cell_to_stress) == n_cells:
-                break
-        # # For checking the above functionality with vtk:
-        # for polygonID,polygon in self._config.polygons_.items():
-        #     polygon.vtk_scalar_ = 0
-        for cellID in self._target_cell_to_stress:
-            cell = self._config.cells_[cellID]
-            # for polygonID in cell.polygons_:
-            #     polygon = self._config.polygons_[polygonID]
-            #     polygon.vtk_scalar_ = 1
-        self._config.write_periodic_vtk(filename = "target_cells.vtk", use_scalar=True)
+    # def set_random_target_cells(self, n_cells = 1, average_cells_only = False, exclude_cells = []):
+    #     self._target_cell_to_stress = {}
+    #     for polygonID,polygon in self._config.polygons_.items():
+    #         polygon.vtk_scalar_ = 0
+    #     if average_cells_only:
+    #         for cellID,cell in self._config.cells_.items():
+    #             cell.max_shear_stress_ = stress.calculate_max_shear_stress(self._config, cellID)
+    #         avg_stress = np.mean([cell.max_shear_stress_ for _,cell in self._config.cells_.items()])
+    #         std_stress = np.std([cell.max_shear_stress_ for _,cell in self._config.cells_.items()])
+    #     while len(self._target_cell_to_stress)<n_cells:
+    #         cellID = random.choice(list(self._config.cells_.keys()))
+    #         cell = self._config.cells_[cellID]
+    #         if cell.crossBoundary_: 
+    #             continue
+    #         if cellID in self._target_cell_to_stress:
+    #             continue
+    #         if average_cells_only:
+    #             lower_limit = avg_stress - std_stress
+    #             if lower_limit < 0:
+    #                 continue
+    #             upper_limit = avg_stress
+    #             # upper_limit = avg_stress + std_stress
+    #             if (cell.max_shear_stress_ < lower_limit):
+    #                 continue
+    #             if (cell.max_shear_stress_ > upper_limit):
+    #                 continue
+    #         if len(exclude_cells):
+    #             if cellID in exclude_cells:
+    #                 continue
+    #         self._target_cell_to_stress[cellID] = None
+    #         targets_share_polygons = False
+    #         for polygonID in cell.polygons_:
+    #             polygon = self._config.polygons_[polygonID]
+    #             if polygon.vtk_scalar_ == 1:
+    #                 targets_share_polygons = True
+    #                 break    
+    #         if targets_share_polygons:
+    #             continue
+    #         for polygonID in cell.polygons_:
+    #             polygon = self._config.polygons_[polygonID]
+    #             polygon.vtk_scalar_ = 1
+    #         if len(self._target_cell_to_stress) == n_cells:
+    #             break
+    #     # # For checking the above functionality with vtk:
+    #     # for polygonID,polygon in self._config.polygons_.items():
+    #     #     polygon.vtk_scalar_ = 0
+    #     for cellID in self._target_cell_to_stress:
+    #         cell = self._config.cells_[cellID]
+    #         # for polygonID in cell.polygons_:
+    #         #     polygon = self._config.polygons_[polygonID]
+    #         #     polygon.vtk_scalar_ = 1
+    #     self._config.write_periodic_vtk(filename = "target_cells.vtk", use_scalar=True)
                 
     def calculate_max_shear_stresses(self):
         for cellID in self._target_cell_to_stress:
@@ -231,12 +231,11 @@ class Patterns(Training):
         init_guess = min(s0_guesses, key=lambda x: abs(s0_guesses[x] - target_stress))
         cell.s0_ = init_guess
         return
+    
     def initialize(self):
         os.system("cp {}cellParameters.input {}cellParameters.init.input".format(self._dir,self._dir))
         os.system("cp {}minimized.txt {}init_config.txt".format(self._dir,self._dir))
-        
-        cost = [self.evaluate_cost()]
-        np.savetxt("{}initial_cost.txt".format(self._dir), cost, fmt='%.2e')
+        np.savetxt("{}initial_cost.txt".format(self._dir), [self.evaluate_cost()], fmt='%.2e')
 
         initial_stresses = {}
         self.calculate_max_shear_stresses()

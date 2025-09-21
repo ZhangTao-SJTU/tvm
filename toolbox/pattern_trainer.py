@@ -7,37 +7,100 @@ from toolbox import stress
 import os
 import numpy as np
 import pandas as pd
+import random
 
-def train_random_cells(run_dir, **kwargs):
+# def set_central_target_cells(self, n_cells = 1):
+#     r_lim = 0.9
+#     self._target_cell_to_stress = {}
+#     for cellID,cell in self._config.cells_.items():
+#         if cell.crossBoundary_:
+#             continue
+#         r = np.subtract(cell.center_,self._config.sample_center_)
+#         r = np.linalg.norm(r)
+#         if r<r_lim:
+#             self._target_cell_to_stress[cellID] = None
+#         if len(self._target_cell_to_stress) == n_cells:
+#             break
+#     # For checking the above functionality with vtk:
+#     for polygonID,polygon in self._config.polygons_.items():
+#         polygon.vtk_scalar_ = 0
+#     for cellID,_ in self._target_cell_to_stress.items():
+#         cell = self._config.cells_[cellID]
+#         for polygonID in cell.polygons_:
+#             polygon = self._config.polygons_[polygonID]
+#             polygon.vtk_scalar_ = 1
+#     self._config.write_periodic_vtk(filename = "target_cells.vtk", use_scalar=True)
+
+def set_random_target_cells(training_instance, n_cells = 1, target_stress =1, **kwargs):
+    stress_limits = []
+    exclude_cells = []
+    if "stress_limits" in kwargs:
+        stress_limits = kwargs["stress_limits"]
+    if "exclude_cells" in kwargs:
+        exclude_cells = kwargs["exclude_cells"]
+    for polygonID,polygon in training_instance._config.polygons_.items():
+        polygon.vtk_scalar_ = 0
+
+    target_cell_to_stress = {}
+    while len(target_cell_to_stress)<n_cells:
+        cellID = random.choice(list(training_instance._config.cells_.keys()))
+        cell = training_instance._config.cells_[cellID]
+        if cell.crossBoundary_: 
+            continue
+        if cellID in target_cell_to_stress:
+            continue
+        if len(stress_limits):
+            if cell.max_shear_stress_ is None:
+                cell.max_shear_stress_ = stress.calculate_max_shear_stress(training_instance._config,cellID)
+            lower_limit = stress_limits[0]
+            upper_limit = stress_limits[1]
+            if (cell.max_shear_stress_ < lower_limit):
+                continue
+            if (cell.max_shear_stress_ > upper_limit):
+                continue
+        if len(exclude_cells):
+            if cellID in exclude_cells:
+                continue
+        target_cell_to_stress[cellID] = target_stress
+        targets_share_polygons = False
+        for polygonID in cell.polygons_:
+            polygon = training_instance._config.polygons_[polygonID]
+            if polygon.vtk_scalar_ == 1:
+                targets_share_polygons = True
+                break    
+        if targets_share_polygons:
+            continue
+
+        for polygonID in cell.polygons_:
+            polygon = training_instance._config.polygons_[polygonID]
+            polygon.vtk_scalar_ = 1
+        if len(target_cell_to_stress) == n_cells:
+            break
+
+    training_instance.set_target_cell_to_stress(target_cell_to_stress)
+    training_instance._config.write_periodic_vtk(filename = "target_cells.vtk", use_scalar=True)
+    training_instance._config.write_cell_collection_vtk(list(target_cell_to_stress.keys()),"target_cells_isolated.vtk",use_scalar=False)
+
+
+def train_random_cells(run_dir, n_cells = 1, target_stress = 1, **kwargs):
     print("Training random cells in directory:", run_dir)
     #default parameters
     cpp_executable_dir = "/home/shabeeb/Projects/tvm-fire/build/"
-    alpha = 0.025
-    n_cells = 1
-    sign = 1
-    tolerance = 1e-6
+    tolerance = 1e-8
     max_iters = 100
-    average_cells_only = False
+    stress_limits = []
     exclude_cells = []
-    target_stress = None
+    if "stress_limits" in kwargs:
+        stress_limits = kwargs["stress_limits"]
     if "cpp_executable_dir" in kwargs:
         cpp_executable_dir = kwargs["cpp_executable_dir"]
-    if "n_cells" in kwargs:
-        n_cells = kwargs["n_cells"]
     if "tolerance" in kwargs:
         tolerance = kwargs["tolerance"]
     if "max_iters" in kwargs:
         max_iters = kwargs["max_iters"]
-    if "alpha" in kwargs:
-        alpha = kwargs["alpha"]
-    if "sign" in kwargs:
-        sign = kwargs["sign"]
-    if "average_cells_only" in kwargs:
-        average_cells_only = kwargs["average_cells_only"]
     if "exclude_cells" in kwargs:
         exclude_cells = kwargs["exclude_cells"]
-    if "target_stress" in kwargs:
-        target_stress = kwargs["target_stress"]
+
     print("Parameters for training:")
     print("cpp_executable_dir:", cpp_executable_dir)
     print("n_cells:", n_cells)
@@ -53,21 +116,13 @@ def train_random_cells(run_dir, **kwargs):
     training_instance.set_cpp_executable_dir(cpp_executable_dir)
     training_instance.minimize_config()
     training_instance.set_tolerance(tolerance)
-    training_instance.set_random_target_cells(
-        n_cells = n_cells, 
-        average_cells_only = average_cells_only,
-        exclude_cells = exclude_cells)
+    set_random_target_cells(
+        training_instance = training_instance,
+        n_cells = n_cells,
+        target_stress = target_stress, 
+        exclude_cells = exclude_cells,
+        stress_limits = stress_limits)
 
-    for cellID in training_instance._target_cell_to_stress:
-        # sign = np.random.choice([-1, 1])
-        initial_stress = stress.calculate_max_shear_stress(training_instance._config, cellID)
-        if target_stress is None:
-            training_instance._target_cell_to_stress[cellID] = np.round((1+sign*alpha) * initial_stress,3)
-        else:
-            training_instance._target_cell_to_stress[cellID] = target_stress
-        # training_instance._target_cell_to_stress[cellID] = alpha
-        print("Initial stress for cell {}: {}".format(cellID, initial_stress))
-    print(training_instance._target_cell_to_stress)
     training_instance.initialize()
     training_instance.run_to_max_iters(max_iters)
     return training_instance
@@ -76,7 +131,7 @@ def resume_run(run_dir, **kwargs):
     print("Resuming runs in directory:", run_dir)
     #default parameters
     cpp_executable_dir = "/home/shabeeb/Projects/tvm-fire/build/"
-    tolerance = 1e-7
+    tolerance = 1e-8
     max_iters = 100
     if "cpp_executable_dir" in kwargs:
         cpp_executable_dir = kwargs["cpp_executable_dir"]
