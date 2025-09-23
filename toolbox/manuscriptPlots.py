@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from matplotlib.ticker import ScalarFormatter
 
 plt.style.use("toolbox/manuscript.mplstyle")
+plt.rcParams['text.usetex'] = True
 import numpy as np
 import pandas as pd
 
@@ -86,14 +87,15 @@ class plot:
             bins = bins,
             color = color,
             label = "_hidden",
+            xlabel=self.xlabel,
             alpha = alpha)
         data.plot(ax = self.ax, kind = "kde",color = color, label = label, alpha = alpha, linewidth = 5)
 
-    def histogram_from_array(self, array, bins = 50, color = "#7d878a", label = "plot"):
+    def histogram_from_array(self, array, bins = 50, color = "#7d878a", label = "_plot",alpha = 0.8):
         # df = pd.DataFrame(array, columns = ["data"])
         df = pd.DataFrame({"data":array})
-        self.histogram_from_dataframe(df["data"], bins = bins, color = color, label = label)
+        self.histogram_from_dataframe(df["data"], bins = bins, color = color, label = label,alpha = alpha)
 
     def save_fig(self,filename = "test.png"):
-        self.ax.legend()
+        # self.ax.legend()
         self.fig.savefig(fname=filename, dpi=300, transparent=False)
