@@ -11,7 +11,7 @@ class Patterns(Training):
     def __init__(self):
         super().__init__()
         self._target_cell_to_stress = None
-        self._clamping_max_iters = 20
+        self._clamping_max_iters = 10
         self._clamping_s0_lower_limit = 4.6
         self._clamping_s0_upper_limit = 5.3
         self._clamping_correction_factor = 0.1
@@ -160,7 +160,7 @@ class Patterns(Training):
         cell = self._config.cells_[cellID]
         upper_limit = self._clamping_s0_upper_limit
         lower_limit = self._clamping_s0_lower_limit
-        s0_guesses = {i:None for i in np.linspace(lower_limit, upper_limit, 2000)}
+        s0_guesses = {i:None for i in np.linspace(lower_limit, upper_limit, 500)}
         for s0 in s0_guesses:
             cell.s0_ = s0
             current_stress = stress.calculate_max_shear_stress(self._config, cellID)

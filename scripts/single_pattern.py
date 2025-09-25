@@ -10,6 +10,9 @@ def main():
     stress_limits = []
     tolerance = 1e-7
     learning_rate = 10
+    # cpp_executable_dir = "/Users/shabeebameen/Projects/tvm-fire/build/"
+    # cpp_executable_dir = "/home/mameen/tvm/build/"
+    cpp_executable_dir = "/home/shabeeb/Projects/tvm-fire/build/"
     
     target_stress = np.loadtxt("{}target".format(run_dir))
     if os.path.isfile("{}n_cells".format(run_dir)):
@@ -20,10 +23,6 @@ def main():
         tolerance = int(np.loadtxt("{}tolerance".format(run_dir)))
     if os.path.isfile("{}learning_rate".format(run_dir)):
         learning_rate = int(np.loadtxt("{}learning_rate".format(run_dir)))
-
-    # cpp_executable_dir = "/Users/shabeebameen/Projects/tvm-fire/build/"
-    # cpp_executable_dir = "/home/mameen/tvm/build/"
-    cpp_executable_dir = "/home/shabeeb/Projects/tvm-fire/build/"
     
     if os.path.isfile(run_dir + "0000.stresses.csv"):
         print("Run already started in dir: {}\n Resuming run from last completed iteration.\n".format(run_dir))
