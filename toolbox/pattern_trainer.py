@@ -88,6 +88,7 @@ def train_random_cells(run_dir, n_cells = 1, target_stress = 1, **kwargs):
     cpp_executable_dir = "/home/shabeeb/Projects/tvm-fire/build/"
     tolerance = 1e-8
     max_iters = 100
+    learning_rate = 10
     stress_limits = []
     exclude_cells = []
     if "stress_limits" in kwargs:
@@ -96,17 +97,22 @@ def train_random_cells(run_dir, n_cells = 1, target_stress = 1, **kwargs):
         cpp_executable_dir = kwargs["cpp_executable_dir"]
     if "tolerance" in kwargs:
         tolerance = kwargs["tolerance"]
+    if "learning_rate" in kwargs:
+        learning_rate = kwargs["learning_rate"]
     if "max_iters" in kwargs:
         max_iters = kwargs["max_iters"]
     if "exclude_cells" in kwargs:
         exclude_cells = kwargs["exclude_cells"]
+    
 
     print("Parameters for training:")
     print("cpp_executable_dir:", cpp_executable_dir)
     print("n_cells:", n_cells)
     print("tolerance:", tolerance)
+    print("learning_rate:", learning_rate)
     print("max_iters:", max_iters)
     print("target stress:", target_stress)
+    print("stress_limits:", stress_limits)
 
     file = "minimized.txt"
     if os.path.isfile("{}minimized.txt".format(run_dir)):
@@ -116,6 +122,7 @@ def train_random_cells(run_dir, n_cells = 1, target_stress = 1, **kwargs):
     training_instance.set_cpp_executable_dir(cpp_executable_dir)
     training_instance.minimize_config()
     training_instance.set_tolerance(tolerance)
+    training_instance.set_learning_rate(learning_rate)
     set_random_target_cells(
         training_instance = training_instance,
         n_cells = n_cells,
@@ -133,18 +140,24 @@ def resume_run(run_dir, **kwargs):
     cpp_executable_dir = "/home/shabeeb/Projects/tvm-fire/build/"
     tolerance = 1e-8
     max_iters = 100
+    learning_rate = 10
     if "cpp_executable_dir" in kwargs:
         cpp_executable_dir = kwargs["cpp_executable_dir"]
     if "tolerance" in kwargs:
         tolerance = kwargs["tolerance"]
+    if "learning_rate" in kwargs:
+        learning_rate = kwargs["learning_rate"]
     if "max_iters" in kwargs:
         max_iters = kwargs["max_iters"]
+
     print("Parameters for training:")
     print("cpp_executable_dir:", cpp_executable_dir)
     print("tolerance:", tolerance)
+    print("learning_rate:", learning_rate)
     print("max iters:", max_iters)
     
     costs = np.loadtxt("{}costs.txt".format(run_dir))
+    q_values = np.loadtxt("{}q_values.txt".format(run_dir))
     iteration = len(costs)
     print(iteration)
     config_file = "{:04d}.bulk.txt".format(iteration-1)
@@ -152,12 +165,15 @@ def resume_run(run_dir, **kwargs):
     sample = PeriodicTissue.from_config(run_dir,config_file)
     training_instance = Patterns.periodic_tissue(sample)
     training_instance._cost_values = list(costs)
+    training_instance._q_values = list(q_values)
+    training_instance.set_initial_config(PeriodicTissue.from_config(training_instance._dir,"init_config.txt".format(training_instance._dir)))
     training_instance.set_cpp_executable_dir(cpp_executable_dir)
     training_instance.set_tolerance(tolerance)
+    training_instance.set_learning_rate(learning_rate)
     cell_parameters_file = "{:04d}.cellParameters.input".format(iteration-1)
     print("Loading cell parameters from: ", cell_parameters_file)
     training_instance.load_cell_parameters(cell_parameters_file)
-    os.system("rm {}cellParameters.input".format(run_dir))
+    os.system("cp {}{} {}cellParameters.input".format(run_dir,cell_parameters_file,run_dir))
     training_instance.set_iter_counter(iteration)
     df = pd.read_csv("{}0000.stresses.csv".format(run_dir))
     training_instance.set_target_cell_to_stress(dict(zip(df['CellID'], df['Target'])))

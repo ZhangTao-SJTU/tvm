@@ -6,25 +6,25 @@ class Training(FIREminimization):
     def __init__(self):
         super().__init__()
         self._iter_counter = 0
-        self._learning_rate = 10
-        self._lambda = 1.1
+        self._learning_rate = 10 # had previously been 10
         self._tolerance = 1e-8
         self._cost = None
         self._cost_values = None
+        self._q_values = None
+        self._initial_config = None
     @classmethod
     def periodic_tissue(cls, tissue):
         inst = super().periodic_tissue(tissue)
         return inst
-    
     def set_iter_counter(self,iter_counter):
         self._iter_counter = iter_counter
-    def set_lambda(self,lam):
-        self._lambda = lam
     def set_learning_rate(self,learning_rate):
         self._learning_rate = learning_rate
     def set_tolerance(self,tolerance):
         self._tolerance = tolerance
-
+    def set_initial_config(self,config):
+        self._initial_config = config
+        self._initial_config.evaluate_cell_neighbors()
     def write_cell_parameters(self):
         if not self._modified_cells:
             print("No modified cells")

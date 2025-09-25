@@ -1,4 +1,6 @@
+from toolbox.periodic import PeriodicTissue
 from toolbox.training import Training
+from toolbox.overlap import calculate_Q
 from toolbox import stress
 import numpy as np
 import os
@@ -9,8 +11,10 @@ class Patterns(Training):
     def __init__(self):
         super().__init__()
         self._target_cell_to_stress = None
-        self._clamping_max_iters = 10 #try 10
-        self._clamping_correction_factor = 10 #try 10
+        self._clamping_max_iters = 20
+        self._clamping_s0_lower_limit = 4.6
+        self._clamping_s0_upper_limit = 5.3
+        self._clamping_correction_factor = 0.1
         self._clamping_FIRE_only = True
         self._clamping_tolerance = 1e-3
         
@@ -38,81 +42,6 @@ class Patterns(Training):
                 polygon = self._config.polygons_[polygonID]
                 polygon.vtk_scalar_ = 1
         self._config.write_periodic_vtk(filename = "target_cells.vtk", use_scalar=True)
-
-    # def set_central_target_cells(self, n_cells = 1):
-    #     r_lim = 0.9
-    #     self._target_cell_to_stress = {}
-    #     for cellID,cell in self._config.cells_.items():
-    #         if cell.crossBoundary_:
-    #             continue
-    #         r = np.subtract(cell.center_,self._config.sample_center_)
-    #         r = np.linalg.norm(r)
-    #         if r<r_lim:
-    #             self._target_cell_to_stress[cellID] = None
-    #         if len(self._target_cell_to_stress) == n_cells:
-    #             break
-    #     # For checking the above functionality with vtk:
-    #     for polygonID,polygon in self._config.polygons_.items():
-    #         polygon.vtk_scalar_ = 0
-    #     for cellID,_ in self._target_cell_to_stress.items():
-    #         cell = self._config.cells_[cellID]
-    #         for polygonID in cell.polygons_:
-    #             polygon = self._config.polygons_[polygonID]
-    #             polygon.vtk_scalar_ = 1
-    #     self._config.write_periodic_vtk(filename = "target_cells.vtk", use_scalar=True)
-
-    # def set_random_target_cells(self, n_cells = 1, average_cells_only = False, exclude_cells = []):
-    #     self._target_cell_to_stress = {}
-    #     for polygonID,polygon in self._config.polygons_.items():
-    #         polygon.vtk_scalar_ = 0
-    #     if average_cells_only:
-    #         for cellID,cell in self._config.cells_.items():
-    #             cell.max_shear_stress_ = stress.calculate_max_shear_stress(self._config, cellID)
-    #         avg_stress = np.mean([cell.max_shear_stress_ for _,cell in self._config.cells_.items()])
-    #         std_stress = np.std([cell.max_shear_stress_ for _,cell in self._config.cells_.items()])
-    #     while len(self._target_cell_to_stress)<n_cells:
-    #         cellID = random.choice(list(self._config.cells_.keys()))
-    #         cell = self._config.cells_[cellID]
-    #         if cell.crossBoundary_: 
-    #             continue
-    #         if cellID in self._target_cell_to_stress:
-    #             continue
-    #         if average_cells_only:
-    #             lower_limit = avg_stress - std_stress
-    #             if lower_limit < 0:
-    #                 continue
-    #             upper_limit = avg_stress
-    #             # upper_limit = avg_stress + std_stress
-    #             if (cell.max_shear_stress_ < lower_limit):
-    #                 continue
-    #             if (cell.max_shear_stress_ > upper_limit):
-    #                 continue
-    #         if len(exclude_cells):
-    #             if cellID in exclude_cells:
-    #                 continue
-    #         self._target_cell_to_stress[cellID] = None
-    #         targets_share_polygons = False
-    #         for polygonID in cell.polygons_:
-    #             polygon = self._config.polygons_[polygonID]
-    #             if polygon.vtk_scalar_ == 1:
-    #                 targets_share_polygons = True
-    #                 break    
-    #         if targets_share_polygons:
-    #             continue
-    #         for polygonID in cell.polygons_:
-    #             polygon = self._config.polygons_[polygonID]
-    #             polygon.vtk_scalar_ = 1
-    #         if len(self._target_cell_to_stress) == n_cells:
-    #             break
-    #     # # For checking the above functionality with vtk:
-    #     # for polygonID,polygon in self._config.polygons_.items():
-    #     #     polygon.vtk_scalar_ = 0
-    #     for cellID in self._target_cell_to_stress:
-    #         cell = self._config.cells_[cellID]
-    #         # for polygonID in cell.polygons_:
-    #         #     polygon = self._config.polygons_[polygonID]
-    #         #     polygon.vtk_scalar_ = 1
-    #     self._config.write_periodic_vtk(filename = "target_cells.vtk", use_scalar=True)
                 
     def calculate_max_shear_stresses(self):
         for cellID in self._target_cell_to_stress:
@@ -127,7 +56,9 @@ class Patterns(Training):
             cell = self._config.cells_[cellID]
             cost += multiplier * (cell.max_shear_stress_ - target_stress) ** 2
         return cost
-    
+    def evaluate_Q(self):
+        self._config.evaluate_cell_neighbors()
+        overlap = calculate_Q
     def single_iteration(self):
         if not len(self._target_cell_to_stress):
             print("No target cells, iteration terminated.")
@@ -189,6 +120,8 @@ class Patterns(Training):
     # such that stress overshoots/undershoots the target stress and energy minimize the config at each iteration.    
     # Minimizing changes the surface area and hence the stress, so process is repeated.
     def clamp_target_cells(self):
+        self.write_cell_parameters()
+        cell_parameters_file = self._dir+"cellParameters.input"
         for iter in range(self._clamping_max_iters):
             print("Clamping iteration {}".format(iter))
             needs_clamping = []
@@ -200,30 +133,34 @@ class Patterns(Training):
             if not len(needs_clamping):
                 print("Clamping successful to tolerance")
                 return
-
+            pre_clamping_s0 = pd.read_csv(cell_parameters_file,header=None,sep=" ")[2]
             for cellID in needs_clamping:
                 cell = self._config.cells_[cellID]
                 final_target_stress = self._target_cell_to_stress[cellID]
                 current_stress = stress.calculate_max_shear_stress(self._config, cellID)
                 # The temporary target stress to be solved for should be an overshoot/undershoot of self._target_stress
-                temp_target_stress = final_target_stress * (1 + self._clamping_correction_factor * (final_target_stress - current_stress))
-                # The temporary target stress should be positive, 
-                # so we take the absolute value in case we hit a really small number
-                temp_target_stress = abs(temp_target_stress)
+                temp_target_stress = final_target_stress + self._clamping_correction_factor * (final_target_stress - current_stress)
+                # The temporary target stress should be positive,
+                # so if the overshooting makes it negative, avoid it.
+                if temp_target_stress<0:
+                    temp_target_stress = final_target_stress
                 print("Cell: {}, Final Target Stress: {} Temporary Target Stress: {}, Current stress: {}, s0: {}".format(
                     cellID, final_target_stress, temp_target_stress, current_stress, cell.s0_))
                 self.solve_cell_s0_for_target_stress(cellID, temp_target_stress)
                 current_stress = stress.calculate_max_shear_stress(self._config, cellID)
-
             self.write_cell_parameters()
             self.minimize_config(FIRE_only = self._clamping_FIRE_only)
-
+            post_clamping_s0 = pd.read_csv(cell_parameters_file,header=None,sep=" ")[2]
+            if post_clamping_s0.equals(pre_clamping_s0):
+                print("Clamping terminated: doesn't change s0")
+                return
+            
     # Binary search for s0 that produces the right stress        
     def solve_cell_s0_for_target_stress(self, cellID, target_stress):
         cell = self._config.cells_[cellID]
-        upper_limit = 5.3
-        lower_limit = 4.6
-        s0_guesses = {i:None for i in np.linspace(lower_limit, upper_limit, 1000)}
+        upper_limit = self._clamping_s0_upper_limit
+        lower_limit = self._clamping_s0_lower_limit
+        s0_guesses = {i:None for i in np.linspace(lower_limit, upper_limit, 2000)}
         for s0 in s0_guesses:
             cell.s0_ = s0
             current_stress = stress.calculate_max_shear_stress(self._config, cellID)
@@ -235,6 +172,8 @@ class Patterns(Training):
     def initialize(self):
         os.system("cp {}cellParameters.input {}cellParameters.init.input".format(self._dir,self._dir))
         os.system("cp {}minimized.txt {}init_config.txt".format(self._dir,self._dir))
+        self.set_initial_config(PeriodicTissue.from_config(self._dir,"init_config.txt".format(self._dir)))
+        self._initial_config.evaluate_cell_neighbors()
         np.savetxt("{}initial_cost.txt".format(self._dir), [self.evaluate_cost()], fmt='%.2e')
 
         initial_stresses = {}
@@ -242,23 +181,28 @@ class Patterns(Training):
         for cellID in self._target_cell_to_stress:
             cell = self._config.cells_[cellID]
             initial_stresses[cellID] = cell.max_shear_stress_
-        df = pd.DataFrame(list(initial_stresses.items()), columns=['cellID', 'Stress'])        
+        df = pd.DataFrame(list(initial_stresses.items()), columns=['CellID', 'Current'])        
         # df = pd.DataFrame(self._target_cell_to_stress.items(), columns=['cellID', 'target_stress'])
         df.to_csv("{}initial_stress.csv".format(self._dir), index=False)
         # print("Initial Cost: {:.2e}".format(cost))
         self._cost_values = []
+        self._q_values = []
 
     def run_to_max_iters(self,max_iters=100):
         cost = self.evaluate_cost()
         for _ in range(max_iters):
             self.set_clamping_tolerance(cost * 1)
             self.single_iteration()
-            cost = self.evaluate_cost()
+            cost = self.evaluate_cost()            
             self._cost_values.append(cost)
+            self._config.evaluate_cell_neighbors()
+            self._q_values.append(calculate_Q(self._initial_config.cell_neighbors_, self._config.cell_neighbors_))
             print("Iteration: {:d}, Cost: {:.2e}".format(self._iter_counter,cost))
             # Rewrite costs.txt
             np.savetxt("{}costs.txt".format(self._dir), self._cost_values, fmt='%.2e')
-            # Rewrite stresses.csv
+            # Rewrite q_values.txt
+            np.savetxt("{}q_values.txt".format(self._dir), self._q_values,fmt = "%.4f")
+            # Write stresses.csv
             current_stresses = []
             for cellID in self._target_cell_to_stress:
                 cell = self._config.cells_[cellID]

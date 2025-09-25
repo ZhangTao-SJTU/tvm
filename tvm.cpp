@@ -71,9 +71,9 @@ int main(int argc, char *argv[]) {
     // In this case one imagines that we may not necessarily be looking for equilibrium.
 
     if (argc > 1 && string(argv[1]) == "FIRE_only") {
-        cout<<"FIRE_only specified; skipping overdamping and reducing itermax: ";
-        run->FIRE_itermax = 5000;
-        cout<<run->FIRE_itermax<<endl;
+        cout<<"FIRE_only specified; skipping overdamping: ";
+        // run->FIRE_itermax = 5000;
+        // cout<<run->FIRE_itermax<<endl;
         run->FIREminimize();
         F_rms = sqrt(run->FIRE_ff/(3 * run->vertices_.size()));
         cout << "Final F_rms: " << F_rms << endl;
@@ -105,12 +105,14 @@ int main(int argc, char *argv[]) {
     if (F_rms > run->FIRE_equilibrium_tolerance) {
         cout << "   FIRE minimization terminated unsuccessfully at max iterations.\n";
         cout << "   Trying overdamping and FIRE minimization again, with no fixed topology..." << endl;
+        cout << "   Set log_period_ to 1000 to facilitate energy dissipation" << endl;
         for (auto cell : run->cells_) {
             cell->is_fixed_ = false;
         }
         for (auto vertex : run->vertices_) {
             vertex->is_fixed_ = false;
         }
+        run-> log_period_ = 1000;
         run->overdampedMotion();
         run->FIREminimize();
     }

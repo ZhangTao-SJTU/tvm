@@ -7,3 +7,7 @@ build/
 samples/
 tests/
 init_homogeneous/
+test/
+test_2_cells/
+test_4_cells/
+test_decrease/

@@ -4,26 +4,43 @@ import sys
 import numpy as np
 def main():
     run_dir = sys.argv[1]
-    target_stress = np.loadtxt("{}target".format(run_dir))
-    n_cells = np.loadtxt("{}n_cells".format(run_dir))
-    tolerance = np.loadtxt("{}tolerance".format(run_dir))
-    average_cells_only = True
-    # cpp_executable_dir = "/Users/shabeebameen/Projects/tvm-fire/build/"
-    cpp_executable_dir = "/home/mameen/tvm/build/"
-    train_random_cells(
-        run_dir,
-        n_cells = n_cells, 
-        tolerance = tolerance, 
-        average_cells_only = average_cells_only, 
-        cpp_executable_dir = cpp_executable_dir,
-        target_stress = target_stress)
+    # Default values
+    max_iters = 1000
+    n_cells = 1
+    stress_limits = []
+    tolerance = 1e-7
+    learning_rate = 10
     
-    # resume_run(
-    #     run_dir, 
-    #     tolerance = tolerance, 
-    #     cpp_executable_dir = cpp_executable_dir,
-    #     max_iters = 100)
+    target_stress = np.loadtxt("{}target".format(run_dir))
+    if os.path.isfile("{}n_cells".format(run_dir)):
+        n_cells = int(np.loadtxt("{}n_cells".format(run_dir)))
+    if os.path.isfile("{}stress_limits".format(run_dir)):
+        stress_limits = list(np.loadtxt("{}stress_limits".format(run_dir)))
+    if os.path.isfile("{}tolerance".format(run_dir)):
+        tolerance = int(np.loadtxt("{}tolerance".format(run_dir)))
+    if os.path.isfile("{}learning_rate".format(run_dir)):
+        learning_rate = int(np.loadtxt("{}learning_rate".format(run_dir)))
 
-
-if __name__ == "__main__":
-    main()
+    # cpp_executable_dir = "/Users/shabeebameen/Projects/tvm-fire/build/"
+    # cpp_executable_dir = "/home/mameen/tvm/build/"
+    cpp_executable_dir = "/home/shabeeb/Projects/tvm-fire/build/"
+    
+    if os.path.isfile(run_dir + "0000.stresses.csv"):
+        print("Run already started in dir: {}\n Resuming run from last completed iteration.\n".format(run_dir))
+        resume_run(
+            run_dir, 
+            tolerance = tolerance,
+            learning_rate = learning_rate, 
+            cpp_executable_dir = cpp_executable_dir,
+            max_iters = max_iters)
+    else:
+        print("Starting a new run in dir: {}".format(run_dir))
+        train_random_cells(
+            run_dir,
+            n_cells = n_cells, 
+            tolerance = tolerance, 
+            learning_rate = learning_rate,
+            cpp_executable_dir = cpp_executable_dir,
+            target_stress = target_stress,
+            stress_limits = stress_limits,
+            max_iters = max_iters)
