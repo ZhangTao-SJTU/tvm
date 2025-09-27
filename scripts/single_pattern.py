@@ -20,9 +20,9 @@ def main():
     if os.path.isfile("{}stress_limits".format(run_dir)):
         stress_limits = list(np.loadtxt("{}stress_limits".format(run_dir)))
     if os.path.isfile("{}tolerance".format(run_dir)):
-        tolerance = int(np.loadtxt("{}tolerance".format(run_dir)))
+        tolerance = np.loadtxt("{}tolerance".format(run_dir))
     if os.path.isfile("{}learning_rate".format(run_dir)):
-        learning_rate = int(np.loadtxt("{}learning_rate".format(run_dir)))
+        learning_rate = np.loadtxt("{}learning_rate".format(run_dir))
     
     if os.path.isfile(run_dir + "0000.stresses.csv"):
         print("Run already started in dir: {}\n Resuming run from last completed iteration.\n".format(run_dir))

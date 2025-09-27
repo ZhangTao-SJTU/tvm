@@ -1,10 +1,9 @@
 #plotting class
 import matplotlib.pyplot as plt
-
 from matplotlib.ticker import ScalarFormatter
 
 plt.style.use("toolbox/manuscript.mplstyle")
-plt.rcParams['text.usetex'] = True
+# plt.rcParams['text.usetex'] = True
 import numpy as np
 import pandas as pd
 

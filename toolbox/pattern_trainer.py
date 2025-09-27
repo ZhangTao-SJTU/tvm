@@ -87,7 +87,7 @@ def train_random_cells(run_dir, n_cells = 1, target_stress = 1, **kwargs):
     #default parameters
     cpp_executable_dir = "/home/shabeeb/Projects/tvm-fire/build/"
     tolerance = 1e-8
-    max_iters = 100
+    max_iters = 2000
     learning_rate = 10
     stress_limits = []
     exclude_cells = []
@@ -139,7 +139,7 @@ def resume_run(run_dir, **kwargs):
     #default parameters
     cpp_executable_dir = "/home/shabeeb/Projects/tvm-fire/build/"
     tolerance = 1e-8
-    max_iters = 100
+    max_iters = 2000
     learning_rate = 10
     if "cpp_executable_dir" in kwargs:
         cpp_executable_dir = kwargs["cpp_executable_dir"]

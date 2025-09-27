@@ -233,7 +233,7 @@ def write_average_error(dir):
         return
     costs = np.loadtxt(dir + "costs.txt")
     initial_stress = pd.read_csv("{}initial_stress.csv".format(dir))
-    init = initial_stress["Stress"].to_numpy()
+    init = initial_stress["Current"].to_numpy()
     targets = pd.read_csv("{}0000.stresses.csv".format(dir))["Target"].to_numpy()
     # Append initial (pretraining value).
     # Note that 0000.stresses.csv has current stresses AFTER the 0th iteration of training...

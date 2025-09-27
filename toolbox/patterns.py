@@ -11,12 +11,12 @@ class Patterns(Training):
     def __init__(self):
         super().__init__()
         self._target_cell_to_stress = None
-        self._clamping_max_iters = 10
+        self._clamping_max_iters = 20
         self._clamping_s0_lower_limit = 4.6
         self._clamping_s0_upper_limit = 5.3
         self._clamping_correction_factor = 0.1
         self._clamping_FIRE_only = True
-        self._clamping_tolerance = 1e-3
+        # self._clamping_tolerance = 1e-7
         
     @classmethod
     def periodic_tissue(cls,tissue):
@@ -29,8 +29,8 @@ class Patterns(Training):
         self._clamping_max_iters = clamping_max_iters
     def set_clamping_correction_factor(self, clamping_correction_factor):
         self._clamping_correction_factor = clamping_correction_factor
-    def set_clamping_tolerance(self, tol):
-        self._clamping_tolerance = tol
+    # def set_clamping_tolerance(self, tol):
+    #     self._clamping_tolerance = tol
     def set_target_cell_to_stress(self,target_cell_to_stress):
         self._target_cell_to_stress = target_cell_to_stress
         # For checking the above functionality with vtk:
@@ -56,9 +56,7 @@ class Patterns(Training):
             cell = self._config.cells_[cellID]
             cost += multiplier * (cell.max_shear_stress_ - target_stress) ** 2
         return cost
-    def evaluate_Q(self):
-        self._config.evaluate_cell_neighbors()
-        overlap = calculate_Q
+
     def single_iteration(self):
         if not len(self._target_cell_to_stress):
             print("No target cells, iteration terminated.")
@@ -72,7 +70,7 @@ class Patterns(Training):
         
         print("\n\n-------------------------------------")
         print("Step 1: Evaluate and store the current (free state) areas of hidden (non-target) cells")
-        print("\n\n-------------------------------------")
+        print("-------------------------------------\n\n")
         
         # The stored cell areas will be used to calculate learning DOF changes
         for cellID,cell in self._config.cells_.items():
@@ -128,7 +126,8 @@ class Patterns(Training):
             for cellID, final_target_stress in self._target_cell_to_stress.items():
                 cell = self._config.cells_[cellID]
                 current_stress = stress.calculate_max_shear_stress(self._config, cellID)
-                if abs(current_stress - final_target_stress) > self._clamping_tolerance:
+                # if abs(current_stress - final_target_stress) > self._clamping_tolerance:
+                if abs(current_stress - final_target_stress) > self._tolerance:
                     needs_clamping.append(cellID)
             if not len(needs_clamping):
                 print("Clamping successful to tolerance")
@@ -156,19 +155,53 @@ class Patterns(Training):
                 return
             
     # Binary search for s0 that produces the right stress        
-    def solve_cell_s0_for_target_stress(self, cellID, target_stress):
+    # def solve_cell_s0_for_target_stress(self, cellID, target_stress):
+    #     cell = self._config.cells_[cellID]
+    #     upper_limit = self._clamping_s0_upper_limit
+    #     lower_limit = self._clamping_s0_lower_limit
+    #     steps = self._clamping_steps
+    #     s0_guesses = {i:None for i in np.linspace(lower_limit, upper_limit, steps)}
+    #     for s0 in s0_guesses:
+    #         cell.s0_ = s0
+    #         current_stress = stress.calculate_max_shear_stress(self._config, cellID)
+    #         s0_guesses[s0] = current_stress 
+    #     init_guess = min(s0_guesses, key=lambda x: abs(s0_guesses[x] - target_stress))
+    #     cell.s0_ = init_guess
+    #     return
+    def solve_cell_s0_for_target_stress(self,cellID, target_stress):
         cell = self._config.cells_[cellID]
+        def clamping_error(s0):
+            cell.s0_ = s0
+            return stress.calculate_max_shear_stress(self._config,cellID)-target_stress
         upper_limit = self._clamping_s0_upper_limit
         lower_limit = self._clamping_s0_lower_limit
-        s0_guesses = {i:None for i in np.linspace(lower_limit, upper_limit, 500)}
-        for s0 in s0_guesses:
-            cell.s0_ = s0
-            current_stress = stress.calculate_max_shear_stress(self._config, cellID)
-            s0_guesses[s0] = current_stress 
-        init_guess = min(s0_guesses, key=lambda x: abs(s0_guesses[x] - target_stress))
-        cell.s0_ = init_guess
-        return
-    
+
+        root_interval = None
+        s0_to_clamping_error = {s0:clamping_error(s0) for s0 in np.linspace(lower_limit, upper_limit,15)}
+        for i, s0 in enumerate(list(s0_to_clamping_error.keys())):
+            if i == len(s0_to_clamping_error)-1:
+                continue
+            if np.sign(s0_to_clamping_error[s0]) == np.sign(list(s0_to_clamping_error.values())[i+1]):
+                continue
+            root_interval = [s0,list(s0_to_clamping_error.keys())[i+1]]
+            break
+        
+        if root_interval is None:
+            print("No root interval found, picking closest guess")
+            min_guess = min(s0_to_clamping_error, key=lambda x: abs(s0_to_clamping_error[x]))
+            cell.s0_ = min_guess
+            return
+        # Binary search within the root interval
+        # while abs(root_interval[1]-root_interval[0])>self._clamping_tolerance:
+        while abs(root_interval[1]-root_interval[0])>self._tolerance:
+            mid = (root_interval[0]+root_interval[1])/2
+            if np.sign(clamping_error(mid)) == np.sign(clamping_error(root_interval[0])):
+                root_interval[0] = mid
+            else:
+                root_interval[1] = mid
+        cell.s0_ = (root_interval[0]+root_interval[1])/2
+        print("Binary search complete, found s0:", cell.s0_)
+
     def initialize(self):
         os.system("cp {}cellParameters.input {}cellParameters.init.input".format(self._dir,self._dir))
         os.system("cp {}minimized.txt {}init_config.txt".format(self._dir,self._dir))
@@ -188,10 +221,9 @@ class Patterns(Training):
         self._cost_values = []
         self._q_values = []
 
-    def run_to_max_iters(self,max_iters=100):
+    def run_to_max_iters(self,max_iters=2000):
         cost = self.evaluate_cost()
         for _ in range(max_iters):
-            self.set_clamping_tolerance(cost * 1)
             self.single_iteration()
             cost = self.evaluate_cost()            
             self._cost_values.append(cost)
@@ -213,10 +245,11 @@ class Patterns(Training):
             df = pd.DataFrame(results)
             df.to_csv("{}{:04d}.stresses.csv".format(self._dir, self._iter_counter), index=False)
             self._iter_counter += 1
-            if cost <= self._tolerance:
+            if cost < self._tolerance:
                 break
         print("Optimization finished at iteration: {:d}".format(self._iter_counter-1))
-        print("Final cost: {:.2e}".format(cost))        
+        print("Final cost: {:.2e}".format(cost))
+    
     def run(self):
         # #store initial cell parameters
         # os.system("cp {}cellParameters.input {}cellParameters.init.input".format(self._dir,self._dir))
@@ -234,7 +267,7 @@ class Patterns(Training):
         # # df.to_csv("{}target_cells.csv".format(self._dir), index=False)
         # print("Initial Cost: {:.2e}".format(cost))
         while cost > self._tolerance:
-            self.set_clamping_tolerance(cost * 1)
+            # self.set_clamping_tolerance(cost * 1)
             self.single_iteration()
             cost = self.evaluate_cost()
             self._cost_values.append(cost)
