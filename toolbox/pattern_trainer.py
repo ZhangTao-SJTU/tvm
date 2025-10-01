@@ -157,10 +157,12 @@ def resume_run(run_dir, **kwargs):
     print("max iters:", max_iters)
     
     costs = np.loadtxt("{}costs.txt".format(run_dir))
+    if costs[-1]<tolerance:
+        print("The last iteration already meets the tolerance requirement. No need to resume.")
+        return
     q_values = np.loadtxt("{}q_values.txt".format(run_dir))
-    iteration = len(costs)
-    print(iteration)
-    config_file = "{:04d}.bulk.txt".format(iteration-1)
+    last_iteration = len(costs) - 1
+    config_file = "{:04d}.bulk.txt".format(last_iteration)
     print("Loading configuration from: ", config_file)
     sample = PeriodicTissue.from_config(run_dir,config_file)
     training_instance = Patterns.periodic_tissue(sample)
@@ -170,11 +172,28 @@ def resume_run(run_dir, **kwargs):
     training_instance.set_cpp_executable_dir(cpp_executable_dir)
     training_instance.set_tolerance(tolerance)
     training_instance.set_learning_rate(learning_rate)
-    cell_parameters_file = "{:04d}.cellParameters.input".format(iteration-1)
+    cell_parameters_file = "{:04d}.cellParameters.input".format(last_iteration)
     print("Loading cell parameters from: ", cell_parameters_file)
     training_instance.load_cell_parameters(cell_parameters_file)
     os.system("cp {}{} {}cellParameters.input".format(run_dir,cell_parameters_file,run_dir))
-    training_instance.set_iter_counter(iteration)
+    training_instance.set_iter_counter(last_iteration+1)
     df = pd.read_csv("{}0000.stresses.csv".format(run_dir))
     training_instance.set_target_cell_to_stress(dict(zip(df['CellID'], df['Target'])))
     training_instance.run_to_max_iters(max_iters=max_iters)
+
+def remove_last_iteration(run_dir):
+    costs = np.loadtxt("{}costs.txt".format(run_dir))
+    q_values = np.loadtxt("{}q_values.txt".format(run_dir))
+    last_iteration = len(costs) - 1
+    costs = costs[:-1]
+    q_values = q_values[:-1]
+    np.savetxt("{}costs.txt".format(run_dir), costs)
+    np.savetxt("{}q_values.txt".format(run_dir), q_values)
+    if os.path.isfile("{}{:04d}.cellParameters.input".format(run_dir,last_iteration)):
+        os.remove("{}{:04d}.cellParameters.input".format(run_dir,last_iteration))
+    if os.path.isfile("{}{:04d}.stresses.csv".format(run_dir, last_iteration)):
+        os.remove("{}{:04d}.stresses.csv".format(run_dir, last_iteration))
+    if os.path.isfile("{}{:04d}.bulk.txt".format(run_dir, last_iteration)):
+        os.remove("{}{:04d}.bulk.txt".format(run_dir, last_iteration))
+    print("Removed iteration {}".format(last_iteration))
+

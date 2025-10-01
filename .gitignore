@@ -10,5 +10,6 @@ init_homogeneous/
 test/
 test_2_cells/
 test_4_cells/
+test_5_cells/
 test_decrease/
 test_increase/

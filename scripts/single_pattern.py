@@ -2,6 +2,7 @@ from toolbox.pattern_trainer import train_random_cells, resume_run
 import os
 import sys
 import numpy as np
+
 def main():
     run_dir = sys.argv[1]
     # Default values
@@ -10,9 +11,13 @@ def main():
     stress_limits = []
     tolerance = 1e-7
     learning_rate = 10
-    # cpp_executable_dir = "/Users/shabeebameen/Projects/tvm-fire/build/"
-    # cpp_executable_dir = "/home/mameen/tvm/build/"
-    cpp_executable_dir = "/home/shabeeb/Projects/tvm-fire/build/"
+
+    if os.path.isdir("/Users/shabeebameen/Projects/tvm-fire/build/"):
+        cpp_executable_dir = "/Users/shabeebameen/Projects/tvm-fire/build/"
+    elif os.path.isdir("/home/shabeeb/Projects/tvm-fire/build/"):
+        cpp_executable_dir = "/home/shabeeb/Projects/tvm-fire/build/"
+    elif os.path.isdir("/home/mameen/tvm/build/"):
+        cpp_executable_dir = "/home/mameen/tvm/build/"
     
     target_stress = np.loadtxt("{}target".format(run_dir))
     if os.path.isfile("{}n_cells".format(run_dir)):
@@ -43,3 +48,6 @@ def main():
             target_stress = target_stress,
             stress_limits = stress_limits,
             max_iters = max_iters)
+
+if __name__ == "__main__":
+    main()
