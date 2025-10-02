@@ -1,16 +1,17 @@
 import os
 import numpy as np
-experiments = ["1_cell_decrease_2_sigma/", "1_cell_increase_2_sigma/","2_cells_mean/","4_cells_mean/"]
+experiments = ["4_cells_mean/"]
 for exp in experiments:
     for i in range(100):
         dir = "/home/mameen/{}{:03d}/".format(exp,i)
-
         if not os.path.isfile(dir + "initial_cost.txt"):
-            print(dir, "run started but no costs file")
+            print(dir, "no initial cost file")
             continue
         if not os.path.isfile(dir + "costs.txt"):
             print(dir, "run started but no costs file")
             continue
+        if os.path.isfile(dir + "error.txt"):
+            print(dir, "error file exists")
         with open(dir + "costs.txt", "r") as f:
             lines = f.readlines()
             print(dir, len(lines), lines[-1])

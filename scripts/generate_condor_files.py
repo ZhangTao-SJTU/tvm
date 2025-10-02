@@ -1,6 +1,7 @@
 import os
 import sys
 import numpy as np
+from toolbox.pattern_trainer import remove_last_iteration
 
 def create_sub_file(script,dir):
     lines = []
@@ -56,12 +57,26 @@ def main():
         #submit job
         os.system("cd {} && condor_submit {}run_job.sub".format(run_dir,run_dir))
 
-def resubmit():
-    for experiment in ["/home/mameen/1_cell_increase_2_sigma/","/home/mameen/1_cell_decrease_2_sigma/","2_cells_mean/"]: 
-        for i in range(100):
-            run_dir = experiment + "{:03d}/".format(i)
-            os.system("cd {} && condor_submit {}run_job.sub".format(run_dir,run_dir))
+# def resubmit():
+#     for experiment in ["/home/mameen/1_cell_increase_2_sigma/","/home/mameen/1_cell_decrease_2_sigma/","2_cells_mean/"]: 
+#         for i in range(100):
+#             run_dir = experiment + "{:03d}/".format(i)
+#             os.system("cd {} && condor_submit {}run_job.sub".format(run_dir,run_dir))
 
+def resubmit():
+    experiment = "/home/mameen/4_cells_mean/" 
+    script = "single_pattern.py"
+
+    for i in range(5,100):
+        run_dir = experiment + "{:03d}/".format(i)
+        if os.path.isfile(run_dir + "error.txt"):
+            if os.path.isfile(run_dir + "costs.txt"):
+                print(run_dir, "error file exists, deleting last iteration and editing conf")
+                remove_last_iteration(run_dir)
+                os.system("rm {}error.txt".format(run_dir))
+                os.system("cp /home/mameen/conf {}".format(run_dir))
+        os.system("echo '5e-12' > {}tolerance".format(run_dir))
+        os.system("cd {} && condor_submit {}run_job.sub".format(run_dir,run_dir))
 
 if __name__ == "__main__":
     resubmit()
@@ -80,7 +95,7 @@ if __name__ == "__main__":
 #             continue
 #         with open(dir + "distances.txt", "r") as f:
 #             lines = f.readlines()
-#             print(len(lines), lines[-1])
+#             print(le  n(lines), lines[-1])
 #         for pattern in ["patternA/", "patternB/"]:
 #             if not os.path.isfile(dir + pattern + "costs.txt"):
 #                 continue
