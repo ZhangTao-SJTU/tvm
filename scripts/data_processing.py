@@ -124,27 +124,18 @@ def write_distances(experiment_list):
 
 # histogram for stresses and s0s:
 
-def write_histogram_data(experiment):
+def write_histogram_data(dir_list,filename):
     init_stresses = []
     final_stresses = []
     init_s0 = []
     final_s0 = []
-    for i in range(100):
-        # dir = "/home/mameen/init_homogeneous/7_{}/".format(i)
-        dir = "{}{:03d}/".format(experiment,i)
-        if not os.path.isfile(dir + "costs.txt"):
-            continue
-        if not os.path.isfile(dir + "0000.bulk.txt"):
-            continue
-        with open(dir + "costs.txt", "r") as f:
-            lines = f.readlines()
-            if len(lines) < 2:
-                continue
-            # if float(lines[-1]) > 1e-6:
-            #     continue
-            print(dir)
+    for dir in dir_list:
+        print(dir)
         init_file = "init_config.txt"
-        final_file = sorted(glob.glob(dir + "*.bulk.txt"))[-1].split("/")[-1]
+        costs = np.loadtxt(dir + "costs.txt")
+        final_iter = len(costs)-1
+        # final_file = sorted(glob.glob(dir + "*.bulk.txt"))[-1].split("/")[-1]
+        final_file = "{:04d}.bulk.txt".format(final_iter)
         print("Final file: ", final_file)
         init_tissue = PeriodicTissue.from_config(dir, init_file)
         final_tissue = PeriodicTissue.from_config(dir, final_file)
@@ -152,7 +143,7 @@ def write_histogram_data(experiment):
         final = FIREminimization.periodic_tissue(final_tissue)
         if os.path.isfile("{}init_cellParameters.txt".format(dir)):
             init.load_cell_parameters("init_cellParameters.txt")
-        final.load_cell_parameters()
+        final.load_cell_parameters("{:04d}.cellParameters.input".format(final_iter))
 
         for cellID,cell in init_tissue.cells_.items():
             cell.max_shear_stress_ = stress.calculate_max_shear_stress(init_tissue,cellID)
@@ -164,7 +155,7 @@ def write_histogram_data(experiment):
             final_s0.append(cell.s0_)
     data_dict = {"Initial_Stress":init_stresses, "Final_Stress": final_stresses, "Initial_s0": init_s0, "Final_s0": final_s0}
     df = pd.DataFrame(data_dict)
-    df.to_csv("{}/histogram_data.csv".format(experiment))
+    df.to_csv(filename)
 #write overlap between consecutive epochs. set value at epoch 0 to be 1.
 
 '''
@@ -203,8 +194,6 @@ def write_Q2(dir,**kwargs):
     df = pd.DataFrame({"iteration":list(iter_to_overlap.keys()),"overlap":list(iter_to_overlap.values())})
     df.to_csv("{}overlaps.csv".format(dir))
 '''
-
-
 
 def write_Q2(dir):
     if not os.path.isdir(dir):
@@ -346,8 +335,17 @@ def download_all():
 def main():
     for experiment in ["1_cell_decrease_2_sigma/","1_cell_increase_2_sigma/","2_cells_mean/","4_cells_mean/"]:
         experiment = "/home/mameen/{}".format(experiment)
-        dirlist = ["{}{:03d}/".format(experiment,i) for i in range(100)]
-        write_mean_error_from_dirlist(dirlist,"{}mean_error.csv".format(experiment))
-    
+        dirlist = []
+        for dir in ["{}{:03d}/".format(experiment,i) for i in range(100)]:
+            if not os.path.isfile(dir+"costs.txt"):
+                continue
+            with open(dir+"costs.txt","r") as f:
+                lines = f.readlines()
+                if len(lines)<2:
+                    continue
+                if float(lines[-1])>1e-10:
+                    continue
+            dirlist.append(dir)
+        write_histogram_data(dirlist,"{}/histogram_data.csv".format(experiment))    
 if __name__ == "__main__":
     main()

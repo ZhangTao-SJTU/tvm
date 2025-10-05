@@ -11,7 +11,7 @@ class Patterns(Training):
     def __init__(self):
         super().__init__()
         self._target_cell_to_stress = None
-        self._clamping_max_iters = 20
+        self._clamping_max_iters = 10
         self._clamping_s0_lower_limit = 4.6
         self._clamping_s0_upper_limit = 5.3
         self._clamping_correction_factor = 0.1

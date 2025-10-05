@@ -1,15 +1,15 @@
 from toolbox.periodic import PeriodicTissue
 from toolbox.minimization import FIREminimization
 import sys
-import os
+def minimize_config_in_dir(dir,cpp_executable_dir = "/home/shabeeb/Projects/tvm-fire/build/"):
+    tissue = PeriodicTissue.from_config(dir,"sample.topo")
+    minimizer = FIREminimization.periodic_tissue(tissue)
+    minimizer.set_cpp_executable_dir(cpp_executable_dir)
+    minimizer.minimize_config()
 
 def main():
     dir = sys.argv[1]
-    # dir = os.getcwd()+"/"
-    tissue = PeriodicTissue.from_config(dir,"sample.topo")
-    minimizer = FIREminimization.periodic_tissue(tissue)
-    minimizer.set_cpp_executable_dir("/home/mameen/tvm/build/")
-    minimizer.minimize_config()
+    minimize_config_in_dir(dir)
 
 if __name__ == "__main__":
     main()

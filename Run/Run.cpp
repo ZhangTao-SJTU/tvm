@@ -192,21 +192,22 @@ int     Run::FIREminimize(){
 
         // Step 2: Compute the power and other force, velocity projections.
         FIREupdateForceVelocityProjections();
-        // Termination check. If ff (sum of square norm of forces) is less than tolerance,
-        // and has been that way for the last 1000 iterations, we
-        // consider the system to be in equilibrium and terminate the process. 
+        
         double F_rms = sqrt(FIRE_ff/(3 * vertices_.size()));
+        // Termination check. If ff (sum of square norm of forces) is less than tolerance,
+        // consider the system to be in equilibrium and terminate the process. 
+
         if (F_rms < FIRE_equilibrium_tolerance) {
             cout << "   FIRE minimization terminated successfully at iteration: "<<iter <<"\n";
             cout << "   F_rms = " << F_rms <<"\n";
             cout << "   is less than FIRE_equilibrium_tolerance: " << FIRE_equilibrium_tolerance << "\n";
-            // dumpTopo();
-            // dumpCellCenter();
-            // dumpCellShapeIndex();
-            // dumpCellVolume();
-            // dumpConfigurationVtk();
-            // dumpMinimization();
             break;
+        }
+        // nan check: If F_rms is nan, something went wrong.
+        if (isnan(F_rms)){
+            cout << "   F_rms = " << F_rms <<"\n";
+            cout << "   is nan. Something went wrong. Terminating FIRE minimization.\n";
+            exit(1);
         } 
         
         // Step 3: Adjust velocities and positions and FIRE parameters based on

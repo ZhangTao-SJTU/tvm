@@ -6,7 +6,7 @@ import numpy as np
 def main():
     run_dir = sys.argv[1]
     # Default values
-    max_iters = 1000
+    max_iters = 10000
     n_cells = 1
     stress_limits = []
     tolerance = 1e-7

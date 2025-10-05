@@ -45,8 +45,10 @@ class Cell:
         self.polygons_.append(polygon)
 
 def main():
+    Lx, Ly, Lz = (4, 4, 4)
+    # Lx, Ly, Lz = (5, 5, 5)
+    # Lx, Ly, Lz = (6, 6, 6)
     # Lx, Ly, Lz = (8, 8, 8)
-    Lx, Ly, Lz = (6, 6, 6)
     # Lx, Ly, Lz = (10, 10, 10)
 
     points = generatePoints(Lx, Ly, Lz)
