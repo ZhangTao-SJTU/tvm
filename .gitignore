@@ -6,7 +6,8 @@ cmake-build-debug
 build/
 samples/
 tests/
-init_homogeneous/
+init/
+init_homogeneous_4/
 test/
 test_2_cells/
 test_4_cells/
