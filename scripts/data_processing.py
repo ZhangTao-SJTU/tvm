@@ -125,35 +125,37 @@ def write_distances(experiment_list):
 # histogram for stresses and s0s:
 
 def write_histogram_data(dir_list,filename):
-    init_stresses = []
+    # init_stresses = []
     final_stresses = []
-    init_s0 = []
+    # init_s0 = []
     final_s0 = []
     for dir in dir_list:
         print(dir)
-        init_file = "init_config.txt"
+        # init_file = "init_config.txt"
         costs = np.loadtxt(dir + "costs.txt")
         final_iter = len(costs)-1
         # final_file = sorted(glob.glob(dir + "*.bulk.txt"))[-1].split("/")[-1]
         final_file = "{:04d}.bulk.txt".format(final_iter)
         print("Final file: ", final_file)
-        init_tissue = PeriodicTissue.from_config(dir, init_file)
+        # init_tissue = PeriodicTissue.from_config(dir, init_file)
         final_tissue = PeriodicTissue.from_config(dir, final_file)
-        init = FIREminimization.periodic_tissue(init_tissue)
+        # init = FIREminimization.periodic_tissue(init_tissue)
         final = FIREminimization.periodic_tissue(final_tissue)
-        if os.path.isfile("{}init_cellParameters.txt".format(dir)):
-            init.load_cell_parameters("init_cellParameters.txt")
+        # if os.path.isfile("{}init_cellParameters.txt".format(dir)):
+            # init.load_cell_parameters("init_cellParameters.txt")
         final.load_cell_parameters("{:04d}.cellParameters.input".format(final_iter))
 
-        for cellID,cell in init_tissue.cells_.items():
-            cell.max_shear_stress_ = stress.calculate_max_shear_stress(init_tissue,cellID)
-            init_stresses.append(cell.max_shear_stress_)
-            init_s0.append(cell.s0_)
+        # for cellID,cell in init_tissue.cells_.items():
+        #     cell.max_shear_stress_ = stress.calculate_max_shear_stress(init_tissue,cellID)
+        #     init_stresses.append(cell.max_shear_stress_)
+        #     init_s0.append(cell.s0_)
         for cellID,cell in final_tissue.cells_.items():
             cell.max_shear_stress_ = stress.calculate_max_shear_stress(final_tissue,cellID)
             final_stresses.append(cell.max_shear_stress_)
             final_s0.append(cell.s0_)
-    data_dict = {"Initial_Stress":init_stresses, "Final_Stress": final_stresses, "Initial_s0": init_s0, "Final_s0": final_s0}
+    # data_dict = {"Initial_Stress":init_stresses, "Final_Stress": final_stresses, "Initial_s0": init_s0, "Final_s0": final_s0}
+    data_dict = {"Final_Stress": final_stresses, "Final_s0": final_s0}
+
     df = pd.DataFrame(data_dict)
     df.to_csv(filename)
 #write overlap between consecutive epochs. set value at epoch 0 to be 1.
