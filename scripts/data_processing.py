@@ -316,15 +316,26 @@ def write_average_error(experiment):
 def download(experiment):
     os.system("scp mameen@smatter-login.syr.edu:/home/mameen/{}error.csv {}error.csv".format(experiment,experiment))
 
-def download_all():
-    s0_vals = [4.8,4.9,5.0,5.1,5.2,5.3]
-    d_list = ["1_cell_increase/", "1_cell_decrease/", "2_cells/","4_cells/"]
-    for d in d_list:
-        os.makedirs(d, exist_ok=True)
-        for s0 in s0_vals:
-            experiment = d+"7_{:.1f}/".format(s0)
-            os.makedirs(experiment,exist_ok=True)
-            download(experiment)
+# def download_all():
+#     s0_vals = [4.8,4.9,5.0,5.1,5.2,5.3]
+#     d_list = ["1_cell_increase/", "1_cell_decrease/", "2_cells/","4_cells/"]
+#     for d in d_list:
+#         os.makedirs(d, exist_ok=True)
+#         for s0 in s0_vals:
+#             experiment = d+"7_{:.1f}/".format(s0)
+#             os.makedirs(experiment,exist_ok=True)
+#             download(experiment)
+
+def download_all(d):
+    os.makedirs("data/"+d, exist_ok=True)
+    os.system("scp mameen@smatter-login.syr.edu:/home/mameen/{}stresses.txt data/{}".format(d,d))
+    os.system("scp mameen@smatter-login.syr.edu:/home/mameen/{}histogram_data.csv data/{}".format(d,d))
+
+    for i in range(100):
+        os.makedirs("data/{}{:03d}/".format(d,i), exist_ok=True)
+        os.system(("scp mameen@smatter-login.syr.edu:/home/mameen/{}{:03d}/errors.txt data/{}{:03d}/".format(d,i,d,i)))
+        os.system(("scp mameen@smatter-login.syr.edu:/home/mameen/{}{:03d}/target data/{}{:03d}/".format(d,i,d,i)))
+
 # def main():
 #     s0_vals = [4.8,4.9,5.0,5.1,5.2,5.3]
 #     d_list = ["1_cell_increase/", "1_cell_decrease/", "2_cells/","4_cells/"]
@@ -349,5 +360,6 @@ def main():
                     continue
             dirlist.append(dir)
         write_histogram_data(dirlist,"{}/histogram_data.csv".format(experiment))    
+
 if __name__ == "__main__":
     main()
