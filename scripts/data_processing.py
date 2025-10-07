@@ -125,6 +125,9 @@ def write_distances(experiment_list):
 # histogram for stresses and s0s:
 
 def write_histogram_data(dir_list,filename):
+    if os.path.isfile(filename):
+        print("Histogram data file already exists!")
+        return
     # init_stresses = []
     final_stresses = []
     # init_s0 = []
@@ -221,6 +224,9 @@ def write_average_error(dir):
     errors = []
     if not os.path.isfile(dir + "costs.txt"):
         print("No costs.txt: maybe run hasn't started yet.")
+        return
+    if os.path.isfile("{}errors.txt".format(dir)):
+        print("Errors file already exists!")
         return
     costs = np.loadtxt(dir + "costs.txt")
     initial_stress = pd.read_csv("{}initial_stress.csv".format(dir))
@@ -328,13 +334,18 @@ def download(experiment):
 
 def download_all(d):
     os.makedirs("data/"+d, exist_ok=True)
-    os.system("scp mameen@smatter-login.syr.edu:/home/mameen/{}stresses.txt data/{}".format(d,d))
-    os.system("scp mameen@smatter-login.syr.edu:/home/mameen/{}histogram_data.csv data/{}".format(d,d))
+    # os.system("scp mameen@smatter-login.syr.edu:/home/mameen/{}stresses.txt data/{}".format(d,d))
+    if not os.path.isfile("data/{}histogram_data.csv".format(d)):
+        os.system("scp mameen@smatter-login.syr.edu:/home/mameen/{}histogram_data.csv data/{}".format(d,d))
 
     for i in range(100):
         os.makedirs("data/{}{:03d}/".format(d,i), exist_ok=True)
-        os.system(("scp mameen@smatter-login.syr.edu:/home/mameen/{}{:03d}/errors.txt data/{}{:03d}/".format(d,i,d,i)))
-        os.system(("scp mameen@smatter-login.syr.edu:/home/mameen/{}{:03d}/target data/{}{:03d}/".format(d,i,d,i)))
+        if not os.path.isfile("data/{}{:03d}/errors.txt".format(d,i)):
+            os.system(("scp mameen@smatter-login.syr.edu:/home/mameen/{}{:03d}/errors.txt data/{}{:03d}/".format(d,i,d,i)))
+        if not os.path.isfile("data/{}{:03d}/q_values.txt".format(d,i)):
+            os.system(("scp mameen@smatter-login.syr.edu:/home/mameen/{}{:03d}/q_values.txt data/{}{:03d}/".format(d,i,d,i)))
+
+        # os.system(("scp mameen@smatter-login.syr.edu:/home/mameen/{}{:03d}/target data/{}{:03d}/".format(d,i,d,i)))
 
 # def main():
 #     s0_vals = [4.8,4.9,5.0,5.1,5.2,5.3]
@@ -359,6 +370,7 @@ def main():
                 if float(lines[-1])>1e-10:
                     continue
             dirlist.append(dir)
+            write_average_error(dir)
         write_histogram_data(dirlist,"{}/histogram_data.csv".format(experiment))    
 
 if __name__ == "__main__":

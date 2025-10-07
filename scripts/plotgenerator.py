@@ -232,6 +232,56 @@ def main():
     # combined_stress_histogram(dir, final_iter)
     # cost_plot(dir)
     # distance_plot(dir)
+def single_cell_combined_s0_histogram(inc_dir, dec_dir, filename = "single_cell_combined_s0_histogram.jpg"):
+    plotter = manuscriptPlots.plot()
+    plotter.set_ylim(0,14)
+    plotter.set_xlim(3.5,5.5)
+    plotter.set_xticks([0.5*i for i in range(150)])
+    plotter.set_yticks([10*i for i in range(1,100)])
+    plotter.set_xlabel(r"$s_0$")
+    plotter.set_yScaled()
+    plotter.initialize_figure()
+    df = pd.read_csv("{}histogram_data.csv".format(inc_dir))["Final_s0"]
+    plotter.histogram_from_dataframe(df,color = "red", bins = 100, alpha = 0.7, label = r"$\sigma_{target} = \sigma_\mu+2\sigma_s$")
+    df = pd.read_csv("{}histogram_data.csv".format(dec_dir))["Final_s0"]
+    plotter.histogram_from_dataframe(df,color = "blue", bins = 20, alpha = 0.7, label = r"$\sigma_{target} = \sigma_\mu-2\sigma_s$")
+    plotter.ax.vlines(5, ymin = 0, ymax = 10,linestyles= "--", color = "black",alpha = 1,label = r"$s_0^{(initial)}$")
+    plotter.ax.legend(loc='upper left')
+    plotter.save_fig("graphs/{}".format(filename))
+
+
+def single_cell_combined_stress_histogram(inc_dir, dec_dir, filename = "single_cell_combined_stress_histogram.jpg"):
+    plotter = manuscriptPlots.plot()
+    plotter.set_ylim(0,20)
+    plotter.set_xlim(0,1)
+    plotter.set_xticks([0.5*i for i in range(150)])
+    plotter.set_yticks([20*i for i in range(1,100)])
+    plotter.set_xlabel(r"$\sigma_{hidden}$")
+    plotter.set_yScaled()
+    plotter.initialize_figure()
+    df = pd.read_csv("{}histogram_data.csv".format(inc_dir))["Final_Stress"]
+    plotter.histogram_from_dataframe(df,color = "red", bins = 20, alpha = 0.7, label = r"$\sigma_{target} = \sigma_\mu+2\sigma_s$")
+    df = pd.read_csv("{}histogram_data.csv".format(dec_dir))["Final_Stress"]
+    plotter.histogram_from_dataframe(df,color = "blue", bins = 20, alpha = 0.7, label = r"$\sigma_{target} = \sigma_\mu-2\sigma_s$")
+    plotter.ax.legend(loc='upper right')
+    plotter.save_fig("graphs/{}".format(filename))
+
+def single_cell_initial_stress_histogram(array,filename = "initial_stress_histogram.jpg"):
+    plotter = manuscriptPlots.plot()
+    plotter.set_ylim(0,8)
+    plotter.set_xlim(0,0.5)
+    plotter.set_xticks([0.25*i for i in range(150)])
+    plotter.set_yticks([5*i for i in range(1,100)])
+    plotter.set_xlabel(r"$\sigma_{hidden}$")
+    plotter.set_yScaled()
+    plotter.initialize_figure()
+    plotter.histogram_from_array(array,color = "black", bins = 20, alpha = 0.4, label = r"$\sigma_{hidden}^{(initial)}$")
+    mean = np.mean(array)
+    std = np.std(array)
+    plotter.ax.vlines(mean+2*std, ymin = 0, ymax = 4,linestyles= "--", color = "red",alpha = 1,label = r"$\sigma_{target} = \sigma_\mu+2\sigma_s$")
+    plotter.ax.vlines(mean-2*std, ymin = 0, ymax = 4,linestyles= "--", color = "blue",alpha = 1,label = r"$\sigma_{target} = \sigma_\mu-2\sigma_s$")
+    plotter.ax.legend(loc='upper right')
+    plotter.save_fig("graphs/{}".format(filename))
 
 
 if __name__ == "__main__":

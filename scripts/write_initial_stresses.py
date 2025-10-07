@@ -39,3 +39,20 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+# from toolbox.periodic import PeriodicTissue
+# from toolbox import stress
+# from toolbox.training import Training
+# import os
+# import numpy as np
+# stresses = []
+# for i in range(100):
+#     dir = "init/init_homogeneous_4/{:03d}/".format(i)
+#     # os.system("scp shabeebameen@macbookpro.lan:/Users/shabeebameen/Projects/tvm-fire/{}sample.topo {}".format(dir,dir))
+#     file = "minimized.txt"
+# #     if not os.path.isfile (dir+file):
+# #         continue
+#     tissue = PeriodicTissue.from_config(dir,file)
+#     stresses.extend([stress.calculate_max_shear_stress(tissue,cellID) for cellID in tissue.cells_])
+# print(np.mean(stresses), np.std(stresses))
+# np.savetxt("init_homogeneous/stresses.txt", stresses)
