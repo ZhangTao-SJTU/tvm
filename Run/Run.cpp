@@ -39,16 +39,8 @@
 using namespace std;
 
 Run::Run() {
-//    dt_ = 0.001;
-//    dtr_ = 10*dt_;
-//    dump_period_ = 10000*dt_;
-//    log_period_ = 100*dt_;
-//    t_start_ = 0.;
-//    t_end_ = 10000.;
     mu_ = 1.0;
     kB_ = 1.0;
-//    temperature_ = 1.0e-5;
-    // NCell_ = 512;
 }
 
 int     Run::overdampedMotion() {
@@ -71,6 +63,7 @@ int     Run::overdampedMotion() {
     printf("Energy      ");
     printf("F_rms       \n");
 
+    // Successful termination of overdamped motion must be within t_end_.
     while (simulation_time_ < t_end_ + t_roundError) {
         // update geometry information
         updateGeoinfo();
@@ -96,41 +89,32 @@ int     Run::overdampedMotion() {
                    volume_->energy_+interface_->energy_,
                    sqrt(FIRE_ff/(3*vertices_.size())));
             cout<<endl;
+            // Successful termination condition for overdamped motion:
             if (reconnection_->count_IH_ == 0 && reconnection_->count_HI_ == 0 && simulation_time_ > dt_) {
                 cout << "\n   Zero reconnections since the previous log dump.\n";
                 cout << "   Terminating overdamped motion and proceeding to FIRE minimization.\n";
                 return 0;
             }
-            
             start = chrono::steady_clock::now();
             reconnection_->count_IH_ = 0;
             reconnection_->count_HI_ = 0;
             count_log_++;
         }
-        // dump
-        // if (simulation_time_ - t_start_ + t_roundError > count_dump_ * dump_period_) {
-        //     if (simulation_time_ > (-0.01)*dt_) {
-        //         dumpTopo();
-        //         dumpCellCenter();
-        //         dumpCellShapeIndex();
-        //         dumpCellVolume();
-        //         dumpReconnection();
-
-        //     }
-        //     count_dump_++;
-        // }
-
         // Euler dynamics
         updateVerticesPosition();
-        // reconnection_->start();
-        // reconnect
         if (simulation_time_ - t_start_ + t_roundError > count_reconnect_ * dtr_) {
             reconnection_->start();
             count_reconnect_++;
         }
         simulation_time_ += dt_;
     }
-
+    // *** Overdamped failure block ***
+    // If the program reaches here, it means that overdamped motion has not terminated successfully within t_end_.
+    cout << "\n   Overdamped motion did not terminate successfully within t_end_.\n";
+    cout << "   Consider increasing t_end_. Terminating program.\n";
+    exit(1);
+    // *** End Overdamped failure block ***
+    
     return 0;
 }
 
@@ -332,6 +316,14 @@ int     Run::FIREupdateForceVelocityProjections() {
             FIRE_fv += f_m * v_m;
             FIRE_vv += v_m * v_m;
         }
+    }
+    // nan check
+    if (isnan(FIRE_ff) || isnan(FIRE_fv) || isnan(FIRE_vv)){
+        cout << "   FIRE_ff = " << FIRE_ff <<"\n";
+        cout << "   FIRE_fv = " << FIRE_fv <<"\n";
+        cout << "   FIRE_vv = " << FIRE_vv <<"\n";
+        cout << "   One of the above is nan. Something went wrong. Terminating FIRE minimization.\n";
+        exit(1);
     }
     return 0;
 }
