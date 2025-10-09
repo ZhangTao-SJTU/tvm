@@ -108,13 +108,12 @@ int     Run::overdampedMotion() {
         }
         simulation_time_ += dt_;
     }
-    // *** Overdamped failure block ***
-    // If the program reaches here, it means that overdamped motion has not terminated successfully within t_end_.
-    cout << "\n   Overdamped motion did not terminate successfully within t_end_.\n";
-    cout << "   Consider increasing t_end_. Terminating program.\n";
-    exit(1);
-    // *** End Overdamped failure block ***
-    
+    // // *** Overdamped failure block ***
+    // // If the program reaches here, it means that overdamped motion has not terminated successfully within t_end_.
+    // cout << "\n   Overdamped motion did not terminate successfully within t_end_.\n";
+    // cout << "   Consider increasing t_end_. Terminating program.\n";
+    // exit(1);
+    // // *** End Overdamped failure block ***
     return 0;
 }
 

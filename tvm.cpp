@@ -66,21 +66,6 @@ int main(int argc, char *argv[]) {
     double F_rms = sqrt(run->FIRE_ff/(3 * run->vertices_.size()));
     cout<<"Initial F_rms: "<< F_rms << endl;
 
-    // If FIRE_only is specified, we will just try FIREminimize procedure once, 
-    // upto maximum iteration steps, and return
-    // In this case one imagines that we may not necessarily be looking for equilibrium.
-
-    if (argc > 1 && string(argv[1]) == "FIRE_only") {
-        cout<<"FIRE_only specified; skipping overdamping: ";
-        // run->FIRE_itermax = 5000;
-        // cout<<run->FIRE_itermax<<endl;
-        run->FIREminimize();
-        F_rms = sqrt(run->FIRE_ff/(3 * run->vertices_.size()));
-        cout << "Final F_rms: " << F_rms << endl;
-        run->dumpMinimization();
-        return 0;
-    }
-
     if (F_rms < run->FIRE_equilibrium_tolerance) {
         cout << "   Minimization terminated:\n"; 
         cout << "   Input is already minimized at FIRE_equilibrium_tolerance: ";
@@ -88,24 +73,27 @@ int main(int argc, char *argv[]) {
         run->dumpMinimization();
         return 0;
     }
-    // if (F_rms < 1e-4) {
-    //     cout << "   Since F_rms is low, skip overdamped stage and commence FIRE minimization." << endl;
-    //     run -> FIREminimize();
-    // }
-    run->overdampedMotion();
-    run->FIREminimize();
-    // run->updateGeoinfo();
-    // run->volume_->updateForces();
-    // run->interface_->updateForces();
-    // run->updateVerticesVelocity();
-    // run->FIREupdateForceVelocityProjections();
-    // F_rms = sqrt(run->FIRE_ff/(3 * run->vertices_.size()));
+
+    // If FIRE_only is specified, we will just try FIREminimize procedure once, 
+    // upto maximum iteration steps, and return
+    // In this case one imagines that we may not necessarily be looking for equilibrium.
+    if (argc > 1 && string(argv[1]) == "FIRE_only") {
+        cout<<"FIRE_only specified; skipping overdamping."<<endl;
+        run->FIREminimize();
+    }
+    // Otherwise, we will first try overdamped motion, and then FIREminimize.
+    else {
+        cout<<"Proceeding with overdamping and FIRE minimization."<<endl;
+        run->overdampedMotion();
+        run->FIREminimize();
+    }
     cout<<"F_rms: "<< F_rms << endl;
     F_rms = sqrt(run->FIRE_ff/(3 * run->vertices_.size()));
+    // run again, if F_rms is no good
     if (F_rms > run->FIRE_equilibrium_tolerance) {
         cout << "   FIRE minimization terminated unsuccessfully at max iterations.\n";
         cout << "   Trying overdamping and FIRE minimization again, with no fixed topology..." << endl;
-        cout << "   Set log_period_ to 1000 to facilitate energy dissipation" << endl;
+        cout << "   Set log_period_ to 1000 to facilitate menergy dissipation" << endl;
         for (auto cell : run->cells_) {
             cell->is_fixed_ = false;
         }
@@ -115,6 +103,7 @@ int main(int argc, char *argv[]) {
         run-> log_period_ = 1000;
         run->overdampedMotion();
         run->FIREminimize();
+        F_rms = sqrt(run->FIRE_ff/(3 * run->vertices_.size()));
     }
     cout << "Final F_rms: " << F_rms << endl;
     run->dumpMinimization();
