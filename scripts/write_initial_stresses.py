@@ -27,15 +27,8 @@ def main():
     # for s0 in [4.8,4.9,5.0,5.1,5.2,5.3]:
     for length in [4,5]:
         output_dir = "init/init_homogeneous_{}/".format(length)
-        dir_list = []
-        # for dir in sorted(glob.glob(output_dir+"*")):
-        #     dir += "/"
-        for i in range(100):
-            dir = output_dir + "{:03d}/".format(i)
-            if not os.path.isfile(dir+"minimized.txt"):
-                raise ValueError("no input file in {}!".format(dir))
-            dir_list.append(dir)
-        write_stresses(output_dir,dir_list)
+        dir_list = [output_dir + "{:03d}/".format(i) for i in range(100)]
+        write_stresses(dir_list,"init/init_homogeneous_{}/stresses.txt".format(length))
 
 if __name__ == "__main__":
     main()
