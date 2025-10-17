@@ -35,72 +35,63 @@ def create_exec_file(script,dir):
             f.write(line)
     # os.system("chmod +x run_job_{}.sh".format(run_num))
     os.system("chmod +x {}run_job.sh".format(dir))
-    
-def main():
-    experiment = "/home/mameen/1_cell_increase_2_sigma/" 
-    # os.system("cp -r /home/mameen/init_homogenous/ {}".format(experiment))
-    stresses = np.loadtxt(experiment + "stresses.txt")
-    # script = "/home/mameen/scripts/single_pattern.py"
-    script = "single_pattern.py"
 
+def resubmit(experiment):
     for i in range(100):
-        run_dir = experiment + "{:03d}/".format(i)
-        create_exec_file(script,run_dir)
-        create_sub_file(script,run_dir)
-        # os.system("echo '0\n{}' > {}stress_limits".format(np.mean(stresses),run_dir))
-        # os.system("echo '{}\n100' > {}stress_limits".format(np.mean(stresses),run_dir))
-        # os.system("echo '{}' > {}target".format(np.mean(stresses) + 2*np.std(stresses),run_dir))
-        os.system("echo '{}' > {}target".format(np.mean(stresses),run_dir))
-        os.system("echo '1e-13' > {}tolerance".format(run_dir))
-        os.system("echo '4' > {}n_cells".format(run_dir))
-        # os.system("rm {}error.txt {}output.txt {}log.txt".format(run_dir,run_dir,run_dir))
-        #submit job
-        os.system("cd {} && condor_submit {}run_job.sub".format(run_dir,run_dir))
-
-# def resubmit():
-#     for experiment in ["/home/mameen/1_cell_increase_2_sigma/","/home/mameen/1_cell_decrease_2_sigma/","2_cells_mean/"]: 
-#         for i in range(100):
-#             run_dir = experiment + "{:03d}/".format(i)
-#             os.system("cd {} && condor_submit {}run_job.sub".format(run_dir,run_dir))
-
-def resubmit():
-    experiment = "/home/mameen/4_cells_mean/" 
-    script = "single_pattern.py"
-
-    for i in range(5,100):
         run_dir = experiment + "{:03d}/".format(i)
         if os.path.isfile(run_dir + "error.txt"):
             if os.path.isfile(run_dir + "costs.txt"):
-                print(run_dir, "error file exists, deleting last iteration and editing conf")
+                print(run_dir, "error file and costs exists, deleting last iteration and editing conf")
                 remove_last_iteration(run_dir)
-                os.system("rm {}error.txt".format(run_dir))
-                os.system("cp /home/mameen/conf {}".format(run_dir))
-        os.system("echo '5e-12' > {}tolerance".format(run_dir))
+            os.system("rm {}error.txt".format(run_dir))
+        os.system("echo '1e-12' > {}tolerance".format(run_dir))
         os.system("cd {} && condor_submit {}run_job.sub".format(run_dir,run_dir))
+    
+def main():
+    stresses = np.loadtxt("init/init_homogeneous_6/stresses.txt")
+    target = np.mean(stresses)
+    tolerance = 1e-12
+    # for experiment in ["/home/mameen/3_cells_mean_l_6/"]:
+    #     n_cells = 3
+    #     script = "single_pattern.py"
+    #     for i in range(100):
+    #         run_dir = experiment + "{:03d}/".format(i)
+    #         create_exec_file(script,run_dir)
+    #         create_sub_file(script,run_dir)
+    #         # os.system("echo '0\n{}' > {}stress_limits".format(np.mean(stresses),run_dir))
+    #         # os.system("echo '{}\n100' > {}stress_limits".format(np.mean(stresses),run_dir))
+    #         # os.system("echo '{}' > {}target".format(np.mean(stresses) + 2*np.std(stresses),run_dir))
+    #         # os.system("echo '{}' > {}target".format(np.mean(stresses),run_dir))
+    #         os.system("echo '{}' > {}target".format(target,run_dir))
+    #         os.system("echo '{}' > {}tolerance".format(tolerance,run_dir))
+    #         os.system("echo '{}' > {}n_cells".format(n_cells,run_dir))
+    #         # os.system("rm {}error.txt {}output.txt {}log.txt".format(run_dir,run_dir,run_dir))
+    #         #submit job
+    #         os.system("cd {} && condor_submit {}run_job.sub".format(run_dir,run_dir))
+    for experiment in ["/home/mameen/6_cells_mean_l_6/"]:
+        n_cells = 6
+        script = "single_pattern.py"
+        for i in range(100):
+            run_dir = experiment + "{:03d}/".format(i)
+            create_exec_file(script,run_dir)
+            create_sub_file(script,run_dir)
+            # os.system("echo '0\n{}' > {}stress_limits".format(np.mean(stresses),run_dir))
+            # os.system("echo '{}\n100' > {}stress_limits".format(np.mean(stresses),run_dir))
+            # os.system("echo '{}' > {}target".format(np.mean(stresses) + 2*np.std(stresses),run_dir))
+            # os.system("echo '{}' > {}target".format(np.mean(stresses),run_dir))
+            os.system("echo '{}' > {}target".format(target,run_dir))
+            os.system("echo '{}' > {}tolerance".format(tolerance,run_dir))
+            os.system("echo '{}' > {}n_cells".format(n_cells,run_dir))
+            # os.system("rm {}error.txt {}output.txt {}log.txt".format(run_dir,run_dir,run_dir))
+            #submit job
+            os.system("cd {} && condor_submit {}run_job.sub".format(run_dir,run_dir))
+    # resubmit("/home/mameen/2_cells_mean_l_4/")
+    # resubmit("/home/mameen/2_cells_mean_l_5/")
+    # resubmit("/home/mameen/2_cells_mean_l_6/")
+    # resubmit("/home/mameen/4_cells_mean_l_4/")
+    # resubmit("/home/mameen/4_cells_mean_l_5/")
+    # resubmit("/home/mameen/4_cells_mean_l_6/")
 
 if __name__ == "__main__":
-    resubmit()
-# import os
-# # for experiment in ["sp_2_cell_increase",
-# #                    "sp_2_cell_decrease",
-# #                    "sp_5_cell_decrease"]:
-# # for experiment in ["sp_5_cell_increase",
-# #                    "sp_5_cell_decrease"]:
-# # for experiment in ["mp_2_cells"]:
-# for experiment
-#     for i in range(20):
-#         dir = "/home/mameen/{}/run_{}/".format(experiment,i)
-#         print(dir)
-#         if not os.path.isfile(dir + "distances.txt"):
-#             continue
-#         with open(dir + "distances.txt", "r") as f:
-#             lines = f.readlines()
-#             print(le  n(lines), lines[-1])
-#         for pattern in ["patternA/", "patternB/"]:
-#             if not os.path.isfile(dir + pattern + "costs.txt"):
-#                 continue
-#             with open(dir + pattern + "costs.txt", "r") as f:
-#                 lines = f.readlines()
-#                 if len(lines) < 2:
-#                     continue
-#                 print(pattern, len(lines), lines[-1])
+    main()
+    # resubmit()

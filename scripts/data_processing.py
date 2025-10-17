@@ -335,8 +335,9 @@ def download(experiment):
 def download_all(d):
     os.makedirs("data/"+d, exist_ok=True)
     # os.system("scp mameen@smatter-login.syr.edu:/home/mameen/{}stresses.txt data/{}".format(d,d))
-    if not os.path.isfile("data/{}histogram_data.csv".format(d)):
-        os.system("scp mameen@smatter-login.syr.edu:/home/mameen/{}histogram_data.csv data/{}".format(d,d))
+    
+    # if not os.path.isfile("data/{}histogram_data.csv".format(d)):
+    #     os.system("scp mameen@smatter-login.syr.edu:/home/mameen/{}histogram_data.csv data/{}".format(d,d))
 
     for i in range(100):
         os.makedirs("data/{}{:03d}/".format(d,i), exist_ok=True)
@@ -357,7 +358,11 @@ def download_all(d):
 #             # write_histogram_data(experiment)
 
 def main():
-    for experiment in ["1_cell_decrease_2_sigma/","1_cell_increase_2_sigma/","2_cells_mean/","4_cells_mean/"]:
+    for experiment in ["2_cells_mean_l_4/",
+                       "2_cells_mean_l_5/",
+                       "4_cells_mean_l_4/",
+                       "4_cells_mean_l_5/",
+                       "4_cells_mean_l_6/"]:
         experiment = "/home/mameen/{}".format(experiment)
         dirlist = []
         for dir in ["{}{:03d}/".format(experiment,i) for i in range(100)]:
@@ -367,11 +372,11 @@ def main():
                 lines = f.readlines()
                 if len(lines)<2:
                     continue
-                if float(lines[-1])>1e-10:
+                if float(lines[-1])>9e-10:
                     continue
             dirlist.append(dir)
             write_average_error(dir)
-        write_histogram_data(dirlist,"{}/histogram_data.csv".format(experiment))    
+        # write_histogram_data(dirlist,"{}/histogram_data.csv".format(experiment))    
 
 if __name__ == "__main__":
     main()

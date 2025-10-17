@@ -1,63 +1,19 @@
 from toolbox.patterns import Patterns
 from toolbox.periodic import PeriodicTissue
-from toolbox.pattern_trainer import find_random_target_cells, train_random_cells,resume_run, set_random_target_cells
+from toolbox.pattern_trainer import train_random_cells
 import os
 import numpy as np
 import pandas as pd
 import glob
 import sys
 
-class multiple_patterns:
-    def __init__(self):
-        self._run_dir = None
-        self._tolerance = 1e-8
-        self._target_cells_A = None
-        self._target_cells_B = None
-        self._target_stress = None
-        self._n_cells_A = 2
-        self._n_cells_B = 2
-        self._max_iters = 10
-        self._target_stress = None
-        self._learning_rate = 10
-        if os.path.isdir("/Users/shabeebameen/Projects/tvm-fire/build/"):
-            self._cpp_executable_dir = "/Users/shabeebameen/Projects/tvm-fire/build/"
-        elif os.path.isdir("/home/shabeeb/Projects/tvm-fire/build/"):
-            self._cpp_executable_dir = "/home/shabeeb/Projects/tvm-fire/build/"
-        elif os.path.isdir("/home/mameen/tvm/build/"):
-            self._cpp_executable_dir = "/home/mameen/tvm/build/"
-    # I am doing the initialization in this convoluted way because I am too lazy (or busy)
-    # to fix the train random cells function.
-    # IDEA:
-    # 1. Pick random cells to train pattern A. Train them for self._max_iters.
-    # 2. At this point self._run_dir has the pattern A run. so, save self._target_cells_A from 0000.stresses.csv
-    # 3. Pick random cells to train pattern B, record them in excluding cells in pattern A. Train them for self._max_iters.
-    # 4. At this point self._run_dir has the
 
-    def initialize(self):
-        training_instance = Patterns.periodic_tissue.from_config(self._run_dir, "initial.bulk.txt")
-        find_random_target_cells(
-            self._run_dir,
-            n_cells = self._n_cells_A, 
-            tolerance = self._tolerance,)
-        # initialize pattern A by training self._n_cells_A cells
-        train_random_cells(
-            self._run_dir,
-            n_cells = self._n_cells_A, 
-            tolerance = self._tolerance, 
-            learning_rate = self._learning_rate,
-            cpp_executable_dir = self._cpp_executable_dir,
-            target_stress = self._target_stress,
-            max_iters = self._max_iters)
-        # record pattern A stress:
-
-
-def copy_config(source_dir):
-    source_costs = np.loadtxt("{}costs.txt".format(source_dir))
-    last_iter = len(source_costs)-1
-    source_parameters = "{}{:04d}.cellParameters.input".format(source_dir,last_iter)
+def copy_config(source_dir,destination_dir):
+    # os.system("cp {}minimized.txt {}minimized.txt".format(source_dir, destination_dir))
+    source_file = sorted(glob.glob("{}*.cellParameters.input".format(source_dir)))[-1]
     print("copying {} to {}cellParameters.input".format(source_file, destination_dir))
     os.system("cp {} {}cellParameters.input".format(source_file, destination_dir))
-    source_config = "{}{:04d}.bulk.txt".format(source_dir,last_iter)
+    source_file = sorted(glob.glob("{}*.bulk.txt".format(source_dir)))[-1]
     print("copying {} to {}minimized.txt".format(source_file, destination_dir))
     os.system("cp {} {}minimized.txt".format(source_file, destination_dir))
 def single_iteration (patternA, patternB):

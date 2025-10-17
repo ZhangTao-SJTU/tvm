@@ -31,6 +31,50 @@ import random
 #             polygon.vtk_scalar_ = 1
 #     self._config.write_periodic_vtk(filename = "target_cells.vtk", use_scalar=True)
 
+def find_random_target_cells(training_instance, n_cells = 1, **kwargs):
+    stress_limits = []
+    exclude_cells = []
+    if "stress_limits" in kwargs:
+        stress_limits = kwargs["stress_limits"]
+    if "exclude_cells" in kwargs:
+        exclude_cells = kwargs["exclude_cells"]
+    for polygonID,polygon in training_instance._config.polygons_.items():
+        polygon.vtk_scalar_ = 0
+    target_cells = []
+    while len(target_cells)<n_cells:
+        cellID = random.choice(list(training_instance._config.cells_.keys()))
+        cell = training_instance._config.cells_[cellID]
+        if cell.crossBoundary_: 
+            continue
+        if cellID in target_cells:
+            continue
+        if len(stress_limits):
+            if cell.max_shear_stress_ is None:
+                cell.max_shear_stress_ = stress.calculate_max_shear_stress(training_instance._config,cellID)
+            lower_limit = stress_limits[0]
+            upper_limit = stress_limits[1]
+            if (cell.max_shear_stress_ < lower_limit):
+                continue
+            if (cell.max_shear_stress_ > upper_limit):
+                continue
+        if len(exclude_cells):
+            if cellID in exclude_cells:
+                continue
+        targets_share_polygons = False
+        for polygonID in cell.polygons_:
+            polygon = training_instance._config.polygons_[polygonID]
+            if polygon.vtk_scalar_ == 1:
+                targets_share_polygons = True
+                break    
+        if targets_share_polygons:
+            continue
+        for polygonID in cell.polygons_:
+            polygon = training_instance._config.polygons_[polygonID]
+            polygon.vtk_scalar_ = 1
+        if len(target_cells) == n_cells:
+            break
+    return target_cells
+
 def set_random_target_cells(training_instance, n_cells = 1, target_stress =1, **kwargs):
     stress_limits = []
     exclude_cells = []
@@ -70,7 +114,6 @@ def set_random_target_cells(training_instance, n_cells = 1, target_stress =1, **
                 break    
         if targets_share_polygons:
             continue
-
         for polygonID in cell.polygons_:
             polygon = training_instance._config.polygons_[polygonID]
             polygon.vtk_scalar_ = 1
@@ -141,6 +184,7 @@ def resume_run(run_dir, **kwargs):
     tolerance = 1e-8
     max_iters = 2000
     learning_rate = 10
+    target_cell_to_stress = None
     if "cpp_executable_dir" in kwargs:
         cpp_executable_dir = kwargs["cpp_executable_dir"]
     if "tolerance" in kwargs:
@@ -149,6 +193,9 @@ def resume_run(run_dir, **kwargs):
         learning_rate = kwargs["learning_rate"]
     if "max_iters" in kwargs:
         max_iters = kwargs["max_iters"]
+    if "target_cell_to_stress" in kwargs:
+        target_cell_to_stress = kwargs["target_cell_to_stress"]
+
 
     print("Parameters for training:")
     print("cpp_executable_dir:", cpp_executable_dir)
@@ -177,18 +224,20 @@ def resume_run(run_dir, **kwargs):
     training_instance.load_cell_parameters(cell_parameters_file)
     os.system("cp {}{} {}cellParameters.input".format(run_dir,cell_parameters_file,run_dir))
     training_instance.set_iter_counter(last_iteration+1)
-    df = pd.read_csv("{}0000.stresses.csv".format(run_dir))
-    training_instance.set_target_cell_to_stress(dict(zip(df['CellID'], df['Target'])))
+    if target_cell_to_stress is None:
+        df = pd.read_csv("{}0000.stresses.csv".format(run_dir))
+        target_cell_to_stress = dict(zip(df['CellID'], df['Target']))
+    training_instance.set_target_cell_to_stress(target_cell_to_stress)
     training_instance.run_to_max_iters(max_iters=max_iters)
 
 def remove_last_iteration(run_dir):
     costs = np.loadtxt("{}costs.txt".format(run_dir))
     q_values = np.loadtxt("{}q_values.txt".format(run_dir))
-    last_iteration = len(costs) - 1
+    last_iteration = len(costs)-1
     costs = costs[:-1]
     q_values = q_values[:-1]
-    np.savetxt("{}costs.txt".format(run_dir), costs)
-    np.savetxt("{}q_values.txt".format(run_dir), q_values)
+    np.savetxt("{}costs.txt".format(run_dir), costs,fmt='%.2e')
+    np.savetxt("{}q_values.txt".format(run_dir), q_values,fmt='%.4f')
     if os.path.isfile("{}{:04d}.cellParameters.input".format(run_dir,last_iteration)):
         os.remove("{}{:04d}.cellParameters.input".format(run_dir,last_iteration))
     if os.path.isfile("{}{:04d}.stresses.csv".format(run_dir, last_iteration)):

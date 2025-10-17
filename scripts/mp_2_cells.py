@@ -9,13 +9,13 @@ import sys
 
 
 def copy_config(source_dir,destination_dir):
-    # os.system("cp {}minimized.txt {}minimized.txt".format(source_dir, destination_dir))
     source_file = sorted(glob.glob("{}*.cellParameters.input".format(source_dir)))[-1]
     print("copying {} to {}cellParameters.input".format(source_file, destination_dir))
     os.system("cp {} {}cellParameters.input".format(source_file, destination_dir))
     source_file = sorted(glob.glob("{}*.bulk.txt".format(source_dir)))[-1]
     print("copying {} to {}minimized.txt".format(source_file, destination_dir))
     os.system("cp {} {}minimized.txt".format(source_file, destination_dir))
+
 def single_iteration (patternA, patternB):
     "Retraining patternA using minimized config of patternB"
     copy_config(source_dir = patternB._dir, destination_dir = patternA._dir)
@@ -134,15 +134,19 @@ def main():
     n_cells = 2
     alpha = 0.05
     tolerance = 1e-5
-    cpp_executable_dir = "/home/mameen/tvm/build/"
-    # cpp_executable_dir = "/home/shabeeb/Projects/tvm-fire/build/"
-    # cpp_executable_dir = "/Users/shabeebameen/Projects/tvm-fire/build/"
+    if os.path.isdir("/Users/shabeebameen/Projects/tvm-fire/build/"):
+        cpp_executable_dir = "/Users/shabeebameen/Projects/tvm-fire/build/"
+    elif os.path.isdir("/home/shabeeb/Projects/tvm-fire/build/"):
+        cpp_executable_dir = "/home/shabeeb/Projects/tvm-fire/build/"
+    elif os.path.isdir("/home/mameen/tvm/build/"):
+        cpp_executable_dir = "/home/mameen/tvm/build/"
+    
     if not len(sys.argv) == 3:
         print("Usage: python3 multiple_patterns.py <input_dir> <run_dir>")
         sys.exit(1)
     input_dir = str(sys.argv[1])
     run_dir = str(sys.argv[2])
-    print("Input dir:", input_dir)
+    # print("Input dir:", input_dir)
     print("Run dir:", run_dir)
     
     os.makedirs(run_dir , exist_ok=True)

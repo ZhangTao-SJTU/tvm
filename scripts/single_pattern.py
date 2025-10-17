@@ -28,7 +28,8 @@ def main():
         tolerance = np.loadtxt("{}tolerance".format(run_dir))
     if os.path.isfile("{}learning_rate".format(run_dir)):
         learning_rate = np.loadtxt("{}learning_rate".format(run_dir))
-    
+    if os.path.isfile("{}max_iters".format(run_dir)):
+        max_iters = int(np.loadtxt("{}max_iters".format(run_dir)))
     if os.path.isfile(run_dir + "0000.stresses.csv"):
         print("Run already started in dir: {}\n Resuming run from last completed iteration.\n".format(run_dir))
         resume_run(
