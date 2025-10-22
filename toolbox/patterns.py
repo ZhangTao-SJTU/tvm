@@ -16,6 +16,7 @@ class Patterns(Training):
         self._clamping_s0_upper_limit = 5.3
         self._clamping_correction_factor = 0.1
         self._clamping_FIRE_only = True
+        self._clamping_tolerance = 1e-15
         
     @classmethod
     def periodic_tissue(cls,tissue):
@@ -28,8 +29,6 @@ class Patterns(Training):
         self._clamping_max_iters = clamping_max_iters
     def set_clamping_correction_factor(self, clamping_correction_factor):
         self._clamping_correction_factor = clamping_correction_factor
-    # def set_clamping_tolerance(self, tol):
-    #     self._clamping_tolerance = tol
     def set_target_cell_to_stress(self,target_cell_to_stress):
         self._target_cell_to_stress = target_cell_to_stress
         # For checking the above functionality with vtk:
@@ -46,16 +45,25 @@ class Patterns(Training):
         for cellID in self._target_cell_to_stress:
             cell = self._config.cells_[cellID]
             cell.max_shear_stress_ = stress.calculate_max_shear_stress(self._config, cellID)
+    # Cost just means average error...
+    # def evaluate_cost(self):
+    #     multiplier = 1
+    #     cost = 0
+    #     self.calculate_max_shear_stresses()
+    #     for cellID, target_stress in self._target_cell_to_stress.items():
+    #         cell = self._config.cells_[cellID]
+    #         cost += multiplier * (cell.max_shear_stress_ - target_stress) ** 2
+    #     return cost
 
     def evaluate_cost(self):
         multiplier = 1
-        cost = 0
+        cost = []
         self.calculate_max_shear_stresses()
         for cellID, target_stress in self._target_cell_to_stress.items():
             cell = self._config.cells_[cellID]
-            cost += multiplier * (cell.max_shear_stress_ - target_stress) ** 2
-        return cost
-
+            cost.append(abs(cell.max_shear_stress_ - target_stress))
+        return np.mean(cost)
+    
     def single_iteration(self):
         if not len(self._target_cell_to_stress):
             print("No target cells, iteration terminated.")
@@ -124,11 +132,11 @@ class Patterns(Training):
             for cellID, final_target_stress in self._target_cell_to_stress.items():
                 cell = self._config.cells_[cellID]
                 current_stress = stress.calculate_max_shear_stress(self._config, cellID)
-                # if abs(current_stress - final_target_stress) > self._clamping_tolerance:
-                if abs(current_stress - final_target_stress) > self._tolerance:
+                # if abs(current_stress - final_target_stress) > self._tolerance:
+                if abs(current_stress - final_target_stress) > self._clamping_tolerance:
                     needs_clamping.append(cellID)
             if not len(needs_clamping):
-                print("Clamping successful to tolerance")
+                print("Clamping successful to clamping tolerance")
                 return
             pre_clamping_s0 = pd.read_csv(cell_parameters_file,header=None,sep=" ")[2]
             for cellID in needs_clamping:
@@ -190,8 +198,8 @@ class Patterns(Training):
             cell.s0_ = min_guess
             return
         # Binary search within the root interval
-        # while abs(root_interval[1]-root_interval[0])>self._clamping_tolerance:
-        while abs(root_interval[1]-root_interval[0])>self._tolerance:
+        # while abs(root_interval[1]-root_interval[0])>self._tolerance:
+        while abs(root_interval[1]-root_interval[0])>self._clamping_tolerance:
             mid = (root_interval[0]+root_interval[1])/2
             if np.sign(clamping_error(mid)) == np.sign(clamping_error(root_interval[0])):
                 root_interval[0] = mid
