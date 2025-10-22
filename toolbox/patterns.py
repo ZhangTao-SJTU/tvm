@@ -16,7 +16,6 @@ class Patterns(Training):
         self._clamping_s0_upper_limit = 5.3
         self._clamping_correction_factor = 0.1
         self._clamping_FIRE_only = True
-        # self._clamping_tolerance = 1e-7
         
     @classmethod
     def periodic_tissue(cls,tissue):
@@ -104,12 +103,11 @@ class Patterns(Training):
         self.write_cell_parameters()
         self.minimize_config()
         # Step 5: Logging, etc
-        self.write_configuration(filename = "{:04d}.bulk.txt".format(self._iter_counter))
+        self.write_configuration(filename = "{:07d}.bulk.txt".format(self._iter_counter))
         for cellID,cell in self._config.cells_.items():
             for polygonID in cell.polygons_:
                 self._config.polygons_[polygonID].vtk_scalar_ = cell.s0_
-        # self._config.write_periodic_vtk(filename = "{:04d}.bulk.vtk".format(self._iter_counter),use_scalar=True)
-        os.system("cp {}cellParameters.input {}{:04d}.cellParameters.input".format(
+        os.system("cp {}cellParameters.input {}{:07d}.cellParameters.input".format(
             self._dir,self._dir,self._iter_counter))
 
     # The goal of clamping is to ensure that the target cells reach the final target stress as
@@ -243,7 +241,7 @@ class Patterns(Training):
                     "Target": list(self._target_cell_to_stress.values()),
                     "Current": current_stresses}
             df = pd.DataFrame(results)
-            df.to_csv("{}{:04d}.stresses.csv".format(self._dir, self._iter_counter), index=False)
+            df.to_csv("{}{:07d}.stresses.csv".format(self._dir, self._iter_counter), index=False)
             self._iter_counter += 1
             if cost < self._tolerance:
                 break

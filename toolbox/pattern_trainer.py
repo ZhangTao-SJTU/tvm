@@ -31,13 +31,20 @@ import random
 #             polygon.vtk_scalar_ = 1
 #     self._config.write_periodic_vtk(filename = "target_cells.vtk", use_scalar=True)
 
-def find_random_target_cells(training_instance, n_cells = 1, **kwargs):
+# input: run dir, filename for config(default: minimized.txt), number of cells to select, other criteria (cell stress limits, exclude cells etc)
+# output: list of randomly selected target cell IDs
+def find_random_target_cells(run_dir, filename = "minimized.txt", n_cells = 1, **kwargs):
+    tissue = PeriodicTissue.from_config(run_dir,filename)
+    training_instance = Patterns.periodic_tissue(tissue)
     stress_limits = []
     exclude_cells = []
+    output_vtk_file = "target_cells.vtk"
     if "stress_limits" in kwargs:
         stress_limits = kwargs["stress_limits"]
     if "exclude_cells" in kwargs:
         exclude_cells = kwargs["exclude_cells"]
+    if "output_vtk_file" in kwargs:
+        output_vtk_file = kwargs["output_vtk_file"]
     for polygonID,polygon in training_instance._config.polygons_.items():
         polygon.vtk_scalar_ = 0
     target_cells = []
@@ -71,8 +78,10 @@ def find_random_target_cells(training_instance, n_cells = 1, **kwargs):
         for polygonID in cell.polygons_:
             polygon = training_instance._config.polygons_[polygonID]
             polygon.vtk_scalar_ = 1
+        target_cells.append(cellID)
         if len(target_cells) == n_cells:
             break
+    training_instance._config.write_cell_collection_vtk(cells_array= target_cells,filename = output_vtk_file)
     return target_cells
 
 def set_random_target_cells(training_instance, n_cells = 1, target_stress =1, **kwargs):
@@ -124,7 +133,45 @@ def set_random_target_cells(training_instance, n_cells = 1, target_stress =1, **
     training_instance._config.write_periodic_vtk(filename = "target_cells.vtk", use_scalar=True)
     training_instance._config.write_cell_collection_vtk(list(target_cell_to_stress.keys()),"target_cells_isolated.vtk",use_scalar=False)
 
+# A target cell trainer. Input run directory and a dictionary of target cells to target stress values.
+def train_target_cells(run_dir, target_cell_to_stress, **kwargs):
+    print("Training target cells in directory:", run_dir)
+    #default parameters
+    cpp_executable_dir = "/home/shabeeb/Projects/tvm-fire/build/"
+    tolerance = 1e-8
+    max_iters = 2000
+    learning_rate = 10
+    if "cpp_executable_dir" in kwargs:
+        cpp_executable_dir = kwargs["cpp_executable_dir"]
+    if "tolerance" in kwargs:
+        tolerance = kwargs["tolerance"]
+    if "learning_rate" in kwargs:
+        learning_rate = kwargs["learning_rate"]
+    if "max_iters" in kwargs:
+        max_iters = kwargs["max_iters"]
 
+    print("Parameters for training:")
+    print("cpp_executable_dir:", cpp_executable_dir)
+    print("tolerance:", tolerance)
+    print("learning_rate:", learning_rate)
+    print("max_iters:", max_iters)
+    print("target_cell_to_stress:", target_cell_to_stress)
+
+    file = "minimized.txt"
+    if os.path.isfile("{}minimized.txt".format(run_dir)):
+        print("File exists:", "{}minimized.txt".format(run_dir))
+    tissue = PeriodicTissue.from_config(run_dir,file)
+    training_instance = Patterns.periodic_tissue(tissue)
+    training_instance.set_cpp_executable_dir(cpp_executable_dir)
+    training_instance.minimize_config()
+    training_instance.set_tolerance(tolerance)
+    training_instance.set_learning_rate(learning_rate)
+    training_instance.set_target_cell_to_stress(target_cell_to_stress)
+    training_instance.initialize()
+    training_instance.run_to_max_iters(max_iters)
+    return
+
+## A shortcut function that picks and trains random cells.
 def train_random_cells(run_dir, n_cells = 1, target_stress = 1, **kwargs):
     print("Training random cells in directory:", run_dir)
     #default parameters
@@ -204,12 +251,12 @@ def resume_run(run_dir, **kwargs):
     print("max iters:", max_iters)
     
     costs = np.loadtxt("{}costs.txt".format(run_dir))
-    if costs[-1]<tolerance:
-        print("The last iteration already meets the tolerance requirement. No need to resume.")
-        return
+    # if costs[-1]<tolerance:
+    #     print("The last iteration already meets the tolerance requirement. No need to resume.")
+    #     return
     q_values = np.loadtxt("{}q_values.txt".format(run_dir))
     last_iteration = len(costs) - 1
-    config_file = "{:04d}.bulk.txt".format(last_iteration)
+    config_file = "{:07d}.bulk.txt".format(last_iteration)
     print("Loading configuration from: ", config_file)
     sample = PeriodicTissue.from_config(run_dir,config_file)
     training_instance = Patterns.periodic_tissue(sample)
@@ -219,13 +266,13 @@ def resume_run(run_dir, **kwargs):
     training_instance.set_cpp_executable_dir(cpp_executable_dir)
     training_instance.set_tolerance(tolerance)
     training_instance.set_learning_rate(learning_rate)
-    cell_parameters_file = "{:04d}.cellParameters.input".format(last_iteration)
+    cell_parameters_file = "{:07d}.cellParameters.input".format(last_iteration)
     print("Loading cell parameters from: ", cell_parameters_file)
     training_instance.load_cell_parameters(cell_parameters_file)
     os.system("cp {}{} {}cellParameters.input".format(run_dir,cell_parameters_file,run_dir))
     training_instance.set_iter_counter(last_iteration+1)
     if target_cell_to_stress is None:
-        df = pd.read_csv("{}0000.stresses.csv".format(run_dir))
+        df = pd.read_csv("{}{:07d}.stresses.csv".format(run_dir,0))
         target_cell_to_stress = dict(zip(df['CellID'], df['Target']))
     training_instance.set_target_cell_to_stress(target_cell_to_stress)
     training_instance.run_to_max_iters(max_iters=max_iters)
@@ -238,11 +285,11 @@ def remove_last_iteration(run_dir):
     q_values = q_values[:-1]
     np.savetxt("{}costs.txt".format(run_dir), costs,fmt='%.2e')
     np.savetxt("{}q_values.txt".format(run_dir), q_values,fmt='%.4f')
-    if os.path.isfile("{}{:04d}.cellParameters.input".format(run_dir,last_iteration)):
-        os.remove("{}{:04d}.cellParameters.input".format(run_dir,last_iteration))
-    if os.path.isfile("{}{:04d}.stresses.csv".format(run_dir, last_iteration)):
-        os.remove("{}{:04d}.stresses.csv".format(run_dir, last_iteration))
-    if os.path.isfile("{}{:04d}.bulk.txt".format(run_dir, last_iteration)):
-        os.remove("{}{:04d}.bulk.txt".format(run_dir, last_iteration))
+    if os.path.isfile("{}{:07d}.cellParameters.input".format(run_dir,last_iteration)):
+        os.remove("{}{:07d}.cellParameters.input".format(run_dir,last_iteration))
+    if os.path.isfile("{}{:07d}.stresses.csv".format(run_dir, last_iteration)):
+        os.remove("{}{:07d}.stresses.csv".format(run_dir, last_iteration))
+    if os.path.isfile("{}{:07d}.bulk.txt".format(run_dir, last_iteration)):
+        os.remove("{}{:07d}.bulk.txt".format(run_dir, last_iteration))
     print("Removed iteration {}".format(last_iteration))
 

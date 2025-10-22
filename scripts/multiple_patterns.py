@@ -1,80 +1,123 @@
 from toolbox.patterns import Patterns
 from toolbox.periodic import PeriodicTissue
-from toolbox.pattern_trainer import find_random_target_cells, train_random_cells,resume_run, set_random_target_cells
+from toolbox.stress import calculate_max_shear_stress
+from toolbox.pattern_trainer import find_random_target_cells, train_target_cells, resume_run
 import os
 import numpy as np
 import pandas as pd
-import glob
 import sys
 
 class multiple_patterns:
     def __init__(self):
         self._run_dir = None
-        self._tolerance = 1e-8
-        self._target_cells_A = None
-        self._target_cells_B = None
+        self._target_cell_to_stress_A = None
+        self._target_cell_to_stress_B = None
         self._target_stress = None
+        self._tolerance = 1e-8
         self._n_cells_A = 2
         self._n_cells_B = 2
         self._max_iters = 10
-        self._target_stress = None
         self._learning_rate = 10
+
+    @classmethod
+    def from_dir(cls, dir):
+        inst = cls()
+        inst._run_dir = dir
+        # set cpp_executable_dir based on existing directories
         if os.path.isdir("/Users/shabeebameen/Projects/tvm-fire/build/"):
-            self._cpp_executable_dir = "/Users/shabeebameen/Projects/tvm-fire/build/"
+            cls._cpp_executable_dir = "/Users/shabeebameen/Projects/tvm-fire/build/"
         elif os.path.isdir("/home/shabeeb/Projects/tvm-fire/build/"):
-            self._cpp_executable_dir = "/home/shabeeb/Projects/tvm-fire/build/"
+            cls._cpp_executable_dir = "/home/shabeeb/Projects/tvm-fire/build/"
         elif os.path.isdir("/home/mameen/tvm/build/"):
-            self._cpp_executable_dir = "/home/mameen/tvm/build/"
-    # I am doing the initialization in this convoluted way because I am too lazy (or busy)
-    # to fix the train random cells function.
-    # IDEA:
-    # 1. Pick random cells to train pattern A. Train them for self._max_iters.
-    # 2. At this point self._run_dir has the pattern A run. so, save self._target_cells_A from 0000.stresses.csv
-    # 3. Pick random cells to train pattern B, record them in excluding cells in pattern A. Train them for self._max_iters.
-    # 4. At this point self._run_dir has the
+            cls._cpp_executable_dir = "/home/mameen/tvm/build/"
 
-    def initialize(self):
-        training_instance = Patterns.periodic_tissue.from_config(self._run_dir, "initial.bulk.txt")
-        find_random_target_cells(
-            self._run_dir,
-            n_cells = self._n_cells_A, 
-            tolerance = self._tolerance,)
-        # initialize pattern A by training self._n_cells_A cells
-        train_random_cells(
-            self._run_dir,
-            n_cells = self._n_cells_A, 
-            tolerance = self._tolerance, 
-            learning_rate = self._learning_rate,
-            cpp_executable_dir = self._cpp_executable_dir,
-            target_stress = self._target_stress,
-            max_iters = self._max_iters)
-        # record pattern A stress:
-
-
-def copy_config(source_dir):
-    source_costs = np.loadtxt("{}costs.txt".format(source_dir))
-    last_iter = len(source_costs)-1
-    source_parameters = "{}{:04d}.cellParameters.input".format(source_dir,last_iter)
-    print("copying {} to {}cellParameters.input".format(source_file, destination_dir))
-    os.system("cp {} {}cellParameters.input".format(source_file, destination_dir))
-    source_config = "{}{:04d}.bulk.txt".format(source_dir,last_iter)
-    print("copying {} to {}minimized.txt".format(source_file, destination_dir))
-    os.system("cp {} {}minimized.txt".format(source_file, destination_dir))
-def single_iteration (patternA, patternB):
-    "Retraining patternA using minimized config of patternB"
-    copy_config(source_dir = patternB._dir, destination_dir = patternA._dir)
-    patternA._config.load_periodic_tissue_from_file("minimized.txt")
-    patternA.load_cell_parameters()
-    patternA.minimize_config()
-    # patternA.run()
-    patternA.run_to_max_iters(max_iters=100)
-    "Retraining patternB using minimized config of patternA"
-    copy_config(source_dir = patternA._dir, destination_dir = patternB._dir)
-    patternA._config.load_periodic_tissue_from_file("minimized.txt")
-    patternB.load_cell_parameters()
-    patternB.minimize_config()
-    # patternB.run()
-    patternB.run_to_max_iters(max_iters=100)
+        if os.path.isfile("{}target".format(dir)):
+            with open("{}target".format(dir), "r") as f:
+                inst._target_stress = float(f.read().strip())
+        if os.path.isfile("{}tolerance".format(dir)):
+            with open("{}tolerance".format(dir), "r") as f:
+                inst._tolerance = float(f.read().strip())
+        if os.path.isfile("{}learning_rate".format(dir)):
+            with open("{}learning_rate".format(dir), "r") as f:
+                inst._learning_rate = float(f.read().strip())
+        if os.path.isfile("{}max_iters".format(dir)):
+            with open("{}max_iters".format(dir), "r") as f:
+                inst._max_iters = int(f.read().strip())
+        if os.path.isfile("{}n_cells_A".format(dir)):
+            with open("{}n_cells_A".format(dir), "r") as f:
+                inst._n_cells_A = int(f.read().strip())
+        if os.path.isfile("{}n_cells_B".format(dir)):
+            with open("{}n_cells_B".format(dir), "r") as f:
+                inst._n_cells_B = int(f.read().strip())
+        return inst
+  
+    # set self._target_cell_to_stress_A and self._target_cell_to_stress_B
+    # requires initialization of self._target_stress (can be read from dir/target if using alternate constructor.
+    # This will be the uniform target stress for all target cells in both patterns.
+    # Save the corresponding vtks and initial_stresses.csv files in the run_dir
+    def set_new_uniform_target_stress_patterns(self):
+        target_cells_A = find_random_target_cells(self._run_dir, n_cells = self._n_cells_A,output_vtk_file = "target_cells_A.vtk")
+        self._target_cell_to_stress_A ={i:self._target_stress for i in target_cells_A}
+        target_cells_B = find_random_target_cells(self._run_dir, n_cells = self._n_cells_B, exclude_cells = target_cells_A, output_vtk_file = "target_cells_B.vtk")
+        self._target_cell_to_stress_B ={i:self._target_stress for i in target_cells_B}
+        # Save initial_stress_A/B.csv files
+        tissue = PeriodicTissue.from_config(self._run_dir, "minimized.txt")
+        initial_stress_A = {cellID: calculate_max_shear_stress(tissue,cellID)for cellID in self._target_cell_to_stress_A}
+        df = pd.DataFrame(list(initial_stress_A.items()), columns=['CellID', 'Current'])        
+        df.to_csv("{}initial_stress_A.csv".format(self._run_dir), index=False)
+        initial_stress_B = {cellID: calculate_max_shear_stress(tissue,cellID)for cellID in self._target_cell_to_stress_B}
+        df = pd.DataFrame(list(initial_stress_B.items()), columns=['CellID', 'Current'])        
+        df.to_csv("{}initial_stress_B.csv".format(self._run_dir), index=False)
+    def reload_uniform_target_stress_patterns(self):
+        target_cells_A = pd.read_csv("{}initial_stress_A.csv".format(self._run_dir))["CellID"].to_numpy()
+        self._target_cell_to_stress_A ={int(cellID):self._target_stress for cellID in target_cells_A}
+        target_cells_B = pd.read_csv("{}initial_stress_B.csv".format(self._run_dir))["CellID"].to_numpy()
+        self._target_cell_to_stress_B ={int(cellID):self._target_stress for cellID in target_cells_B}
+    def single_iteration(self):
+        # start a new run if no costs.txt file exists
+        # Otherwise, use resume_run
+        # Either way, first train pattern A for self._max_iters
+        if not os.path.isfile("{}costs.txt".format(self._run_dir)):
+            print("Starting new run: Training pattern A")
+            train_target_cells(self._run_dir, self._target_cell_to_stress_A, learning_rate=self._learning_rate, max_iters=self._max_iters, cpp_executable_dir=self._cpp_executable_dir, tolerance=self._tolerance)
+        else:
+            print("Training pattern A")
+            resume_run(self._run_dir, target_cell_to_stress = self._target_cell_to_stress_A, learning_rate=self._learning_rate, max_iters=self._max_iters, cpp_executable_dir=self._cpp_executable_dir, tolerance=self._tolerance)
+        # Now train pattern B for self._max_iters
+        print("Training pattern B")
+        resume_run(self._run_dir, target_cell_to_stress = self._target_cell_to_stress_B, learning_rate=self._learning_rate, max_iters=self._max_iters, cpp_executable_dir=self._cpp_executable_dir, tolerance=self._tolerance)
+    def run(self, iterations):
+        print(self._target_cell_to_stress_A)
+        print(self._target_cell_to_stress_B)
+        print("Target stress:", self._target_stress)
+        print("Tolerance:", self._tolerance)
+        print("Max iterations:", self._max_iters)
+        print("cpp_executable_dir:", self._cpp_executable_dir)
+        print("Number of target cells in pattern A:", self._n_cells_A)
+        print("Number of target cells in pattern B:", self._n_cells_B)
+        for _ in range(iterations):
+            self.single_iteration()
+    
+def calculate_parameter_space_distance(patternA, patternB):
+    cellParametersA = "{}cellParameters.input".format(patternA._dir)
+    cellParametersB = "{}cellParameters.input".format(patternB._dir)
+    df = pd.read_csv(cellParametersA, sep=" ",header=None)
+    cellID_to_s0 = {int(i): [float(s0)] for i, s0 in zip(df[0].to_numpy(), df[2].to_numpy())}
+    df = pd.read_csv(cellParametersB, sep=" ",header=None)
+    for i, row in df.iterrows():
+        cellID = row[0]
+        s0 = row[2]
+        if cellID in cellID_to_s0:
+            cellID_to_s0[cellID].append(s0)
+        else:
+            raise ValueError("CellID {} not found in first pattern".format(cellID))
+    distance = 0
+    for cellID, s0s in cellID_to_s0.items():
+        # print("CellID: {}, s0s: {}".format(cellID, s0s))
+        distance += (s0s[0] - s0s[1])**2
+    distance = distance**0.5
+    # print(distance)
+    return distance
 
 def calculate_parameter_space_distance(patternA, patternB):
     cellParametersA = "{}cellParameters.input".format(patternA._dir)
@@ -97,124 +140,60 @@ def calculate_parameter_space_distance(patternA, patternB):
     # print(distance)
     return distance
 
-def initialize_patterns(init_dir,run_dir, **kwargs):
-    #default parameters
-    cpp_executable_dir = "/home/shabeeb/Projects/tvm-fire/build/"
-    alpha = 0.025
-    n_cells = 1
-    tolerance = 1e-5
-    average_cells_only = False
-    if "cpp_executable_dir" in kwargs:
-        cpp_executable_dir = kwargs["cpp_executable_dir"]
-    if "alpha" in kwargs:
-        alpha = kwargs["alpha"]
-    if "n_cells" in kwargs:
-        n_cells = kwargs["n_cells"]
-    if "tolerance" in kwargs:
-        tolerance = kwargs["tolerance"]
-    if "average_cells_only" in kwargs:
-        average_cells_only = kwargs["average_cells_only"]
-    patterns_dict = {"patternA/":None, "patternB/":None}
-    print("Parameters for initialization:")
-    print("cpp_executable_dir:", cpp_executable_dir)
-    print("alpha:", alpha)
-    print("n_cells:", n_cells)
-    print("tolerance:", tolerance)
-    for pattern_name in patterns_dict:
-        dir = run_dir + pattern_name
-        os.system("cp -r {} {}".format(init_dir, dir))
-        if pattern_name == "patternA/":
-            patterns_dict[pattern_name] = train_random_cells(
-                run_dir = dir,
-                alpha = alpha,
-                n_cells = n_cells,
-                tolerance = tolerance, 
-                cpp_executable_dir = cpp_executable_dir,
-                average_cells_only = average_cells_only)
-        elif pattern_name == "patternB/":
-            exclude_cells = list(patterns_dict["patternA/"]._target_cell_to_stress.keys())
-            print("Excluding cells in patternA from patternB:", exclude_cells)
-            patterns_dict[pattern_name] = train_random_cells(
-                run_dir = dir,
-                alpha = alpha,
-                n_cells = n_cells,
-                tolerance = tolerance, 
-                cpp_executable_dir = cpp_executable_dir,
-                average_cells_only = average_cells_only)
-        else:
-            raise ValueError("Unknown pattern name: {}".format(pattern_name))
-    return patterns_dict
+def run(trainer,iterations):
+    print(trainer._target_cell_to_stress_A)
+    print(trainer._target_cell_to_stress_B)
+    print("Target stress:", trainer._target_stress)
+    print("Tolerance:", trainer._tolerance)
+    print("Max iterations:", trainer._max_iters)
+    print("cpp_executable_dir:", trainer._cpp_executable_dir)
+    print("Number of target cells in pattern A:", trainer._n_cells_A)
+    print("Number of target cells in pattern B:", trainer._n_cells_B)
+    for _ in range(iterations):
+        trainer.single_iteration()
+# def new_multiple_patterns_trainer(run_dir, **kwargs):
+#     trainer = multiple_patterns.from_dir(run_dir)
+#     trainer.set_uniform_target_stress_patterns()
+#     iterations = 100
+#     if "iterations" in kwargs:
+#         iterations = kwargs["iterations"]
+#     run(trainer, iterations)
 
-def initialize_patterns_from_run_dir(run_dir,**kwargs):
-    #default parameters
-    cpp_executable_dir = "/home/shabeeb/Projects/tvm-fire/build/"
-    tolerance = 1e-5
-    if "cpp_executable_dir" in kwargs:
-        cpp_executable_dir = kwargs["cpp_executable_dir"]
-    if "tolerance" in kwargs:
-        tolerance = kwargs["tolerance"]
-    patterns = {"patternA/":None, "patternB/":None}
-    for pattern_name in patterns:
-        dir = run_dir + pattern_name
-        file = sorted(glob.glob("{}*.bulk.txt".format(dir)))[-1]
-        file = file.split("/")[-1]
-        print("Loading pattern from file:", file)
-        tissue = PeriodicTissue.from_config(dir, file)
-        patterns[pattern_name] = Patterns.periodic_tissue(tissue)
-        patterns[pattern_name].set_cpp_executable_dir(cpp_executable_dir)
-        patterns[pattern_name].set_tolerance(tolerance)
-        df = pd.read_csv("{}initial_stress.csv".format(dir))
-        cellID_to_stress = {int(i): float(stress) for i, stress in zip(df["cellID"].to_numpy(), df["Stress"].to_numpy())}
-        patterns[pattern_name].set_target_cell_to_stress(cellID_to_stress)
-        cost_values = list(np.loadtxt("{}costs.txt".format(dir)))
-        patterns[pattern_name]._cost_values = cost_values
-        patterns[pattern_name].set_iter_counter(len(cost_values))
-        cellParameters_file = sorted(glob.glob("{}*.cellParameters.input".format(dir)))[-1]
-        os.system("cp {} {}cellParameters.input".format(cellParameters_file, dir))
-    return patterns
+# def resume_multiple_patterns_trainer(run_dir, **kwargs):
+#     trainer = multiple_patterns.from_dir(run_dir)
+#     trainer.reload_uniform_target_stress_patterns()
+#     iterations = 100
+#     if "iterations" in kwargs:
+#         iterations = kwargs["iterations"]
+#     run(trainer, iterations)
+# def new_run(run_dir, **kwargs):
+#     iterations = 100
+#     if "iterations" in kwargs:
+#         iterations = kwargs["iterations"]
+#     trainer = multiple_patterns.from_dir(run_dir)
+#     trainer.set_uniform_target_stress_patterns()
+
+#     print(trainer._target_cell_to_stress_A)
+#     print(trainer._target_cell_to_stress_B)
+#     print("Target stress:", trainer._target_stress)
+#     print("Tolerance:", trainer._tolerance)
+#     print("Max iterations:", trainer._max_iters)
+#     print("cpp_executable_dir:", trainer._cpp_executable_dir)
+#     print("Number of target cells in pattern A:", trainer._n_cells_A)
+#     print("Number of target cells in pattern B:", trainer._n_cells_B)
+#     for _ in range(iterations):
+#         trainer.single_iteration()
 
 def main():
-    n_iters = 100
-    n_cells = 2
-    alpha = 0.05
-    tolerance = 1e-5
-    # cpp_executable_dir = "/home/mameen/tvm/build/"
-    # cpp_executable_dir = "/home/shabeeb/Projects/tvm-fire/build/"
-    cpp_executable_dir = "/Users/shabeebameen/Projects/tvm-fire/build/"
-    if not len(sys.argv) == 3:
-        print("Usage: python3 multiple_patterns.py <input_dir> <run_dir>")
+    if len(sys.argv) < 2:
+        print("Usage: python multiple_patterns.py <run_dir>")
         sys.exit(1)
-    input_dir = str(sys.argv[1])
-    run_dir = str(sys.argv[2])
-    print("Input dir:", input_dir)
-    print("Run dir:", run_dir)
-    
-    os.makedirs(run_dir , exist_ok=True)
-    distances_array = []
-    if os.path.isfile("{}distances.txt".format(run_dir)):
-        distances_array = list(np.loadtxt("{}distances.txt".format(run_dir)))
-    
-    patterns = initialize_patterns(input_dir, run_dir,
-        cpp_executable_dir = cpp_executable_dir,
-        n_cells = n_cells,
-        average_cells_only = True,
-        alpha = alpha,
-        tolerance = tolerance)
-    # patterns = initialize_patterns_from_run_dir(run_dir)
-    patternA = patterns["patternA/"]
-    patternB = patterns["patternB/"]
-
-    init_distance = [calculate_parameter_space_distance(patternA, patternB)]
-    if not os.path.isfile("{}initial_distances.txt".format(run_dir)):
-        np.savetxt("{}initial_distances.txt".format(run_dir), init_distance, fmt='%.12e')
-    for iteration in range(n_iters):
-        print("Starting pattern-switching iteration:", iteration)
-        single_iteration(patternA, patternB)
-        current_distance = calculate_parameter_space_distance(patternA, patternB)
-        distances_array.append(current_distance)
-        np.savetxt("{}distances.txt".format(run_dir), distances_array, fmt='%.12e')
-        if current_distance < 1e-9:
-            print("Converged at iteration", iteration)
-            break
+    run_dir = sys.argv[1]
+    trainer = multiple_patterns.from_dir(run_dir)
+    if not os.path.isfile("{}costs.txt".format(run_dir)):
+        trainer.set_new_uniform_target_stress_patterns()
+    else:
+        trainer.reload_uniform_target_stress_patterns()
+    trainer.run(iterations=1000)
 if __name__ == "__main__":
     main()

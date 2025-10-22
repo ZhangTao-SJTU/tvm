@@ -6,7 +6,7 @@ import numpy as np
 def main():
     run_dir = sys.argv[1]
     # Default values
-    max_iters = 10000
+    max_iters = 100000
     n_cells = 1
     stress_limits = []
     tolerance = 1e-7
@@ -30,7 +30,7 @@ def main():
         learning_rate = np.loadtxt("{}learning_rate".format(run_dir))
     if os.path.isfile("{}max_iters".format(run_dir)):
         max_iters = int(np.loadtxt("{}max_iters".format(run_dir)))
-    if os.path.isfile(run_dir + "0000.stresses.csv"):
+    if os.path.isfile(run_dir + "{:07d}.stresses.csv".format(0)):
         print("Run already started in dir: {}\n Resuming run from last completed iteration.\n".format(run_dir))
         resume_run(
             run_dir, 
