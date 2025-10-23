@@ -54,14 +54,16 @@ class Patterns(Training):
     #         cell = self._config.cells_[cellID]
     #         cost += multiplier * (cell.max_shear_stress_ - target_stress) ** 2
     #     return cost
-
+    
+    # From now on, cost just means average error...
     def evaluate_cost(self):
         multiplier = 1
         cost = []
         self.calculate_max_shear_stresses()
         for cellID, target_stress in self._target_cell_to_stress.items():
             cell = self._config.cells_[cellID]
-            cost.append(abs(cell.max_shear_stress_ - target_stress))
+            # percentage error:
+            cost.append(abs(cell.max_shear_stress_ - target_stress)/target_stress)
         return np.mean(cost)
     
     def single_iteration(self):

@@ -61,18 +61,43 @@ class multiple_patterns:
         target_cells_B = find_random_target_cells(self._run_dir, n_cells = self._n_cells_B, exclude_cells = target_cells_A, output_vtk_file = "target_cells_B.vtk")
         self._target_cell_to_stress_B ={i:self._target_stress for i in target_cells_B}
         # Save initial_stress_A/B.csv files
-        tissue = PeriodicTissue.from_config(self._run_dir, "minimized.txt")
-        initial_stress_A = {cellID: calculate_max_shear_stress(tissue,cellID)for cellID in self._target_cell_to_stress_A}
-        df = pd.DataFrame(list(initial_stress_A.items()), columns=['CellID', 'Current'])        
-        df.to_csv("{}initial_stress_A.csv".format(self._run_dir), index=False)
-        initial_stress_B = {cellID: calculate_max_shear_stress(tissue,cellID)for cellID in self._target_cell_to_stress_B}
-        df = pd.DataFrame(list(initial_stress_B.items()), columns=['CellID', 'Current'])        
-        df.to_csv("{}initial_stress_B.csv".format(self._run_dir), index=False)
-    def reload_uniform_target_stress_patterns(self):
-        target_cells_A = pd.read_csv("{}initial_stress_A.csv".format(self._run_dir))["CellID"].to_numpy()
-        self._target_cell_to_stress_A ={int(cellID):self._target_stress for cellID in target_cells_A}
-        target_cells_B = pd.read_csv("{}initial_stress_B.csv".format(self._run_dir))["CellID"].to_numpy()
-        self._target_cell_to_stress_B ={int(cellID):self._target_stress for cellID in target_cells_B}
+        for pattern, target_dict in {"A":self._target_cell_to_stress_A, "B":self._target_cell_to_stress_B}.items():
+            tissue = PeriodicTissue.from_config(self._run_dir, "minimized.txt")
+            initial_stress = {cellID: calculate_max_shear_stress(tissue,cellID)for cellID in target_dict}
+            df = pd.DataFrame(list(initial_stress.items()), columns=['CellID', 'Current'])
+            # additionally save the uniform target stress column
+            df['Target'] = self._target_stress       
+            df.to_csv("{}initial_stress_{}.csv".format(self._run_dir,pattern), index=False)
+
+
+        # tissue = PeriodicTissue.from_config(self._run_dir, "minimized.txt")
+        # initial_stress_A = {cellID: calculate_max_shear_stress(tissue,cellID)for cellID in self._target_cell_to_stress_A}
+        # df = pd.DataFrame(list(initial_stress_A.items()), columns=['CellID', 'Current'])        
+        # df.to_csv("{}initial_stress_A.csv".format(self._run_dir), index=False)
+        # initial_stress_B = {cellID: calculate_max_shear_stress(tissue,cellID)for cellID in self._target_cell_to_stress_B}
+        # df = pd.DataFrame(list(initial_stress_B.items()), columns=['CellID', 'Current'])        
+        # df.to_csv("{}initial_stress_B.csv".format(self._run_dir), index=False)
+    def load_target_stress_patterns(self):
+        for pattern, target_dict in {"A":self._target_cell_to_stress_A,"B":self._target_cell_to_stress_B}.items():
+            df = pd.read_csv("{}initial_stress_{}.csv".format(self._run_dir,pattern))
+            target_dict = dict(zip(df["CellID"].to_numpy().astype(int), df["Target"].to_numpy().astype(float)))
+        # df_A = pd.read_csv("{}initial_stress_A.csv".format(self._run_dir))
+        # self._target_cell_to_stress_A = dict(zip(df_A["CellID"].to_numpy().astype(int), df_A["Target"].to_numpy().astype(float)))
+        # df_B = pd.read_csv("{}initial_stress_B.csv".format(self._run_dir))
+        # self._target_cell_to_stress_B = dict(zip(df_B["CellID"].to_numpy().astype(int), df_B["Target"].to_numpy().astype(float)))
+        # for _, row in df_A.iterrows():
+        #     cellID = int(row["CellID"])
+        #     target_stress = float(row["Target"])
+        #     self._target_cell_to_stress_A[cellID] = target_stress
+        # use zip for efficiency to do the same thing as above:
+        # self._target_cell_to_stress_B ={}
+        # df_B = pd.read_csv("{}initial_stress_B.csv".format(self._run_dir))
+        # for _, row in df_B.iterrows():
+        #     cellID = int(row["CellID"])
+        #     target_stress = float(row["Target"])
+        #     self._target_cell_to_stress_B[cellID] = target_stress
+        # target_cells_B = pd.read_csv("{}initial_stress_B.csv".format(self._run_dir))["CellID"].to_numpy()
+        # self._target_cell_to_stress_B ={int(cellID):self._target_stress for cellID in target_cells_B}
     def single_iteration(self):
         # start a new run if no costs.txt file exists
         # Otherwise, use resume_run
@@ -89,12 +114,9 @@ class multiple_patterns:
     def run(self, iterations):
         print(self._target_cell_to_stress_A)
         print(self._target_cell_to_stress_B)
-        print("Target stress:", self._target_stress)
         print("Tolerance:", self._tolerance)
         print("Max iterations:", self._max_iters)
         print("cpp_executable_dir:", self._cpp_executable_dir)
-        print("Number of target cells in pattern A:", self._n_cells_A)
-        print("Number of target cells in pattern B:", self._n_cells_B)
         for _ in range(iterations):
             self.single_iteration()
     
@@ -193,7 +215,7 @@ def main():
     if not os.path.isfile("{}costs.txt".format(run_dir)):
         trainer.set_new_uniform_target_stress_patterns()
     else:
-        trainer.reload_uniform_target_stress_patterns()
-    trainer.run(iterations=1000)
+        trainer.load_target_stress_patterns()
+    trainer.run(iterations=100000)
 if __name__ == "__main__":
     main()
