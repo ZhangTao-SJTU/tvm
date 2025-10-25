@@ -360,9 +360,13 @@ def download_all(d):
 def main():
     for experiment in ["2_cells_mean_l_4/",
                        "2_cells_mean_l_5/",
+                       "2_cells_mean_l_6/",
+                       "3_cells_mean_l_6/",
                        "4_cells_mean_l_4/",
                        "4_cells_mean_l_5/",
-                       "4_cells_mean_l_6/"]:
+                       "4_cells_mean_l_6/"
+                       "5_cells_mean_l_6/"
+                       "6_cells_mean_l_6/"]:
         experiment = "/home/mameen/{}".format(experiment)
         dirlist = []
         for dir in ["{}{:03d}/".format(experiment,i) for i in range(100)]:
