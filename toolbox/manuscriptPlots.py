@@ -74,6 +74,8 @@ class plot:
         self.ax.plot(x_array,y_array, color = color, label = label,alpha = alpha)
     def plot_errorfill(self,x_array,y_array, err_array,color = "#7d878a", label = "plot",alpha = 0.3):
         self.ax.fill_between(x_array, y_array-err_array, y_array+err_array,color = color, label = label,alpha = alpha)
+    def plot_max_min_fill(self,x_array,y_min_array, y_max_array,color = "#7d878a", label = "_plot",alpha = 0.3):
+        self.ax.fill_between(x_array, y_min_array, y_max_array,color = color, label = label,alpha = alpha)
     def histogram_from_dataframe(self, data, from_array = False,  bins = 50, color = "#7d878a", alpha = 0.8,label = "plot"):
         if from_array:
             data = pd.DataFrame(data, columns = ["data"])

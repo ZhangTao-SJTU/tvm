@@ -237,6 +237,9 @@ def write_average_error(dir):
     errors.append(np.mean(abs((init - targets))/init))
     for iter in range(len(costs)):
         current_stress_file = "{}{:04d}.stresses.csv".format(dir,iter)
+        if not os.path.isfile(current_stress_file):
+            print("No stress file for iteration ", iter)
+            continue
         current_stress = pd.read_csv(current_stress_file)
         mean_stress = np.mean(abs((current_stress["Current"].to_numpy() - targets))/current_stress["Current"].to_numpy())
         errors.append(mean_stress)
@@ -378,7 +381,8 @@ def main():
                     continue
                 if float(lines[-1])>9e-10:
                     continue
-            dirlist.append(dir)
+            # dirlist.append(dir)
+            os.system("rm {}errors.txt".format(dir))
             write_average_error(dir)
         # write_histogram_data(dirlist,"{}/histogram_data.csv".format(experiment))    
 

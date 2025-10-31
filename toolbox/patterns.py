@@ -211,7 +211,11 @@ class Patterns(Training):
         print("Binary search complete, found s0:", cell.s0_)
 
     def initialize(self):
-        os.system("cp {}cellParameters.input {}cellParameters.init.input".format(self._dir,self._dir))
+        if os.path.isfile("{}cellParameters.input".format(self._dir)):
+            os.system("cp {}cellParameters.input {}cellParameters.init.input".format(self._dir,self._dir))
+        else:
+            self.write_cell_parameters("cellParameters.init.input")
+
         os.system("cp {}minimized.txt {}init_config.txt".format(self._dir,self._dir))
         self.set_initial_config(PeriodicTissue.from_config(self._dir,"init_config.txt".format(self._dir)))
         self._initial_config.evaluate_cell_neighbors()

@@ -5,6 +5,7 @@ from toolbox.pattern_trainer import find_random_target_cells, train_target_cells
 import os
 import numpy as np
 import pandas as pd
+import glob
 import sys
 
 class multiple_patterns:
@@ -18,6 +19,10 @@ class multiple_patterns:
         self._n_cells_B = 2
         self._max_iters = 10
         self._learning_rate = 10
+        self._net_error = None
+        self._distance = None
+        self._epoch = 0
+        self._current_pattern = None
 
     @classmethod
     def from_dir(cls, dir):
@@ -49,6 +54,8 @@ class multiple_patterns:
         if os.path.isfile("{}n_cells_B".format(dir)):
             with open("{}n_cells_B".format(dir), "r") as f:
                 inst._n_cells_B = int(f.read().strip())
+        
+        os.makedirs(inst._run_dir + "files/", exist_ok=True)
         return inst
   
     # set self._target_cell_to_stress_A and self._target_cell_to_stress_B
@@ -68,49 +75,32 @@ class multiple_patterns:
             # additionally save the uniform target stress column
             df['Target'] = self._target_stress       
             df.to_csv("{}initial_stress_{}.csv".format(self._run_dir,pattern), index=False)
-
-
-        # tissue = PeriodicTissue.from_config(self._run_dir, "minimized.txt")
-        # initial_stress_A = {cellID: calculate_max_shear_stress(tissue,cellID)for cellID in self._target_cell_to_stress_A}
-        # df = pd.DataFrame(list(initial_stress_A.items()), columns=['CellID', 'Current'])        
-        # df.to_csv("{}initial_stress_A.csv".format(self._run_dir), index=False)
-        # initial_stress_B = {cellID: calculate_max_shear_stress(tissue,cellID)for cellID in self._target_cell_to_stress_B}
-        # df = pd.DataFrame(list(initial_stress_B.items()), columns=['CellID', 'Current'])        
-        # df.to_csv("{}initial_stress_B.csv".format(self._run_dir), index=False)
+    
     def load_target_stress_patterns(self):
         for pattern, target_dict in {"A":self._target_cell_to_stress_A,"B":self._target_cell_to_stress_B}.items():
             df = pd.read_csv("{}initial_stress_{}.csv".format(self._run_dir,pattern))
             target_dict = dict(zip(df["CellID"].to_numpy().astype(int), df["Target"].to_numpy().astype(float)))
-        # df_A = pd.read_csv("{}initial_stress_A.csv".format(self._run_dir))
-        # self._target_cell_to_stress_A = dict(zip(df_A["CellID"].to_numpy().astype(int), df_A["Target"].to_numpy().astype(float)))
-        # df_B = pd.read_csv("{}initial_stress_B.csv".format(self._run_dir))
-        # self._target_cell_to_stress_B = dict(zip(df_B["CellID"].to_numpy().astype(int), df_B["Target"].to_numpy().astype(float)))
-        # for _, row in df_A.iterrows():
-        #     cellID = int(row["CellID"])
-        #     target_stress = float(row["Target"])
-        #     self._target_cell_to_stress_A[cellID] = target_stress
-        # use zip for efficiency to do the same thing as above:
-        # self._target_cell_to_stress_B ={}
-        # df_B = pd.read_csv("{}initial_stress_B.csv".format(self._run_dir))
-        # for _, row in df_B.iterrows():
-        #     cellID = int(row["CellID"])
-        #     target_stress = float(row["Target"])
-        #     self._target_cell_to_stress_B[cellID] = target_stress
-        # target_cells_B = pd.read_csv("{}initial_stress_B.csv".format(self._run_dir))["CellID"].to_numpy()
-        # self._target_cell_to_stress_B ={int(cellID):self._target_stress for cellID in target_cells_B}
+        
     def single_iteration(self):
         # start a new run if no costs.txt file exists
         # Otherwise, use resume_run
         # Either way, first train pattern A for self._max_iters
+        self._current_pattern = "A"
+        print("Training pattern {}".format(self._current_pattern))
         if not os.path.isfile("{}costs.txt".format(self._run_dir)):
-            print("Starting new run: Training pattern A")
+            print("...Starting a new run.")
             train_target_cells(self._run_dir, self._target_cell_to_stress_A, learning_rate=self._learning_rate, max_iters=self._max_iters, cpp_executable_dir=self._cpp_executable_dir, tolerance=self._tolerance)
         else:
-            print("Training pattern A")
             resume_run(self._run_dir, target_cell_to_stress = self._target_cell_to_stress_A, learning_rate=self._learning_rate, max_iters=self._max_iters, cpp_executable_dir=self._cpp_executable_dir, tolerance=self._tolerance)
+        self.write_info()
         # Now train pattern B for self._max_iters
-        print("Training pattern B")
+        self._current_pattern = "B"
+        print("Training pattern {}".format(self._current_pattern))
         resume_run(self._run_dir, target_cell_to_stress = self._target_cell_to_stress_B, learning_rate=self._learning_rate, max_iters=self._max_iters, cpp_executable_dir=self._cpp_executable_dir, tolerance=self._tolerance)
+        self.write_info()
+        self.clear_dir()
+        self._epoch += 1
+
     def run(self, iterations):
         print(self._target_cell_to_stress_A)
         print(self._target_cell_to_stress_B)
@@ -119,93 +109,52 @@ class multiple_patterns:
         print("cpp_executable_dir:", self._cpp_executable_dir)
         for _ in range(iterations):
             self.single_iteration()
-    
-def calculate_parameter_space_distance(patternA, patternB):
-    cellParametersA = "{}cellParameters.input".format(patternA._dir)
-    cellParametersB = "{}cellParameters.input".format(patternB._dir)
-    df = pd.read_csv(cellParametersA, sep=" ",header=None)
-    cellID_to_s0 = {int(i): [float(s0)] for i, s0 in zip(df[0].to_numpy(), df[2].to_numpy())}
-    df = pd.read_csv(cellParametersB, sep=" ",header=None)
-    for i, row in df.iterrows():
-        cellID = row[0]
-        s0 = row[2]
-        if cellID in cellID_to_s0:
-            cellID_to_s0[cellID].append(s0)
-        else:
-            raise ValueError("CellID {} not found in first pattern".format(cellID))
-    distance = 0
-    for cellID, s0s in cellID_to_s0.items():
-        # print("CellID: {}, s0s: {}".format(cellID, s0s))
-        distance += (s0s[0] - s0s[1])**2
-    distance = distance**0.5
-    # print(distance)
-    return distance
+            if self._net_error < self._tolerance:
+                print("Converged with net error:", self._net_error)
+                break
 
-def calculate_parameter_space_distance(patternA, patternB):
-    cellParametersA = "{}cellParameters.input".format(patternA._dir)
-    cellParametersB = "{}cellParameters.input".format(patternB._dir)
-    df = pd.read_csv(cellParametersA, sep=" ",header=None)
-    cellID_to_s0 = {int(i): [float(s0)] for i, s0 in zip(df[0].to_numpy(), df[2].to_numpy())}
-    df = pd.read_csv(cellParametersB, sep=" ",header=None)
-    for i, row in df.iterrows():
-        cellID = row[0]
-        s0 = row[2]
-        if cellID in cellID_to_s0:
-            cellID_to_s0[cellID].append(s0)
-        else:
-            raise ValueError("CellID {} not found in first pattern".format(cellID))
-    distance = 0
-    for cellID, s0s in cellID_to_s0.items():
-        # print("CellID: {}, s0s: {}".format(cellID, s0s))
-        distance += (s0s[0] - s0s[1])**2
-    distance = distance**0.5
-    # print(distance)
-    return distance
+    def evaluate_net_error(self):
+        tissue = PeriodicTissue.from_config(self._run_dir, "minimized.txt")
+        trainer = Patterns.periodic_tissue(tissue)
+        target_stress = {}
+        for p in ["A","B"]:
+            df = pd.read_csv("{}initial_stress_{}.csv".format(self._run_dir,p))
+            for _, row in df.iterrows():
+                cellID = int(row["CellID"])
+                target_stress[cellID] = float(row["Target"])
+        trainer.set_target_cell_to_stress(target_stress)
+        trainer.load_cell_parameters()
+        self._net_error = trainer.evaluate_cost()
 
-def run(trainer,iterations):
-    print(trainer._target_cell_to_stress_A)
-    print(trainer._target_cell_to_stress_B)
-    print("Target stress:", trainer._target_stress)
-    print("Tolerance:", trainer._tolerance)
-    print("Max iterations:", trainer._max_iters)
-    print("cpp_executable_dir:", trainer._cpp_executable_dir)
-    print("Number of target cells in pattern A:", trainer._n_cells_A)
-    print("Number of target cells in pattern B:", trainer._n_cells_B)
-    for _ in range(iterations):
-        trainer.single_iteration()
-# def new_multiple_patterns_trainer(run_dir, **kwargs):
-#     trainer = multiple_patterns.from_dir(run_dir)
-#     trainer.set_uniform_target_stress_patterns()
-#     iterations = 100
-#     if "iterations" in kwargs:
-#         iterations = kwargs["iterations"]
-#     run(trainer, iterations)
+    def evaluate_parameter_space_distance(self):
+        fileA = "{}cellParameters.init.input".format(self._run_dir)
+        fileB = "{}cellParameters.input".format(self._run_dir)
+        df_A = pd.read_csv(fileA, sep=" ",header=None)
+        df_B = pd.read_csv(fileB, sep=" ",header=None)
+        if not (df_A[0].to_numpy() == df_B[0].to_numpy()).all():
+            raise ValueError("Files have different number of cells {} vs {}".format(df_A.shape[0], df_B.shape[0]))
+        self._distance = np.sqrt(np.sum((df_A[2].to_numpy()-df_B[2].to_numpy())**2))
+        
+    # Moves files to files/ directory and appends info to info file
 
-# def resume_multiple_patterns_trainer(run_dir, **kwargs):
-#     trainer = multiple_patterns.from_dir(run_dir)
-#     trainer.reload_uniform_target_stress_patterns()
-#     iterations = 100
-#     if "iterations" in kwargs:
-#         iterations = kwargs["iterations"]
-#     run(trainer, iterations)
-# def new_run(run_dir, **kwargs):
-#     iterations = 100
-#     if "iterations" in kwargs:
-#         iterations = kwargs["iterations"]
-#     trainer = multiple_patterns.from_dir(run_dir)
-#     trainer.set_uniform_target_stress_patterns()
-
-#     print(trainer._target_cell_to_stress_A)
-#     print(trainer._target_cell_to_stress_B)
-#     print("Target stress:", trainer._target_stress)
-#     print("Tolerance:", trainer._tolerance)
-#     print("Max iterations:", trainer._max_iters)
-#     print("cpp_executable_dir:", trainer._cpp_executable_dir)
-#     print("Number of target cells in pattern A:", trainer._n_cells_A)
-#     print("Number of target cells in pattern B:", trainer._n_cells_B)
-#     for _ in range(iterations):
-#         trainer.single_iteration()
-
+    def write_info(self):
+        errors = np.loadtxt("{}costs.txt".format(self._run_dir))
+        iter = len(errors)-1
+        for file in ["cellParameters.input","bulk.txt","stresses.txt"]:
+            filename = "{}{:07d}.{}".format(self._run_dir,iter,file)
+            os.system("cp {} {}".format(filename, "{}files/".format(self._run_dir)))
+        self.evaluate_net_error()
+        self.evaluate_parameter_space_distance()
+        if not os.path.isfile("{}info".format(self._run_dir)):
+            with open("{}info".format(self._run_dir), "w") as f:
+                f.write("Epoch,Iter,Pattern,Error,Distance\n")
+        with open("{}info".format(self._run_dir), "a") as f:
+            f.write("{},{},{},{},{}\n".format(self._epoch, iter, self._current_pattern, self._net_error, self._distance))
+    def clear_dir(self):
+        for file in ["cellParameters.input","bulk.txt","stresses.txt"]:
+            list_of_files = glob.glob("{}*.{}".format(self._run_dir,file))
+            for f in list_of_files:
+                os.remove(f)
 def main():
     if len(sys.argv) < 2:
         print("Usage: python multiple_patterns.py <run_dir>")
@@ -217,5 +166,6 @@ def main():
     else:
         trainer.load_target_stress_patterns()
     trainer.run(iterations=100000)
+
 if __name__ == "__main__":
     main()

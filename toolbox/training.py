@@ -25,12 +25,12 @@ class Training(FIREminimization):
     def set_initial_config(self,config):
         self._initial_config = config
         self._initial_config.evaluate_cell_neighbors()
-    def write_cell_parameters(self):
+    def write_cell_parameters(self,filename = "cellParameters.input"):
         if not self._modified_cells:
             print("No modified cells")
             return
         # write the modified cell IDs to a file
-        with open("{}cellParameters.input".format(self._dir),"w") as f:
+        with open("{}{}".format(self._dir,filename),"w") as f:
             for cellID in self._modified_cells:
                 cell = self._config.cells_[cellID]
                 f.write("{:d} {} {} {}\n".format(
