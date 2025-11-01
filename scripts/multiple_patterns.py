@@ -18,6 +18,7 @@ class multiple_patterns:
         self._n_cells_A = 2
         self._n_cells_B = 2
         self._max_iters = 10
+        self._convergence_check_interval = 100
         self._learning_rate = 10
         self._net_error = None
         self._distance = None
@@ -54,7 +55,7 @@ class multiple_patterns:
         if os.path.isfile("{}n_cells_B".format(dir)):
             with open("{}n_cells_B".format(dir), "r") as f:
                 inst._n_cells_B = int(f.read().strip())
-        
+        # create directory for saving end-of-epoch files
         os.makedirs(inst._run_dir + "files/", exist_ok=True)
         return inst
   
@@ -107,12 +108,17 @@ class multiple_patterns:
         print("Tolerance:", self._tolerance)
         print("Max iterations:", self._max_iters)
         print("cpp_executable_dir:", self._cpp_executable_dir)
-        for _ in range(iterations):
+        for i in range(iterations):
             self.single_iteration()
             if self._net_error < self._tolerance:
                 print("Converged with net error:", self._net_error)
                 break
-
+            # check if distance is not changing every convergence_check_interval epochs
+            if i>0 and not i%self._convergence_check_interval:
+                distances = pd.read_csv("{}info.csv".format(self._run_dir))["Distance"].to_numpy()
+                if np.allclose(distances[-self._convergence_check_interval:], distances[-1]):
+                    print("Parameter space distance not changing. Stopping training.")
+                    break
     def evaluate_net_error(self):
         tissue = PeriodicTissue.from_config(self._run_dir, "minimized.txt")
         trainer = Patterns.periodic_tissue(tissue)
@@ -135,25 +141,26 @@ class multiple_patterns:
             raise ValueError("Files have different number of cells {} vs {}".format(df_A.shape[0], df_B.shape[0]))
         self._distance = np.sqrt(np.sum((df_A[2].to_numpy()-df_B[2].to_numpy())**2))
         
-    # Moves files to files/ directory and appends info to info file
+    # Moves files to files/ directory and appends info to info.csv file
 
     def write_info(self):
         errors = np.loadtxt("{}costs.txt".format(self._run_dir))
         iter = len(errors)-1
-        for file in ["cellParameters.input","bulk.txt","stresses.txt"]:
+        for file in ["cellParameters.input","bulk.txt","stresses.csv"]:
             filename = "{}{:07d}.{}".format(self._run_dir,iter,file)
             os.system("cp {} {}".format(filename, "{}files/".format(self._run_dir)))
         self.evaluate_net_error()
         self.evaluate_parameter_space_distance()
-        if not os.path.isfile("{}info".format(self._run_dir)):
-            with open("{}info".format(self._run_dir), "w") as f:
+        if not os.path.isfile("{}info.csv".format(self._run_dir)):
+            with open("{}info.csv".format(self._run_dir), "w") as f:
                 f.write("Epoch,Iter,Pattern,Error,Distance\n")
-        with open("{}info".format(self._run_dir), "a") as f:
+        with open("{}info.csv".format(self._run_dir), "a") as f:
             f.write("{},{},{},{},{}\n".format(self._epoch, iter, self._current_pattern, self._net_error, self._distance))
     def clear_dir(self):
-        for file in ["cellParameters.input","bulk.txt","stresses.txt"]:
-            list_of_files = glob.glob("{}*.{}".format(self._run_dir,file))
-            for f in list_of_files:
+        for file in ["cellParameters.input","bulk.txt","stresses.csv"]:
+            list_of_files = sorted(glob.glob("{}*.{}".format(self._run_dir,file)))
+            # keep only the latest file
+            for f in list_of_files[:-1]:
                 os.remove(f)
 def main():
     if len(sys.argv) < 2:
