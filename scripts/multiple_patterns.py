@@ -18,7 +18,7 @@ class multiple_patterns:
         self._n_cells_A = 2
         self._n_cells_B = 2
         self._max_iters = 10
-        self._convergence_check_interval = 100
+        self._convergence_check_interval = 10
         self._learning_rate = 10
         self._net_error = None
         self._distance = None
@@ -102,13 +102,13 @@ class multiple_patterns:
         self.clear_dir()
         self._epoch += 1
 
-    def run(self, iterations):
+    def run(self, epochs = 100000):
         print(self._target_cell_to_stress_A)
         print(self._target_cell_to_stress_B)
         print("Tolerance:", self._tolerance)
         print("Max iterations:", self._max_iters)
         print("cpp_executable_dir:", self._cpp_executable_dir)
-        for i in range(iterations):
+        for i in range(epochs):
             self.single_iteration()
             if self._net_error < self._tolerance:
                 print("Converged with net error:", self._net_error)
@@ -117,7 +117,7 @@ class multiple_patterns:
             if i>0 and not i%self._convergence_check_interval:
                 distances = pd.read_csv("{}info.csv".format(self._run_dir))["Distance"].to_numpy()
                 if np.allclose(distances[-self._convergence_check_interval:], distances[-1]):
-                    print("Parameter space distance not changing. Stopping training.")
+                    print("Parameter space distance did not change for the last {} epochs.".format(self._convergence_check_interval))
                     break
     def evaluate_net_error(self):
         tissue = PeriodicTissue.from_config(self._run_dir, "minimized.txt")
@@ -172,7 +172,7 @@ def main():
         trainer.set_new_uniform_target_stress_patterns()
     else:
         trainer.load_target_stress_patterns()
-    trainer.run(iterations=100000)
+    trainer.run()
 
 if __name__ == "__main__":
     main()
