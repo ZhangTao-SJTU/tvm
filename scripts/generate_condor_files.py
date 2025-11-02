@@ -50,7 +50,7 @@ def resubmit(experiment):
 def main():
     stresses = np.loadtxt("init/init_homogeneous_6/stresses.txt")
     target = np.mean(stresses)
-    tolerance = 1e-12
+    tolerance = 1e-6
     # for experiment in ["/home/mameen/3_cells_mean_l_6/"]:
     #     n_cells = 3
     #     script = "single_pattern.py"
@@ -92,6 +92,42 @@ def main():
     # resubmit("/home/mameen/4_cells_mean_l_5/")
     # resubmit("/home/mameen/4_cells_mean_l_6/")
 
+def multiple_patterns():
+    script = "multiple_patterns.py"
+    stresses = np.loadtxt("init/init_homogeneous_6/stresses.txt")
+    target = np.mean(stresses)
+    tolerance = 1e-6
+    max_iters = 100
+
+    def submit_jobs(script,run_dir,target,tolerance,n_cells_A,n_cells_B,max_iters):
+        create_exec_file(script,run_dir)
+        create_sub_file(script,run_dir)
+        os.system("echo '{}' > {}target".format(target,run_dir))
+        os.system("echo '{}' > {}tolerance".format(tolerance,run_dir))
+        os.system("echo '{}' > {}n_cells_A".format(n_cells_A,run_dir))
+        os.system("echo '{}' > {}n_cells_B".format(n_cells_B,run_dir))
+        os.system("echo '{}' > {}max_iters".format(max_iters,run_dir))
+        #submit job
+        os.system("cd {} && condor_submit {}run_job.sub".format(run_dir,run_dir))
+
+    for experiment in ["/home/mameen/1_1_l_4/","/home/mameen/1_1_l_5/","/home/mameen/1_1_l_6/"]:
+        n_cells_A = 1
+        n_cells_B = 1
+        for i in range(100):
+            run_dir = experiment + "{:03d}/".format(i)
+            submit_jobs(script,run_dir,target,tolerance,n_cells_A,n_cells_B,max_iters)
+    for experiment in ["/home/mameen/1_2_l_4/","/home/mameen/1_2_l_5/","/home/mameen/1_2_l_6/"]:
+        n_cells_A = 1
+        n_cells_B = 2
+        for i in range(100):
+            run_dir = experiment + "{:03d}/".format(i)
+            submit_jobs(script,run_dir,target,tolerance,n_cells_A,n_cells_B,max_iters)
+    for experiment in ["/home/mameen/2_2_l_4/","/home/mameen/2_2_l_5/","/home/mameen/2_2_l_6/"]:
+        n_cells_A = 2
+        n_cells_B = 2
+        for i in range(100):
+            run_dir = experiment + "{:03d}/".format(i)
+            submit_jobs(script,run_dir,target,tolerance,n_cells_A,n_cells_B,max_iters)
 if __name__ == "__main__":
-    main()
+    multiple_patterns()
     # resubmit()
