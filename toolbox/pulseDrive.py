@@ -35,3 +35,4 @@ class pulseDrive(Training):
                 else:
                     cell.s0_ = min_s0
             self.single_iteration()
+    

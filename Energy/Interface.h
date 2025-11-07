@@ -30,7 +30,6 @@ class Interface;
 
 class Interface {
 public:
-    // double s0_;
     double energy_;
 
     explicit Interface(Run *);
