@@ -162,20 +162,7 @@ class Patterns(Training):
                 print("Clamping terminated: doesn't change s0")
                 return
             
-    # Binary search for s0 that produces the right stress        
-    # def solve_cell_s0_for_target_stress(self, cellID, target_stress):
-    #     cell = self._config.cells_[cellID]
-    #     upper_limit = self._clamping_s0_upper_limit
-    #     lower_limit = self._clamping_s0_lower_limit
-    #     steps = self._clamping_steps
-    #     s0_guesses = {i:None for i in np.linspace(lower_limit, upper_limit, steps)}
-    #     for s0 in s0_guesses:
-    #         cell.s0_ = s0
-    #         current_stress = stress.calculate_max_shear_stress(self._config, cellID)
-    #         s0_guesses[s0] = current_stress 
-    #     init_guess = min(s0_guesses, key=lambda x: abs(s0_guesses[x] - target_stress))
-    #     cell.s0_ = init_guess
-    #     return
+    # Binary search for s0 that produces the right stress
     def solve_cell_s0_for_target_stress(self,cellID, target_stress):
         cell = self._config.cells_[cellID]
         def clamping_error(s0):
@@ -262,40 +249,4 @@ class Patterns(Training):
         print("Optimization finished at iteration: {:d}".format(self._iter_counter-1))
         print("Final cost: {:.2e}".format(cost))
     
-    # def run(self):
-    #     # #store initial cell parameters
-    #     # os.system("cp {}cellParameters.input {}cellParameters.init.input".format(self._dir,self._dir))
-    #     # os.system("cp {}minimized.txt {}init_config.txt".format(self._dir,self._dir))
-    #     # self._cost_values = []
-    #     cost = self.evaluate_cost()
-    #     # self._cost_values.append(cost)
-    #     # initial_stresses = []
-    #     # self.calculate_max_shear_stresses()
-    #     # for cellID in self._target_cell_to_stress:
-    #     #     cell = self._config.cells_[cellID]
-    #     #     initial_stresses.append(cell.max_shear_stress_)
-        
-    #     # # df = pd.DataFrame(self._target_cell_to_stress.items(), columns=['cellID', 'target_stress'])
-    #     # # df.to_csv("{}target_cells.csv".format(self._dir), index=False)
-    #     # print("Initial Cost: {:.2e}".format(cost))
-    #     while cost > self._tolerance:
-    #         # self.set_clamping_tolerance(cost * 1)
-    #         self.single_iteration()
-    #         cost = self.evaluate_cost()
-    #         self._cost_values.append(cost)
-    #         print("Iteration: {:d}, Cost: {:.2e}".format(self._iter_counter,cost))
-    #         # Rewrite costs.txt
-    #         np.savetxt("{}costs.txt".format(self._dir), self._cost_values, fmt='%.2e')
-    #         # Rewrite stresses.csv
-    #         current_stresses = []
-    #         for cellID in self._target_cell_to_stress:
-    #             cell = self._config.cells_[cellID]
-    #             current_stresses.append(cell.max_shear_stress_)
-    #         results = {"CellID": list(self._target_cell_to_stress.keys()),
-    #                 "Target": list(self._target_cell_to_stress.values()),
-    #                 "Current": current_stresses}
-    #         df = pd.DataFrame(results)
-    #         df.to_csv("{}{:04d}.stresses.csv".format(self._dir, self._iter_counter), index=False)
-    #         self._iter_counter += 1
-    #     print("Optimization finished at iteration: {:d}".format(self._iter_counter-1))
-    #     print("Final cost: {:.2e}".format(cost))
+    

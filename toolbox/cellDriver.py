@@ -7,7 +7,7 @@ import os
 import random
 import pandas as pd
 
-class cell_driver(Training):
+class CellDriver(Training):
     def __init__(self):
         super().__init__()
         self._target_cell = None
@@ -26,22 +26,63 @@ class cell_driver(Training):
         inst = super().periodic_tissue(tissue)
         inst._modified_cells = list(inst._config.cells_.keys())
         return inst
+    def set_direction(self,direction):
+        norm = np.linalg.norm(direction)
+        if norm == 0:
+            raise ValueError("Direction vector cannot be zero")
+        self._direction = direction / norm
     def set_target_cell(self,target_cell):
         self._target_cell = target_cell
         # For checking the above functionality with vtk:
         for polygonID,polygon in self._config.polygons_.items():
             polygon.vtk_scalar_ = 0
-        for cellID in self._target_cell_to_stress:
-            cell = self._config.cells_[cellID]
-            for polygonID in cell.polygons_:
-                polygon = self._config.polygons_[polygonID]
-                polygon.vtk_scalar_ = 1
+        cell = self._config.cells_[self._target_cell]
+        for polygonID in cell.polygons_:
+            polygon = self._config.polygons_[polygonID]
+            polygon.vtk_scalar_ = 1
         self._config.write_periodic_vtk(filename = "target_cells.vtk", use_scalar=True)
+        self._config.write_cell_collection_vtk(cells_array=[self._target_cell], filename="target_cell_only.vtk")
+    def set_central_target_cell(self):
+        # Pick the cell closest to the center of the box
+        box_center = np.array([self._config.boxSize_/2,self._config.boxSize_/2,self._config.boxSize_/2])
+        min_distance = float('inf')
+        central_cell_id = None
+        for cellID,cell in self._config.cells_.items():
+            if cell.crossBoundary_:
+                continue
+            distance = np.linalg.norm(np.subtract(cell.center_,box_center))
+            if distance < min_distance:
+                min_distance = distance
+                central_cell_id = cellID
+        self.set_target_cell(central_cell_id)
     def set_target_position(self, position):
         self._target_position = position
-    def set_target_cell_neighbors(self):
+    def evaluate_target_cell_neighbors(self):
         self._config.evaluate_cell_neighbors()
         self._target_cell_neighbors = self._config.cell_neighbors_[self._target_cell]
+    
+    def set_target_cell_neighbors_s0(self):
+        #   set the s0 of the target cell neighbors to:
+        #   5.3 if distance > 0
+        #   4.9 if distance < 0
+        self.evaluate_target_cell_neighbors()
+        for neighbor_cell_id in self._target_cell_neighbors:
+            neighbor_cell = self._config.cells_[neighbor_cell_id]
+            vector_from_target = np.subtract(neighbor_cell.center_, self._config.cells_[self._target_cell].center_)
+            if vector_from_target.dot(self._direction) > 0:
+                neighbor_cell.s0_ = 5.3
+            else:
+                neighbor_cell.s0_ = 4.9
+        self.write_cell_parameters()
+        for cellID in self._target_cell_neighbors:
+            cell = self._config.cells_[cellID]
+            cell.vtk_scalar_ = cell.s0_
+            for polygonID in cell.polygons_:
+                polygon = self._config.polygons_[polygonID]
+                polygon.vtk_scalar_ = cell.s0_
+
+        self._config.write_cell_collection_vtk(cells_array=self._target_cell_neighbors, filename="target_cell_neighbors_s0.vtk", use_scalar=True)
+        
 
     def evaluate_distance(self):
         return     
@@ -56,18 +97,4 @@ class cell_driver(Training):
         os.system("cp {}minimized.txt {}init_config.txt".format(self._dir,self._dir))
         self.set_initial_config(PeriodicTissue.from_config(self._dir,"init_config.txt".format(self._dir)))
         self._initial_config.evaluate_cell_neighbors()
-        np.savetxt("{}initial_cost.txt".format(self._dir), [self.evaluate_cost()], fmt='%.2e')
-
-        initial_stresses = {}
-        self.calculate_max_shear_stresses()
-        for cellID in self._target_cell_to_stress:
-            cell = self._config.cells_[cellID]
-            initial_stresses[cellID] = cell.max_shear_stress_
-        df = pd.DataFrame(list(initial_stresses.items()), columns=['CellID', 'Current'])        
-        # df = pd.DataFrame(self._target_cell_to_stress.items(), columns=['cellID', 'target_stress'])
-        df.to_csv("{}initial_stress.csv".format(self._dir), index=False)
-        # print("Initial Cost: {:.2e}".format(cost))
-        self._cost_values = []
-        self._q_values = []
-
-
+        self.set_target_cell_neighbors()
