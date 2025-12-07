@@ -70,8 +70,8 @@ class FiberNetworkMeasurements:
                     configDir = dir,
                     time = time,
                     linkerSpringNetwork = self._linkerSpringNetwork)
-                if not self._linkerSpringNetwork:
-                    self._dirToFiberNetworks[dir][time].calculateEdgeAttributes()
+                # if not self._linkerSpringNetwork:
+                    # self._dirToFiberNetworks[dir][time].calculateEdgeAttributes()
         return
     def setTimevals(self,timevals:list[int]) -> None:
         self._timevals = timevals
@@ -138,11 +138,12 @@ class FiberNetworkMeasurements:
 
     def calculateAverageDisplacementOnShells(
             self,
+            output_filename:str = "AverageDisplacementOnShells.csv",
             initTimeval:int = 10000,
             finalTimeval:int = 25000,
             r_bins:list[float] = np.linspace(5,29,18)):
         print("Calculating average displacement on shells")
-        filename = self._outputDir + "AverageDisplacementOnShells.csv"
+        filename = self._outputDir + output_filename
         print("Results to be written to: ", filename)
         shellRadiusToDisplacements = {i:[] for i in r_bins}
         for dir in self._dirList:
@@ -152,14 +153,21 @@ class FiberNetworkMeasurements:
                 fiberNetwork = initNetwork,
                 rBins = r_bins)
             for rBin,nodeIDList in initial_rBinsToNodeIDs.items():
-                if len(nodeIDList):
-                    for nodeID in nodeIDList:
-                        if nodeID in finalNetwork.connectedNodes_:
-                            shellRadiusToDisplacements[rBin].append(
-                                np.linalg.norm(
-                                    np.subtract(
-                                        finalNetwork.nodeIDToCoordinates_[nodeID],
-                                        initNetwork.nodeIDToCoordinates_[nodeID])))
+                if not len(nodeIDList):
+                    continue
+                for nodeID in nodeIDList:
+                    if not nodeID in finalNetwork.connectedNodes_:
+                        continue
+                    displacement = np.subtract(
+                                finalNetwork.nodeIDToCoordinates_[nodeID],
+                                initNetwork.nodeIDToCoordinates_[nodeID])
+                    # REMOVE TRANSLATIONAL MOTION
+                    initOrigin = initNetwork.getOrigin()
+                    finalOrigin = finalNetwork.getOrigin()
+                    displacement = np.subtract(
+                        displacement,
+                        np.subtract(finalOrigin,initOrigin))
+                    shellRadiusToDisplacements[rBin].append(np.linalg.norm(displacement))
             print("Processed ", dir)
 
         radius = []

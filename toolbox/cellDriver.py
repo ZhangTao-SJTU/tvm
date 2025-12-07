@@ -57,22 +57,48 @@ class CellDriver(Training):
         self.set_target_cell(central_cell_id)
     def set_target_position(self, position):
         self._target_position = position
-    def evaluate_target_cell_neighbors(self):
+    def evaluate_target_cell_neighbors(self, n_layers = 1):
         self._config.evaluate_cell_neighbors()
         self._target_cell_neighbors = self._config.cell_neighbors_[self._target_cell]
-    
+        if n_layers == 1:
+            return
+        for _ in range(1, n_layers):
+            new_neighbors = set()
+            for neighbor_cell_id in self._target_cell_neighbors:
+                neighbor_neighbors = self._config.cell_neighbors_[neighbor_cell_id]
+                for nn_id in neighbor_neighbors:
+                    if nn_id != self._target_cell and nn_id not in self._target_cell_neighbors:
+                        new_neighbors.add(nn_id)
+            self._target_cell_neighbors.extend(new_neighbors)
+    def set_s0_gradient(self):
+        for cellID,cell in self._config.cells_.items():
+            if cell.center_ is None:
+                continue
+            if cellID == self._target_cell:
+                continue
+            vector_from_target = np.subtract(cell.center_, self._config.cells_[self._target_cell].center_)
+            distance_along_direction = vector_from_target.dot(self._direction)
+            if distance_along_direction > 0 and distance_along_direction < 1:
+                cell.s0_ = 5.6
+            if distance_along_direction>1:
+                cell.s0_ = 5.6
+            if distance_along_direction < 0 and distance_along_direction > -1:
+                cell.s0_ = 4.8
+            if distance_along_direction < -1:
+                cell.s0_ = 4.8
+        self.write_cell_parameters()
     def set_target_cell_neighbors_s0(self):
         #   set the s0 of the target cell neighbors to:
         #   5.3 if distance > 0
         #   4.9 if distance < 0
-        self.evaluate_target_cell_neighbors()
         for neighbor_cell_id in self._target_cell_neighbors:
             neighbor_cell = self._config.cells_[neighbor_cell_id]
             vector_from_target = np.subtract(neighbor_cell.center_, self._config.cells_[self._target_cell].center_)
-            if vector_from_target.dot(self._direction) > 0:
-                neighbor_cell.s0_ = 5.3
-            else:
-                neighbor_cell.s0_ = 4.9
+            neighbor_cell.s0_ = 5.6
+            # if vector_from_target.dot(self._direction) > 0:
+            #     neighbor_cell.s0_ = 5.6
+            # else:
+            #     neighbor_cell.s0_ = 4.8
         self.write_cell_parameters()
         for cellID in self._target_cell_neighbors:
             cell = self._config.cells_[cellID]
@@ -86,7 +112,6 @@ class CellDriver(Training):
 
     def evaluate_distance(self):
         return     
-    
 
     def initialize(self):
         if os.path.isfile("{}cellParameters.input".format(self._dir)):
@@ -97,4 +122,17 @@ class CellDriver(Training):
         os.system("cp {}minimized.txt {}init_config.txt".format(self._dir,self._dir))
         self.set_initial_config(PeriodicTissue.from_config(self._dir,"init_config.txt".format(self._dir)))
         self._initial_config.evaluate_cell_neighbors()
-        self.set_target_cell_neighbors()
+
+    def single_iteration(self):
+        self.set_s0_gradient()
+        self.minimize_config()
+        for _,cell in self._config.cells_.items():
+            cell.vtk_scalar_ = cell.s0_
+            for polygonID in cell.polygons_:
+                polygon = self._config.polygons_[polygonID]
+                polygon.vtk_scalar_ = cell.vtk_scalar_
+        self._config.write_periodic_vtk("{:07d}.bulk.vtk".format(self._iter_counter),use_scalar=True)
+        self._config.write_cell_collection_vtk(cells_array=[self._target_cell], filename="{:07d}.target.vtk".format(self._iter_counter), use_scalar=True)
+        os.system("cp {}minimized.txt {}{:07d}.bulk.txt".format(self._dir,self._dir,self._iter_counter))
+        os.system("cp {}cellParameters.input {}{:07d}.cellParameters.txt".format(self._dir,self._dir,self._iter_counter))
+        self._iter_counter += 1

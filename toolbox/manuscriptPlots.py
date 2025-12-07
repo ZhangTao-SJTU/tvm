@@ -4,6 +4,7 @@ from matplotlib.ticker import ScalarFormatter
 
 plt.style.use("toolbox/manuscript.mplstyle")
 # plt.rcParams['text.usetex'] = True
+from scipy import stats
 import numpy as np
 import pandas as pd
 
@@ -28,9 +29,9 @@ class plot:
         self.fig = None
         self.ax = None
     def set_xLog(self):
-        self.ax.xscale("log")
+        self.ax.set_xscale("log")
     def set_yLog(self):
-        self.ax.yscale("log")
+        self.ax.set_yscale("log")
     def set_xScaled(self,yeah = True):
         self.xScaled = yeah
     def set_yScaled(self,yeah = True):
@@ -76,7 +77,7 @@ class plot:
         self.ax.fill_between(x_array, y_array-err_array, y_array+err_array,color = color, label = label,alpha = alpha)
     def plot_max_min_fill(self,x_array,y_min_array, y_max_array,color = "#7d878a", label = "_plot",alpha = 0.3):
         self.ax.fill_between(x_array, y_min_array, y_max_array,color = color, label = label,alpha = alpha)
-    def histogram_from_dataframe(self, data, from_array = False,  bins = 50, color = "#7d878a", alpha = 0.8,label = "plot"):
+    def histogram_from_dataframe(self, data, from_array = False, fit_type = None, bins = 50, color = "#7d878a", alpha = 0.8,label = "plot"):
         if from_array:
             data = pd.DataFrame(data, columns = ["data"])
         data.plot(
@@ -87,16 +88,25 @@ class plot:
             edgecolor = color,
             bins = bins,
             color = color,
-            label = "_hidden",
+            label = label,
             xlabel=self.xlabel,
             alpha = alpha)
-        data.plot(ax = self.ax, kind = "kde",color = color, label = label, alpha = alpha, linewidth = 5)
-
-    def histogram_from_array(self, array, bins = 50, color = "#7d878a", label = "_plot",alpha = 0.8):
+        if fit_type is None:
+            return
+        if fit_type == "kde":
+            data.plot(ax = self.ax, kind = "kde",color = color, label = "_hidden", alpha = alpha, linewidth = 5)
+        elif fit_type == "gamma":
+            a, loc, scale = stats.gamma.fit(data, floc=0)
+            x = np.linspace(self.x0, self.x1, 500)
+            pdf = stats.gamma.pdf(x, a, loc=loc, scale=scale)
+            # gamma_label = r'$\alpha={:.2f}, \theta={:.2e}$'.format(a, scale)
+            gamma_label = "_None"
+            self.ax.plot(x, pdf, color = color, label = gamma_label, alpha = alpha, linewidth = 5)
+    def histogram_from_array(self, array, fit_type = None, bins = 50, color = "#7d878a", label = "_plot",alpha = 0.6):
         # df = pd.DataFrame(array, columns = ["data"])
         df = pd.DataFrame({"data":array})
-        self.histogram_from_dataframe(df["data"], bins = bins, color = color, label = label,alpha = alpha)
+        self.histogram_from_dataframe(df["data"], fit_type = fit_type, bins = bins, color = color, label = label,alpha = alpha)
 
-    def save_fig(self,filename = "test.png"):
+    def save_fig(self,filename = "test.png",transparent = True):
         # self.ax.legend()
-        self.fig.savefig(fname=filename, dpi=300, transparent=False)
+        self.fig.savefig(fname=filename, transparent=transparent)
