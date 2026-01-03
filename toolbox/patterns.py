@@ -11,6 +11,7 @@ class Patterns(Training):
     def __init__(self):
         super().__init__()
         self._target_cell_to_stress = None
+        self._frozen_cells = []
         self._clamping_max_iters = 10
         self._clamping_s0_lower_limit = 4.6
         self._clamping_s0_upper_limit = 5.3
@@ -40,7 +41,8 @@ class Patterns(Training):
                 polygon = self._config.polygons_[polygonID]
                 polygon.vtk_scalar_ = 1
         self._config.write_periodic_vtk(filename = "target_cells.vtk", use_scalar=True)
-                
+    def set_frozen_cells(self, frozen_cells):
+        self._frozen_cells = frozen_cells            
     def calculate_max_shear_stresses(self):
         for cellID in self._target_cell_to_stress:
             cell = self._config.cells_[cellID]
@@ -99,6 +101,10 @@ class Patterns(Training):
 
         for cellID in free_state_areas:
             cell = self._config.cells_[cellID]
+            if cellID in self._target_cell_to_stress:
+                continue
+            if cellID in self._frozen_cells:
+                continue
             del_area = cell.surface_area_ - free_state_areas[cellID]
             s0_change = self._learning_rate * del_area
             ## TESTING
@@ -108,8 +114,7 @@ class Patterns(Training):
         print("Step 4: UNCLAMP target cells; write cell parameters")
         print("-------------------------------------\n\n")
         for cellID in self._target_cell_to_stress:
-            cell = self._config.cells_[cellID]
-            cell.s0_ = self._config.s0_
+            self._config.cells_[cellID].s0_ = self._config.s0_
         self.write_cell_parameters()
         self.minimize_config()
         # Step 5: Logging, etc
@@ -208,14 +213,14 @@ class Patterns(Training):
         self._initial_config.evaluate_cell_neighbors()
         np.savetxt("{}initial_cost.txt".format(self._dir), [self.evaluate_cost()], fmt='%.2e')
 
-        initial_stresses = {}
-        self.calculate_max_shear_stresses()
-        for cellID in self._target_cell_to_stress:
-            cell = self._config.cells_[cellID]
-            initial_stresses[cellID] = cell.max_shear_stress_
-        df = pd.DataFrame(list(initial_stresses.items()), columns=['CellID', 'Current'])        
+        # initial_stresses = {}
+        # self.calculate_max_shear_stresses()
+        # for cellID in self._target_cell_to_stress:
+        #     cell = self._config.cells_[cellID]
+        #     initial_stresses[cellID] = cell.max_shear_stress_
+        # df = pd.DataFrame(list(initial_stresses.items()), columns=['CellID', 'Current'])        
         # df = pd.DataFrame(self._target_cell_to_stress.items(), columns=['cellID', 'target_stress'])
-        df.to_csv("{}initial_stress.csv".format(self._dir), index=False)
+        # df.to_csv("{}initial_stress.csv".format(self._dir), index=False)
         # print("Initial Cost: {:.2e}".format(cost))
         self._cost_values = []
         self._q_values = []

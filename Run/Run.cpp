@@ -102,18 +102,13 @@ int     Run::overdampedMotion() {
         }
         // Euler dynamics
         updateVerticesPosition();
+        // reconnect
         if (simulation_time_ - t_start_ + t_roundError > count_reconnect_ * dtr_) {
             reconnection_->start();
             count_reconnect_++;
         }
         simulation_time_ += dt_;
     }
-    // // *** Overdamped failure block ***
-    // // If the program reaches here, it means that overdamped motion has not terminated successfully within t_end_.
-    // cout << "\n   Overdamped motion did not terminate successfully within t_end_.\n";
-    // cout << "   Consider increasing t_end_. Terminating program.\n";
-    // exit(1);
-    // // *** End Overdamped failure block ***
     return 0;
 }
 
@@ -356,14 +351,14 @@ int     Run::updateVerticesPosition() {
     std::default_random_engine generator(std::random_device{}());
     std::normal_distribution<double> ndist(0., 1.);
     double cR = sqrt(2.0*mu_*kB_*temperature_*dt_);
-    for (long int i = 0; i < vertices_.size(); i++) {
-        if (vertices_[i]->is_fixed_) {
+    for (auto vertex: vertices_) {
+        if (vertex->is_fixed_) {
             continue;
         }
         for (int m = 0; m < 3; m++) {
-            vertices_[i]->position_[m] = vertices_[i]->position_[m] + vertices_[i]->velocity_[m] * dt_ + cR*ndist(generator);
+            vertex->position_[m] = vertex->position_[m] + vertex->velocity_[m] * dt_ + cR*ndist(generator);
         }
-        box_->resetPosition(vertices_[i]->position_);
+        box_->resetPosition(vertex->position_);
     }
     return 0;
 }
@@ -533,6 +528,7 @@ Edge *  Run::addEdge(Vertex * v0, Vertex * v1) {
 }
 
 int     Run::dumpConfigurationVtk() {
+    updatePolygonVertices();
     //////////////////////////////////////////////////////////////////////////////////////
     stringstream filename;
     filename << setw(7) << setfill('0') << (long int) (floor(simulation_time_ + 0.01 * dt_)) << ".sample.vtk";
@@ -556,9 +552,6 @@ int     Run::dumpConfigurationVtk() {
     }
     out << endl;
 
-
-
-    updatePolygonVertices();
     long int Npolygons = 0;
     long int NpolygonVertices = 0;
     for (long int i = 0; i < polygons_.size(); i++) {

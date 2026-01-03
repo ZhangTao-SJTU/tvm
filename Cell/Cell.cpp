@@ -43,11 +43,9 @@ Cell::Cell(Run * run, long int id) {
     id_ = id;
     is_fixed_ = false;
     v0_ = 1;
-    // s0_ = 5.4;
     volume_ = 0.;
     pressure_ = 0.;
     shapeIndex_ = 0.;
-
 }
 
 int Cell::updatePolygonDirections() {

@@ -110,3 +110,4 @@ class plot:
     def save_fig(self,filename = "test.png",transparent = True):
         # self.ax.legend()
         self.fig.savefig(fname=filename, transparent=transparent)
+        plt.close(self.fig)

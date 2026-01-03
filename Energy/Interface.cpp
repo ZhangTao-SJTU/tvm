@@ -45,15 +45,9 @@ Interface::Interface(Run * run) {
 
 int     Interface::updateForces() {
     // reset all interfaceForce values in vertices
-    // for (long int i = 0; i < run_->vertices_.size(); i++) {
-    //     for (int j = 0; j < 3; j++) {
-    //         run_->vertices_[i]->interfaceForce_[j] = 0.;
-    //     }
-    // }`
-
     for (auto vertex : run_->vertices_) {
-        for (int j = 0; j < 3; j++) {
-            vertex->interfaceForce_[j] = 0.;
+        for (int m = 0; m < 3; m++) {
+            vertex->interfaceForce_[m] = 0.;
         }
     }
 
@@ -66,9 +60,6 @@ int     Interface::updateForces() {
     updateTension();
 
     // update interfaceForce values
-    // for (long int i = 0; i < run_->polygons_.size(); i++) {
-    //     updatePolygonForces(run_->polygons_[i]);
-    // }
     for (auto polygon : run_->polygons_) {
         updatePolygonForces(polygon);
     }
@@ -176,4 +167,4 @@ int Interface::updateEnergy() {
     }
 
     return 0;
-}
+

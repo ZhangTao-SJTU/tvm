@@ -2,7 +2,6 @@ from toolbox.cSection import makeSampleCrossSection
 from toolbox.patterns import Patterns
 from toolbox.periodic import PeriodicTissue
 from toolbox import stress
-import matplotlib.pyplot as plt
 from toolbox import stress
 import os
 import numpy as np
@@ -33,6 +32,7 @@ import random
 
 # input: run dir, filename for config(default: minimized.txt), number of cells to select, other criteria (cell stress limits, exclude cells etc)
 # output: list of randomly selected target cell IDs
+# side effect: vtk of found target cells
 def find_random_target_cells(run_dir, filename = "minimized.txt", n_cells = 1, **kwargs):
     tissue = PeriodicTissue.from_config(run_dir,filename)
     training_instance = Patterns.periodic_tissue(tissue)
@@ -141,6 +141,9 @@ def train_target_cells(run_dir, target_cell_to_stress, **kwargs):
     tolerance = 1e-8
     max_iters = 2000
     learning_rate = 10
+    frozen_cells = []
+    if "frozen_cells" in kwargs:
+        frozen_cells = kwargs["frozen_cells"]
     if "cpp_executable_dir" in kwargs:
         cpp_executable_dir = kwargs["cpp_executable_dir"]
     if "tolerance" in kwargs:
@@ -149,6 +152,7 @@ def train_target_cells(run_dir, target_cell_to_stress, **kwargs):
         learning_rate = kwargs["learning_rate"]
     if "max_iters" in kwargs:
         max_iters = kwargs["max_iters"]
+
 
     print("Parameters for training:")
     print("cpp_executable_dir:", cpp_executable_dir)
@@ -167,9 +171,9 @@ def train_target_cells(run_dir, target_cell_to_stress, **kwargs):
     training_instance.set_tolerance(tolerance)
     training_instance.set_learning_rate(learning_rate)
     training_instance.set_target_cell_to_stress(target_cell_to_stress)
+    training_instance.set_frozen_cells(frozen_cells)
     training_instance.initialize()
     training_instance.run_to_max_iters(max_iters)
-    return
 
 ## A shortcut function that picks and trains random cells.
 def train_random_cells(run_dir, n_cells = 1, target_stress = 1, **kwargs):
@@ -195,7 +199,7 @@ def train_random_cells(run_dir, n_cells = 1, target_stress = 1, **kwargs):
         exclude_cells = kwargs["exclude_cells"]
     
 
-    print("Parameters for training:")
+    print("Train Random Cells:\n \tParameters for training:")
     print("cpp_executable_dir:", cpp_executable_dir)
     print("n_cells:", n_cells)
     print("tolerance:", tolerance)
@@ -222,7 +226,6 @@ def train_random_cells(run_dir, n_cells = 1, target_stress = 1, **kwargs):
 
     training_instance.initialize()
     training_instance.run_to_max_iters(max_iters)
-    return training_instance
 
 def resume_run(run_dir, **kwargs):
     print("Resuming runs in directory:", run_dir)
@@ -232,6 +235,9 @@ def resume_run(run_dir, **kwargs):
     max_iters = 2000
     learning_rate = 10
     target_cell_to_stress = None
+    frozen_cells = []
+    if "frozen_cells" in kwargs:    
+        frozen_cells = kwargs["frozen_cells"]
     if "cpp_executable_dir" in kwargs:
         cpp_executable_dir = kwargs["cpp_executable_dir"]
     if "tolerance" in kwargs:
@@ -275,6 +281,7 @@ def resume_run(run_dir, **kwargs):
         df = pd.read_csv("{}{:07d}.stresses.csv".format(run_dir,0))
         target_cell_to_stress = dict(zip(df['CellID'], df['Target']))
     training_instance.set_target_cell_to_stress(target_cell_to_stress)
+    training_instance.set_frozen_cells(frozen_cells)
     training_instance.run_to_max_iters(max_iters=max_iters)
 
 def remove_last_iteration(run_dir):

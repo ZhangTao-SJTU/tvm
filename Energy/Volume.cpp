@@ -40,7 +40,6 @@ using namespace std;
 
 Volume::Volume(Run * run) {
     run_ = run;
-    // kv_ = 10.;  // 0.1, 1, 10, 100, 1000
     totalVolume_ = 0.;
     energy_ = 0.;
 }
@@ -178,9 +177,6 @@ int Volume::updateVolume() {
     totalVolume_ = 0.;
     for (auto cell : run_->cells_) {
         cell->updateVolume();
-//        if (run_->simulation_time_ < run_->t_start_+0.01*run_->dt_) {
-//            printf("%6f\n", cell->volume_);
-//        }
         totalVolume_ += cell->volume_;
     }
 

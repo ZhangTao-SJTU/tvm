@@ -49,10 +49,6 @@ int main(int argc, char *argv[]) {
     // InitializeFixed(run);
     LoadCellParameters(run);
     run->updatePolygonVertices();
-    // double FIRE_equilibrium_tolerance = 1e-7;
-
-    // Check if the system is already in equilibrium. If it is, basically return the system.
-    
     // update geometry information
     run->updateGeoinfo();
     // update volumeForces
@@ -641,7 +637,7 @@ int LoadConf(string filename, Run * run) {
         cout << "conf file error: box" << endl;
         exit(1);
     }
-    
+
     conf.close();
     cout << endl;
     return 0;

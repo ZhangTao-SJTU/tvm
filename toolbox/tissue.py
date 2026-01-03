@@ -81,9 +81,9 @@ class Sample:
     def set_origin(self,origin):
         for _, vertex in self.vertices_.items():
             vertex.position_ = np.subtract(vertex.position_, origin)
-        self.calculate_cell_centers()
         self.calculate_polygon_centers_and_perimeters()
         self.calculate_polygon_areas()
+        self.calculate_cell_centers()
         self.calculate_cell_volumes()
         self.calculate_cell_surface_areas()
         self.calculate_cell_shape_indices()
