@@ -167,4 +167,5 @@ int Interface::updateEnergy() {
     }
 
     return 0;
+}
 

@@ -22,6 +22,7 @@ class multiple_patterns:
         self._distance = None
         self._epoch = 0
         self._current_pattern = None
+        self._freeze_target_cells = False
 
     @classmethod
     def from_dir(cls, dir):
@@ -80,6 +81,10 @@ class multiple_patterns:
         # Otherwise, use resume_run
         # Either way, first train the first cell for self._max_iters
         # then resume with the other cells
+        if self._freeze_target_cells:
+            frozen_cells = list(self._target_cell_to_stress.keys())
+        else:
+            frozen_cells = []
         for i in range(self._n_cells):
             self._current_pattern = i
             cellID = list(self._target_cell_to_stress.keys())[i]
@@ -88,9 +93,9 @@ class multiple_patterns:
             print("Training pattern {}".format(self._current_pattern))
             if not os.path.isfile("{}costs.txt".format(self._run_dir)):
                 print("...Starting a new run.")
-                train_target_cells(self._run_dir, single_pattern, learning_rate=self._learning_rate, max_iters=self._max_iters, cpp_executable_dir=self._cpp_executable_dir, tolerance=self._tolerance, frozen_cells = list(self._target_cell_to_stress.keys()))
+                train_target_cells(self._run_dir, single_pattern, learning_rate=self._learning_rate, max_iters=self._max_iters, cpp_executable_dir=self._cpp_executable_dir, tolerance=self._tolerance, frozen_cells = frozen_cells)
             else:
-                resume_run(self._run_dir, target_cell_to_stress = single_pattern, learning_rate=self._learning_rate, max_iters=self._max_iters, cpp_executable_dir=self._cpp_executable_dir, tolerance=self._tolerance, frozen_cells = list(self._target_cell_to_stress.keys()))
+                resume_run(self._run_dir, target_cell_to_stress = single_pattern, learning_rate=self._learning_rate, max_iters=self._max_iters, cpp_executable_dir=self._cpp_executable_dir, tolerance=self._tolerance, frozen_cells = frozen_cells)
             self.write_info()
         self.clear_dir()
         self._epoch += 1
