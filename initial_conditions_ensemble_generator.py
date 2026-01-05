@@ -10,7 +10,7 @@ for run in range(100):
     # if os.path.isfile("{}minimized.txt".format(run_dir)):
     #     continue
     print("\n\n     {}\n\n".format(run_dir))
-    os.system("cp conf_l_4  {}conf".format(run_dir))
+    os.system("cp conf  {}conf".format(run_dir))
     minimization_found = False
     while not minimization_found:
         try:

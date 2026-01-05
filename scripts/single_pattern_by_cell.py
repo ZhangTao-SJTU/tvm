@@ -8,7 +8,7 @@ import pandas as pd
 import glob
 import sys
 
-class multiple_patterns:
+class single_pattern_by_cell:
     def __init__(self):
         self._run_dir = None
         self._target_cell_to_stress = None
@@ -163,7 +163,7 @@ def main():
         print("Usage: python multiple_patterns.py <run_dir>")
         sys.exit(1)
     run_dir = sys.argv[1]
-    trainer = multiple_patterns.from_dir(run_dir)
+    trainer = single_pattern_by_cell.from_dir(run_dir)
     if not os.path.isfile("{}costs.txt".format(run_dir)):
         trainer.set_new_uniform_target_stress_patterns()
     else:

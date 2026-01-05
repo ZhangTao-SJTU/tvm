@@ -14,7 +14,7 @@ def create_sub_file(script,dir):
     lines.append("log        = log.txt\n")
     lines.append("getenv     = True\n")
     lines.append("request_cpus = 1\n")
-    lines.append("request_memory = 200 MB\n")
+    lines.append("request_memory = 500 MB\n")
     # lines.append('Requirements = TARGET.vm_name == "its-u20-nfs-20210413" && regexp("CRUSH", TARGET.name)\n')
     lines.append("queue \n")
     # with open("job_{}.sub".format(run_num), "w") as f:
@@ -97,7 +97,7 @@ def multiple_patterns():
     stresses = np.loadtxt("init/init_homogeneous_6/stresses.txt")
     target = np.mean(stresses)
     tolerance = 1e-6
-    max_iters = 100
+    max_iters = 500
 
     def submit_jobs(script,run_dir,target,tolerance,n_cells_A,n_cells_B,max_iters):
         create_exec_file(script,run_dir)
@@ -128,6 +128,30 @@ def multiple_patterns():
         for i in range(100):
             run_dir = experiment + "{:03d}/".format(i)
             submit_jobs(script,run_dir,target,tolerance,n_cells_A,n_cells_B,max_iters)
+
+def single_pattern_by_cell():
+    def submit_jobs(script,run_dir,target,tolerance,n_cells,max_iters):
+        create_exec_file(script,run_dir)
+        create_sub_file(script,run_dir)
+        os.system("echo '{}' > {}target".format(target,run_dir))
+        os.system("echo '{}' > {}tolerance".format(tolerance,run_dir))
+        os.system("echo '{}' > {}n_cells".format(n_cells,run_dir))
+        os.system("echo '{}' > {}max_iters".format(max_iters,run_dir))
+        #submit job
+        os.system("cd {} && condor_submit {}run_job.sub".format(run_dir,run_dir))
+    
+    script = "single_pattern_by_cell.py"
+    l = 4
+    stresses = np.loadtxt("init/init_homogeneous_{}/stresses.txt".format(l))
+    target = np.mean(stresses)
+    tolerance = 1e-6
+    max_iters = 500
+    for n_cells in [3,4,5,6,7]:
+        experiment = "/home/mameen/new_cells_{}_l_{}/".format(n_cells,l)
+        for i in range(10):
+            run_dir = experiment + "{:03d}/".format(i)
+            submit_jobs(script,run_dir,target,tolerance,n_cells,max_iters)
+    
 if __name__ == "__main__":
-    multiple_patterns()
+    single_pattern_by_cell()
     # resubmit()
