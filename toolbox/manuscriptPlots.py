@@ -73,6 +73,9 @@ class plot:
 
     def plot_xy(self,x_array,y_array, color = "#7d878a", label = "plot",alpha = 0.8):
         self.ax.plot(x_array,y_array, color = color, label = label,alpha = alpha)
+    def plot_scatter(self,x_array,y_array, color = "#7d878a", label = "plot",alpha = 0.8):
+        self.ax.scatter(x_array,y_array, color = color, label = label,alpha = alpha,s = 1000)
+
     def plot_errorfill(self,x_array,y_array, err_array,color = "#7d878a", label = "plot",alpha = 0.3):
         self.ax.fill_between(x_array, y_array-err_array, y_array+err_array,color = color, label = label,alpha = alpha)
     def plot_max_min_fill(self,x_array,y_min_array, y_max_array,color = "#7d878a", label = "_plot",alpha = 0.3):
