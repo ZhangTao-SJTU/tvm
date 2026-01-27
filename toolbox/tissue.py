@@ -17,6 +17,7 @@ class Sample:
         self.cells_:dict[int,topology.Cell] = {}
         self.cell_neighbors_ = {}
         self.s0_ = None
+        self.v0_ = None
         self.gamma_ = None
         self.kv_ = None
         self.boxSize_ = None
@@ -74,10 +75,10 @@ class Sample:
         return result
     def set_config_dir(self,dir):
         self.config_dir_ = dir
-    def set_file(self,file):
-        if not os.path.isfile(self.config_dir_ + file):
+    def set_file(self,filename):
+        if not os.path.isfile(self.config_dir_ + filename):
             raise ValueError("Error in tissueSample.Sample: file must exist in self._config_dir")
-        self.file_ = self.config_dir_ + file
+        self.file_ = self.config_dir_ + filename
     def set_origin(self,origin):
         for _, vertex in self.vertices_.items():
             vertex.position_ = np.subtract(vertex.position_, origin)
@@ -176,7 +177,7 @@ class Sample:
                         cell.s0_ = copy.deepcopy(self.s0_)
                 if (line.split()[0]) == "kv": 
                     self.kv_=(float(line.split()[1]))#kv
-                if (self.tissueType_ == "periodic") and (line.split()[0]) == "box":
+                if (line.split()[0]) == "box":
                     self.boxSize_ = float(line.split()[1])
     
     def load_cell_vertices(self):
@@ -197,22 +198,24 @@ class Sample:
         for cellID, cell in self.cells_.items():
             if self.tissueType_ == "spheroid" and not cell.type_:
                 continue
-            if self.tissueType_ == "periodic" and cell.crossBoundary_:
+            if cell.crossBoundary_:
                 continue
             # cell.center_ = np.zeros(3)
             # for vertexID in cell.vertices_:
             #     cell.center_ = np.add(cell.center_, self.vertices_[vertexID].position_)
             # cell.center_ = np.divide(cell.center_, len(cell.vertices_))
-            cell.center_ = []
-            for vertexID in cell.vertices_:
-                cell.center_.append(self.vertices_[vertexID].position_)
-            for polygonID in cell.polygons_:
-                polygon = self.polygons_[polygonID]
-                if polygon.center_ is None:
-                    continue
-                cell.center_.append(polygon.center_)
-            cell.center_ = np.mean(cell.center_, axis=0)
-               
+            # cell.center_ = []
+            # for vertexID in cell.vertices_:
+            #     cell.center_.append(self.vertices_[vertexID].position_)
+            # cell.center_ = np.mean(cell.center_, axis=0)
+            
+            # for polygonID in cell.polygons_:
+            #     polygon = self.polygons_[polygonID]
+            #     if polygon.center_ is None:
+            #         continue
+            #     cell.center_.append(polygon.center_)
+            # cell.center_ = np.mean(cell.center_, axis=0)
+            cell.center_ = np.mean([self.vertices_[vertexID].position_ for vertexID in cell.vertices_],axis=0)   
     # Load cell attributes from {self.time_}.cellInfo.txt
     # Create this file if it does not exist.
     def load_cell_attributes(self):
@@ -243,6 +246,71 @@ class Sample:
             if self.tissueType_ == "spheroid" and not cell.type_:
                 continue
             cell.surface_area_ = (cell.shape_index_ * pow(cell.volume_,2/3))
+    def load_cross_boundary_attributes(self):
+        for edgeID, edge in self.edges_.items():
+            edge.length_ = np.linalg.norm(
+                np.subtract(
+                    self.vertices_[edge.vertices_[0]].position_,
+                    self.vertices_[edge.vertices_[1]].position_))
+            if edge.length_ > self.boxSize_/2:
+                edge.crossBoundary_ = True
+                
+        for _,polygon in self.polygons_.items():
+            for edgeID in polygon.edges_:
+                if self.edges_[edgeID].crossBoundary_:
+                    polygon.crossBoundary_ = True
+                    break
+        for _,cell in self.cells_.items():
+            for polygonID in cell.polygons_:
+                if self.polygons_[polygonID].crossBoundary_:
+                    cell.crossBoundary_ = True
+                    break
+
+    def calculate_boundary_cell_attributes(self):
+        if self.tissueType_ == "periodic":
+            boundary_cells = [cellID for cellID,cell in self.cells_.items() if cell.crossBoundary_]
+        elif self.tissueType_ == "spheroid":
+            boundary_cells = [cellID for cellID,cell in self.cells_.items() if cell.type_ and cell.crossBoundary_]
+        for num,testCellID in enumerate(boundary_cells):
+            test_b_cell = self.extract_cell(testCellID)
+            for cellID,cell in test_b_cell.cells_.items():
+                cell.crossBoundary_ = False
+            for polygonID, polygon in test_b_cell.polygons_.items():
+                polygon.crossBoundary_ = False
+            for edgeID, edge in test_b_cell.edges_.items():
+                edge.crossBoundary_ = False
+
+            axes_to_flip = []  # Flip all axes
+            for edgeID,edge in test_b_cell.edges_.items():
+                v0 = test_b_cell.vertices_[edge.vertices_[0]].position_
+                v1 = test_b_cell.vertices_[edge.vertices_[1]].position_
+                edge_vector = np.subtract(v1, v0)
+                for i in range(3):
+                    if abs(edge_vector[i]) > self.boxSize_/2 :
+                        axes_to_flip.append(i)
+            axes_to_flip = list(set(axes_to_flip))  # Remove duplicates
+            # print("Axes to flip:", axes_to_flip)
+            for vertexID, vertex in test_b_cell.vertices_.items():
+                for i in axes_to_flip:
+                    if vertex.position_[i] < self.boxSize_ / 2:
+                        continue
+                    vertex.position_[i] -= self.boxSize_
+
+            # for vertexID, vertex in test_b_cell.vertices_.items():
+            #     for i,coordinate in enumerate(vertex.position_):
+            #         vertex.position_[i] -= boxSize*np.floor(coordinate / boxSize)
+            test_b_cell.arrange_polygon_vertices()
+            test_b_cell.calculate_COM_polygon_centers()
+            test_b_cell.calculate_cell_centers()
+            test_b_cell.calculate_cell_volumes()
+            test_b_cell.calculate_polygon_areas()
+            test_b_cell.calculate_cell_surface_areas()
+            test_b_cell.calculate_cell_shape_indices()
+            # test_b_cell.write_cell_collection_vtk([testCellID],"{}.cell.vtk".format(num))
+            cell = test_b_cell.cells_[testCellID]
+            self.cells_[testCellID].volume_ = cell.volume_
+            self.cells_[testCellID].surface_area_ = cell.surface_area_
+            self.cells_[testCellID].shape_index_ = cell.shape_index_
 
     # As defined in Okuda et al 
     def calculate_polygon_centers_and_perimeters(self):
@@ -268,21 +336,23 @@ class Sample:
     # Equip polygon.center_ with the COM center coordinates (average of vertex positions)    
     def calculate_COM_polygon_centers(self):
         for polygonID, polygon in self.polygons_.items():
-            if self.tissueType_ == "periodic" and polygon.crossBoundary_:
+            if polygon.crossBoundary_:
                 continue
             if not len(polygon.vertices_):
                 continue
-            polygon.center_ = np.zeros(3)
-            for vertexID in polygon.vertices_:
-                polygon.center_ = np.add(polygon.center_, self.vertices_[vertexID].position_)
-            polygon.center_ = np.divide(polygon.center_, len(polygon.vertices_))
-
+            # polygon.center_ = np.zeros(3)
+            # for vertexID in polygon.vertices_:
+            #     polygon.center_ = np.add(polygon.center_, self.vertices_[vertexID].position_)
+            # polygon.center_ = np.divide(polygon.center_, len(polygon.vertices_))
+            polygon.center_ = np.mean([self.vertices_[vertexID].position_ for vertexID in polygon.vertices_],axis=0)
 
     # Calculate polygon areas by breaking up into triangular patches.
     # Note that this requires that we first calculate polygon centers.
     def calculate_polygon_areas(self):
         for polygonID, polygon in self.polygons_.items():
-            if self.tissueType_ == "periodic" and polygon.crossBoundary_:
+            if polygon.crossBoundary_:
+                continue
+            if self.tissueType_ == "spheroid" and not polygon.vertices_:
                 continue
             polygon.area_=0
             for edgeID in polygon.edges_:
@@ -298,7 +368,7 @@ class Sample:
         for cellID, cell in self.cells_.items():
             if self.tissueType_ == "spheroid" and not cell.type_:
                 continue
-            if self.tissueType_ == "periodic" and cell.crossBoundary_:
+            if cell.crossBoundary_:
                 continue
             cell.surface_area_ = 0
             for polygonID in cell.polygons_:
@@ -309,7 +379,7 @@ class Sample:
         for cellID, cell in self.cells_.items():
             if self.tissueType_ == "spheroid" and not cell.type_:
                 continue
-            if self.tissueType_ == "periodic" and cell.crossBoundary_:
+            if cell.crossBoundary_:
                 continue
             cell.shape_index_ = cell.surface_area_ / pow(cell.volume_,2/3)
 
@@ -318,7 +388,7 @@ class Sample:
         for cellID, cell in self.cells_.items():
             if self.tissueType_ == "spheroid" and not cell.type_:
                 continue
-            if self.tissueType_ == "periodic" and cell.crossBoundary_:
+            if cell.crossBoundary_:
                 continue
             cell.volume_ = 0
             for polygonID in cell.polygons_:
@@ -347,7 +417,7 @@ class Sample:
             # if self.tissueType_ == "periodic" and cell.crossBoundary_: 
             #     continue
             for polygonID in cell.polygons_:
-                if self.tissueType_ == "periodic" and self.polygons_[polygonID].crossBoundary_:
+                if self.polygons_[polygonID].crossBoundary_:
                     continue
                 tmp_vertices=[]
                 for edgeID in self.polygons_[polygonID].edges_:
@@ -368,10 +438,7 @@ class Sample:
                         continue
                     self.cell_neighbors_[cellID].append(test_cellID)
                     self.cell_neighbors_[test_cellID].append(cellID)
-                    # if polygonID in spheroid.cells_[list(cellID_to_neighbors.keys())[j]].polygons_:
-                    #     cellID_to_neighbors[cellID].append(list(cellID_to_neighbors.keys())[j])
-                    #     cellID_to_neighbors[list(cellID_to_neighbors.keys())[j]].append(cellID)
-    
+                        
     def extract_cell(self,cellID):
         cell = copy.deepcopy(self.cells_[cellID])
         vertices = {}
@@ -384,23 +451,6 @@ class Sample:
                 edges[edgeID] = copy.deepcopy(self.edges_[edgeID])
                 for vertexID in edges[edgeID].vertices_:
                     vertices[vertexID] = copy.deepcopy(self.vertices_[vertexID])
-        # for polygonID in cell.polygons_:
-        #     polygon = polygons[polygonID]
-        #     sum_of_cross_product = np.array([0,0,0])
-        #     for i in range(len(polygon.vertices_)):
-        #         v1 = polygon.vertices_[i]
-        #         v2 = polygon.vertices_[(i+1)%len(polygon.vertices_)]
-        #         # print("     ", v1, v2)
-        #         # print("before",vertices[v1].position_)
-        #         vector1 = np.subtract(vertices[v1].position_, cell.center_)
-        #         vector2 = np.subtract(vertices[v2].position_, cell.center_)
-        #         # print("after",vertices[v1].position_)
-        #         cross_product = np.cross(vector1, vector2)
-        #         sum_of_cross_product = np.add(sum_of_cross_product, cross_product)
-
-        #     sign = np.sign(np.dot(sum_of_cross_product,np.subtract(polygon.center_, cell.center_)))
-        #     if sign == -1:
-        #         polygon.vertices_=polygon.vertices_[::-1]
 
         for vertexID,vertex in vertices.items():
             for polygonID,polygon in polygons.items():
@@ -462,55 +512,3 @@ class Sample:
             for polygonID in polygons:
                 polygon = self.polygons_[polygonID]
                 f.write("{}\n".format(polygon.vtk_scalar_))
-
-# class SingleCell:
-#     def __init__(self,vertices,edges,polygons,cell):
-#         self.config_dir_ = None
-#         self.time_ = None
-#         self.id_ = cell.id_
-#         self.vertices_ = vertices
-#         self.edges_ = edges
-#         self.polygons_ = polygons
-#         self.cells_ = {cell.id_:cell}
-#         self.center_ = cell.center_
-#         self.s0_ = None
-#         self.kv_ = None
-#         self.gamma_ = None
-
-#     def update_center(self):
-#         center = []
-#         for _,vertex in self.vertices_.items():
-#             center.append(vertex.position_)
-#         center = np.mean(center,axis = 0)
-#         self.center_ = center
-#         self.cells_[self.id_].center_ = center
-#     def dump_vtk(self,filename):
-#         v_map = functions.mapmaker(self.vertices_)
-#         # e_map = functions.mapmaker(self.edges_)
-#         # p_map = functions.mapmaker(self.polygons_)
-#         totalPolygonDataPoints = 0
-#         for polygonID,polygon in self.polygons_.items():
-#             totalPolygonDataPoints += (len(polygon.vertices_) + 1)
-#         # with open(self.config_dir_
-#                 #   + "{:07d}.cell_{}.vtk".format(self.time_,self.id_),'w') as file:
-#         with open(filename, "w") as file: 
-#             file.write("# vtk DataFile Version 2.0\n")
-#             file.write("polydata\n")
-#             file.write("ASCII\n")
-#             file.write("DATASET POLYDATA\n")
-#             file.write("POINTS {} double\n".format(len(self.vertices_)))
-            
-#             for vertexID, vertex in self.vertices_.items():
-#                 file.write("{:12.5e} {:12.5e} {:12.5e}\n".format(
-#                     vertex.position_[0],
-#                     vertex.position_[1],
-#                     vertex.position_[2]))
-#             file.write("POLYGONS {} {}\n".format(
-#                 len(self.polygons_),totalPolygonDataPoints))
-        
-#             for polygonID, polygon in self.polygons_.items():
-#                 file.write("{:<7d}".format(len(polygon.edges_)))
-#                 for vID in polygon.vertices_: 
-#                     file.write("{:<7d}".format(v_map[vID]))
-#                 file.write("\n")
-#             file.close()

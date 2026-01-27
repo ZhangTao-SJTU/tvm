@@ -1,4 +1,5 @@
 from toolbox.periodic import PeriodicTissue
+from toolbox.spheroid import Spheroid
 import os
 import copy
 class FIREminimization:
@@ -6,36 +7,38 @@ class FIREminimization:
         self._config = None
         self._dir = None
         self._cpp_executable_dir = None
-        self._modified_cells = []
+
     @classmethod
-    def periodic_tissue(cls, tissue:PeriodicTissue):
+    def from_sample(cls, tissue):
         sample = cls()
         sample._config = tissue
         sample._dir = tissue.config_dir_
-        # sample.minimize_config()
-        return sample
+        return sample    
+
     def set_cpp_executable_dir(self, cpp_executable_dir:str):
         self._cpp_executable_dir = cpp_executable_dir
     def set_config(self, tissue:PeriodicTissue):
         self._config = copy.deepcopy(tissue)
+        
     def minimize_config(self, FIRE_only = False):
         self.write_configuration("sample.topo")
         # tvm produces a new minimized.txt in self._dir
-        # Any file of the same name must be therefore first removed.
+        # Any file of the same name must be therefore first removed or renamed.
         # Otherwise, tvm will append to the existing file.
         if os.path.isfile("{}minimized.txt".format(self._dir)):
-            os.remove("{}minimized.txt".format(self._dir))
-        # if FIRE_only:
-        #     os.system("cd {} && ../build/tvm FIRE_only".format(self._dir))
-        # else:
-        #     os.system("cd {} && ../build/tvm".format(self._dir))
+            os.system("mv {}minimized.txt {}minimized_old.txt".format(self._dir,self._dir))
+        # Run tvm executable
         if FIRE_only:
             os.system("cd {} && {}tvm FIRE_only".format(self._dir,self._cpp_executable_dir))
         else:
             os.system("cd {} && {}tvm".format(self._dir,self._cpp_executable_dir))
-        self._config.load_periodic_tissue_from_file("minimized.txt")
-        # self._config.set_file("minimized.txt")
-        # self._config = tissueSample.Sample.periodic_tissue(self._dir,"minimized.txt")
+        if not os.path.isfile("{}minimized.txt".format(self._dir)):
+            raise ValueError("FIREminimization failed: minimized.txt not found")
+        self._config.set_file("minimized.txt")
+        if self._config.tissueType_ == "spheroid":
+            self._config.load_spheroid_from_file()
+        elif self._config.tissueType_ == "periodic":
+            self._config.load_periodic_tissue_from_file()
         self.load_cell_parameters()
 
     def write_configuration(self,filename = "sample.topo"):
@@ -65,13 +68,14 @@ class FIREminimization:
                 file.write("{:d}".format(cell.id_))
                 for polygonID in cell.polygons_:
                     file.write(" {:6d}".format(polygonID))
+                if self._config.tissueType_ == "spheroid":
+                    file.write(" {:d}".format(cell.type_))
                 file.write("\n")
 
     def load_cell_parameters(self, filename = "cellParameters.input"):
         if not os.path.isfile("{}{}".format(self._dir,filename)):
             print("{} does not exist".format(filename))
             return
-        self._modified_cells = []
         with open("{}{}".format(self._dir,filename),"r") as f:
             lines = f.readlines()
             for line in lines:
@@ -84,7 +88,6 @@ class FIREminimization:
                 tmp_v0 = float(line.split()[1])
                 tmp_s0 = float(line.split()[2])
                 tmp_is_fixed = bool(int(line.split()[3]))
-                self._modified_cells.append(tmp_id)
                 cell = self._config.cells_[tmp_id]
                 cell.v0_ = tmp_v0
                 cell.s0_ = tmp_s0

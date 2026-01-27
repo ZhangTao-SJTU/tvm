@@ -38,6 +38,7 @@
 
 using namespace std;
 
+int     n_attempts = 1;
 int     InitializeAll(Run *);
 int     InitializeFixed(Run *);
 int     LoadCellParameters(Run *);
@@ -86,20 +87,25 @@ int main(int argc, char *argv[]) {
     cout<<"F_rms: "<< F_rms << endl;
     F_rms = sqrt(run->FIRE_ff/(3 * run->vertices_.size()));
     // run again, if F_rms is no good
-    if (F_rms > run->FIRE_equilibrium_tolerance) {
+    for (int attempt = 0; attempt < n_attempts; attempt++) {
+        if (F_rms > run->FIRE_equilibrium_tolerance) {
         cout << "   FIRE minimization terminated unsuccessfully at max iterations.\n";
-        cout << "   Trying overdamping and FIRE minimization again, with no fixed topology..." << endl;
-        cout << "   Set log_period_ to 1000 to facilitate menergy dissipation" << endl;
+        cout << "   Trying overdamping and FIRE minimization again, with no fixed topology...\n";
+        cout << "ATTEMPT: " << attempt + 1 << endl;
+        // cout << "   Set temp to 0" << endl;
+        // run->temperature_ = 0;
         for (auto cell : run->cells_) {
             cell->is_fixed_ = false;
         }
         for (auto vertex : run->vertices_) {
             vertex->is_fixed_ = false;
         }
-        run-> log_period_ = 1000;
+        // run-> log_period_ = 1000;
         run->overdampedMotion();
         run->FIREminimize();
         F_rms = sqrt(run->FIRE_ff/(3 * run->vertices_.size()));
+        }
+
     }
     cout << "Final F_rms: " << F_rms << endl;
     run->dumpMinimization();
