@@ -802,7 +802,8 @@ int     Run::dumpMinimization() {
 
     out << endl;
     out.close();
-
+    
+    /*
     // dump fixed vertex forces - if they exist
     stringstream filename2;
     filename2 << "FE.txt";
@@ -850,6 +851,7 @@ int     Run::dumpMinimization() {
     out2 << "Volume " << setprecision(15) << volume_->energy_ << endl;
     out2 << "Interface " << setprecision(15) << interface_->energy_ << endl;
     out2.close();
+    */
     return 0;
 }
 
