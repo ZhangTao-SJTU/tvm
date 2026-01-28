@@ -98,8 +98,3 @@ clear_directory()
     Move {:07d iter_counter}.bulk.txt, ... to self._dir/files
     Delete the rest of the files
 
-
-set_random_target_cells(self, n_cells = 1, target_stress = 1, **kwargs)
-    Kwargs:
-        "stress_limits"
-        "exclude_cells"

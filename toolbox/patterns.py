@@ -237,49 +237,49 @@ class Patterns(Training):
             for file in glob.glob("{}*.{}".format(self._dir,filename)):
                 os.remove(file)
 
-    def set_random_target_cells(self, n_cells = 1, target_stress = 1, **kwargs):
-        stress_limits = []
-        exclude_cells = []
-        if "stress_limits" in kwargs:
-            stress_limits = kwargs["stress_limits"]
-        if "exclude_cells" in kwargs:
-            exclude_cells = kwargs["exclude_cells"]
-        for polygonID,polygon in self._config.polygons_.items():
-            polygon.vtk_scalar_ = 0
+    # def set_random_target_cells(self, n_cells = 1, target_stress = 1, **kwargs):
+    #     stress_limits = []
+    #     exclude_cells = []
+    #     if "stress_limits" in kwargs:
+    #         stress_limits = kwargs["stress_limits"]
+    #     if "exclude_cells" in kwargs:
+    #         exclude_cells = kwargs["exclude_cells"]
+    #     for polygonID,polygon in self._config.polygons_.items():
+    #         polygon.vtk_scalar_ = 0
 
-        target_cell_to_stress = {}
-        while len(target_cell_to_stress)<n_cells:
-            cellID = random.choice(list(self._config.cells_.keys()))
-            cell = self._config.cells_[cellID]
-            if cell.crossBoundary_: 
-                continue
-            if self._config.tissueType_ == "spheroid" and cell.is_surface_:
-                continue
-            if self._config.tissueType_ == "spheroid" and not cell.type_:
-                continue
-            if cellID in target_cell_to_stress:
-                continue
-            if len(stress_limits):
-                cell.max_shear_stress_ = stress.calculate_max_shear_stress(self._config,cellID)
-                if (cell.max_shear_stress_ < stress_limits[0]):
-                    continue
-                if (cell.max_shear_stress_ > stress_limits[1]):
-                    continue
-            if len(exclude_cells) and cellID in exclude_cells:
-                    continue
-            target_cell_to_stress[cellID] = target_stress
-            targets_share_polygons = False
-            for polygonID in cell.polygons_:
-                polygon = self._config.polygons_[polygonID]
-                if polygon.vtk_scalar_ == 1:
-                    targets_share_polygons = True
-                    break    
-            if targets_share_polygons:
-                continue
-            for polygonID in cell.polygons_:
-                polygon = self._config.polygons_[polygonID]
-                polygon.vtk_scalar_ = 1
-            if len(target_cell_to_stress) == n_cells:
-                break
-        self.set_target_cell_to_stress(target_cell_to_stress)
-        self._config.write_cell_collection_vtk(list(target_cell_to_stress.keys()),"target_cells_isolated.vtk",use_scalar=False)
+    #     target_cell_to_stress = {}
+    #     while len(target_cell_to_stress)<n_cells:
+    #         cellID = random.choice(list(self._config.cells_.keys()))
+    #         cell = self._config.cells_[cellID]
+    #         if cell.crossBoundary_: 
+    #             continue
+    #         if self._config.tissueType_ == "spheroid" and cell.is_surface_:
+    #             continue
+    #         if self._config.tissueType_ == "spheroid" and not cell.type_:
+    #             continue
+    #         if cellID in target_cell_to_stress:
+    #             continue
+    #         if len(stress_limits):
+    #             cell.max_shear_stress_ = stress.calculate_max_shear_stress(self._config,cellID)
+    #             if (cell.max_shear_stress_ < stress_limits[0]):
+    #                 continue
+    #             if (cell.max_shear_stress_ > stress_limits[1]):
+    #                 continue
+    #         if len(exclude_cells) and cellID in exclude_cells:
+    #                 continue
+    #         target_cell_to_stress[cellID] = target_stress
+    #         targets_share_polygons = False
+    #         for polygonID in cell.polygons_:
+    #             polygon = self._config.polygons_[polygonID]
+    #             if polygon.vtk_scalar_ == 1:
+    #                 targets_share_polygons = True
+    #                 break    
+    #         if targets_share_polygons:
+    #             continue
+    #         for polygonID in cell.polygons_:
+    #             polygon = self._config.polygons_[polygonID]
+    #             polygon.vtk_scalar_ = 1
+    #         if len(target_cell_to_stress) == n_cells:
+    #             break
+    #     self.set_target_cell_to_stress(target_cell_to_stress)
+    #     self._config.write_cell_collection_vtk(list(target_cell_to_stress.keys()),"target_cells_isolated.vtk",use_scalar=False)

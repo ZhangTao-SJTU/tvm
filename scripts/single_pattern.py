@@ -3,46 +3,61 @@ from toolbox.periodic import PeriodicTissue
 from toolbox.spheroid import Spheroid
 import os
 import sys
+import random
+import pandas as pd
+from toolbox import stress
 import numpy as np
-## A shortcut function that picks and trains random cells.
-def train_random_cells(run_dir, n_cells = 1, target_stress = 1, tissue_type = "periodic", **kwargs):
-    print("Training random cells in directory:", run_dir)
-    #default parameters
-    cpp_executable_dir = "/home/shabeeb/Projects/tvm-fire/build/"
-    tolerance = 1e-8
-    max_iters = 2000
-    learning_rate = 10
-    clear_interval = 10
-    stress_limits = []
-    exclude_cells = []
-    frozen_cells = []
-    if "stress_limits" in kwargs:
-        stress_limits = kwargs["stress_limits"]
-    if "cpp_executable_dir" in kwargs:
-        cpp_executable_dir = kwargs["cpp_executable_dir"]
-    if "tolerance" in kwargs:
-        tolerance = kwargs["tolerance"]
-    if "learning_rate" in kwargs:
-        learning_rate = kwargs["learning_rate"]
-    if "max_iters" in kwargs:
-        max_iters = kwargs["max_iters"]
-    if "clear_interval" in kwargs:
-        clear_interval = kwargs["clear_interval"]
-    if "exclude_cells" in kwargs:
-        exclude_cells = kwargs["exclude_cells"]
-    if "frozen_cells" in kwargs:
-        frozen_cells = kwargs["frozen_cells"]
-    
 
-    print("Train Random Cells:\n \tParameters for training:")
-    print("cpp_executable_dir:", cpp_executable_dir)
-    print("n_cells:", n_cells)
-    print("tolerance:", tolerance)
-    print("learning_rate:", learning_rate)
-    print("clear_interval:", clear_interval)
-    print("max_iters:", max_iters)
-    print("target stress:", target_stress)
-    print("stress_limits:", stress_limits)
+def find_random_target_cells(sample, n_cells = 1, stress_limits = [],exclude_cells = []):
+    for polygonID,polygon in sample.polygons_.items():
+        polygon.vtk_scalar_ = 0
+    target_cells = []
+    while len(target_cells)<n_cells:
+        cellID = random.choice(list(sample.cells_.keys()))
+        cell = sample.cells_[cellID]
+        if cell.crossBoundary_: 
+            continue
+        if sample.tissueType_ == "spheroid" and cell.is_surface_:
+            continue
+        if sample.tissueType_ == "spheroid" and not cell.type_:
+            continue
+        if cellID in target_cells:
+            continue
+        if len(stress_limits):
+            cell.max_shear_stress_ = stress.calculate_max_shear_stress(sample,cellID)
+            if (cell.max_shear_stress_ < stress_limits[0]):
+                continue
+            if (cell.max_shear_stress_ > stress_limits[1]):
+                continue
+        if len(exclude_cells) and cellID in exclude_cells:
+                continue
+        target_cells.append(cellID)
+        for polygonID in cell.polygons_:
+            polygon = sample.polygons_[polygonID]
+            polygon.vtk_scalar_ = 1
+        if len(target_cells) == n_cells:
+            break
+    sample.write_cell_collection_vtk(target_cells,"target_cells_isolated.vtk",use_scalar=False)
+    return target_cells
+
+
+def train_target_cell_to_stress(
+        run_dir, 
+        target_cell_to_stress,
+        tissue_type = "periodic",
+        cpp_executable_dir = "/home/shabeeb/Projects/tvm-fire/build/",
+        tolerance = 1e-8,
+        learning_rate = 10,
+        clear_interval = 10,
+        max_iters = 2000,
+        frozen_cells = []):
+    print("Training random cells in directory:", run_dir)
+    print("     Parameters for training:")
+    print("     cpp_executable_dir:", cpp_executable_dir)
+    print("     tolerance:", tolerance)
+    print("     learning_rate:", learning_rate)
+    print("     clear_interval:", clear_interval)
+    print("     max_iters:", max_iters)
 
     file = "minimized.txt"
     if os.path.isfile("{}minimized.txt".format(run_dir)):
@@ -51,18 +66,14 @@ def train_random_cells(run_dir, n_cells = 1, target_stress = 1, tissue_type = "p
         tissue = PeriodicTissue.from_config(run_dir,file)
     elif tissue_type == "spheroid":
         tissue = Spheroid.from_config(run_dir,file)
+    
     training_instance = Patterns.from_sample(tissue)
     training_instance.set_cpp_executable_dir(cpp_executable_dir)
     training_instance.set_tolerance(tolerance)
     training_instance.set_learning_rate(learning_rate)
     training_instance.set_clear_interval(clear_interval)
     training_instance.set_frozen_cells(frozen_cells)
-    training_instance.set_random_target_cells(
-        n_cells = n_cells,
-        target_stress = target_stress, 
-        exclude_cells = exclude_cells,
-        stress_limits = stress_limits)
-
+    training_instance.set_target_cell_to_stress(target_cell_to_stress)
     training_instance.initialize()
     training_instance.run_to_max_iters(max_iters)
 
@@ -144,7 +155,6 @@ def main():
     # Default values
     max_iters = 100000
     n_cells = 1
-    stress_limits = []
     tolerance = 1e-7
     learning_rate = 10
     clear_interval = 10
@@ -179,9 +189,10 @@ def main():
             max_iters = max_iters)
     else:
         print("Starting a new run in dir: {}".format(run_dir))
-        train_random_cells(
+        target_cells =find_random_target_cells(PeriodicTissue.from_config(run_dir,"minimized.txt"),n_cells = n_cells)
+        train_target_cell_to_stress(
             run_dir,
-            n_cells = n_cells, 
+            target_cell_to_stress = dict(zip(target_cells, [target_stress]*len(target_cells))),
             tolerance = tolerance, 
             learning_rate = learning_rate,
             clear_interval = clear_interval,
