@@ -37,8 +37,20 @@ def find_random_target_cells(sample, n_cells = 1, stress_limits = [],exclude_cel
             polygon.vtk_scalar_ = 1
         if len(target_cells) == n_cells:
             break
+    np.savetxt("{}target_cells.txt".format(sample.config_dir_), target_cells, fmt='%d')
     sample.write_cell_collection_vtk(target_cells,"target_cells_isolated.vtk",use_scalar=False)
-    return target_cells
+    
+
+def find_target_cells_in_spheroid(sample, r_sphere = 2, n_cells = 1, stress_limits = [],exclude_cells = []):
+    sample.calculate_periodic_sample_center()
+    frozen_cells = [cellID for cellID,cell in sample.cells_.items() if cell.crossBoundary_ or np.linalg.norm(np.subtract(cell.center_,sample.periodic_sample_center_))>r_sphere]
+    np.savetxt("{}frozen_cells.txt".format(sample.config_dir_), frozen_cells, fmt='%d')
+    exclude_cells += frozen_cells
+    find_random_target_cells(sample, n_cells=n_cells, stress_limits=stress_limits, exclude_cells=exclude_cells)
+    # Also record spheroid cell IDs and an initial vtk
+    spheroid_cells = [cellID for cellID in sample.cells_ if not cellID in frozen_cells]
+    np.savetxt("{}spheroid_cells.txt".format(sample.config_dir_), spheroid_cells, fmt='%d')
+    sample.write_cell_collection_vtk(spheroid_cells,"initial_spheroid.vtk",use_scalar=False)
 
 
 def train_target_cell_to_stress(
@@ -99,7 +111,6 @@ def resume_run(run_dir, **kwargs):
     if "target_cell_to_stress" in kwargs:
         target_cell_to_stress = kwargs["target_cell_to_stress"]
 
-
     print("     Parameters for training:")
     print("     cpp_executable_dir:", cpp_executable_dir)
     print("     tolerance:", tolerance)
@@ -150,15 +161,12 @@ def remove_last_iteration(run_dir):
         os.remove("{}{:07d}.bulk.txt".format(run_dir, last_iteration))
     print("Removed iteration {}".format(last_iteration))
 
-def main():
-    run_dir = sys.argv[1]
-    # Default values
+def single_pattern(run_dir):
+    # Default parameters, can be overridden by files in run_dir
     max_iters = 100000
-    n_cells = 1
     tolerance = 1e-7
     learning_rate = 10
     clear_interval = 10
-
     if os.path.isdir("/Users/shabeebameen/Projects/tvm-fire/build/"):
         cpp_executable_dir = "/Users/shabeebameen/Projects/tvm-fire/build/"
     elif os.path.isdir("/home/shabeeb/Projects/tvm-fire/build/"):
@@ -167,10 +175,12 @@ def main():
         cpp_executable_dir = "/home/mameen/tvm/build/"
     
     target_stress = np.loadtxt("{}target".format(run_dir))
-    if os.path.isfile("{}n_cells".format(run_dir)):
-        n_cells = int(np.loadtxt("{}n_cells".format(run_dir)))
-    if os.path.isfile("{}stress_limits".format(run_dir)):
-        stress_limits = list(np.loadtxt("{}stress_limits".format(run_dir)))
+    with open("{}target_cells.txt".format(run_dir), 'r') as f:
+        target_cells = [int(line.strip()) for line in f.readlines()]
+    frozen_cells = []
+    if os.path.isfile("{}frozen_cells.txt".format(run_dir)):
+        with open("{}frozen_cells.txt".format(run_dir), 'r') as f:
+            frozen_cells = [int(line.strip()) for line in f.readlines()]
     if os.path.isfile("{}tolerance".format(run_dir)):
         tolerance = np.loadtxt("{}tolerance".format(run_dir))
     if os.path.isfile("{}learning_rate".format(run_dir)):
@@ -189,17 +199,19 @@ def main():
             max_iters = max_iters)
     else:
         print("Starting a new run in dir: {}".format(run_dir))
-        target_cells =find_random_target_cells(PeriodicTissue.from_config(run_dir,"minimized.txt"),n_cells = n_cells)
+
         train_target_cell_to_stress(
             run_dir,
             target_cell_to_stress = dict(zip(target_cells, [target_stress]*len(target_cells))),
+            frozen_cells=frozen_cells,
             tolerance = tolerance, 
             learning_rate = learning_rate,
             clear_interval = clear_interval,
             cpp_executable_dir = cpp_executable_dir,
-            target_stress = target_stress,
-            stress_limits = stress_limits,
             max_iters = max_iters)
-
+ 
+def main():
+    run_dir = sys.argv[1]
+    single_pattern(run_dir)
 if __name__ == "__main__":
     main()

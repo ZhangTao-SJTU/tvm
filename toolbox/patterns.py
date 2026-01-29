@@ -27,6 +27,7 @@ class Patterns(Training):
         inst = super().from_sample(tissue)
         return inst    
 
+
     
     def set_clamping_FIRE_only(self, clamping_FIRE_only):
         self._clamping_FIRE_only = clamping_FIRE_only
@@ -236,6 +237,51 @@ class Patterns(Training):
             # remove all other files except the latest one
             for file in glob.glob("{}*.{}".format(self._dir,filename)):
                 os.remove(file)
+    @staticmethod
+    def find_random_target_cells(sample, n_cells = 1, stress_limits = [],exclude_cells = []):
+        for polygonID,polygon in sample.polygons_.items():
+            polygon.vtk_scalar_ = 0
+        target_cells = []
+        while len(target_cells)<n_cells:
+            cellID = random.choice(list(sample.cells_.keys()))
+            cell = sample.cells_[cellID]
+            if cell.crossBoundary_: 
+                continue
+            if sample.tissueType_ == "spheroid" and cell.is_surface_:
+                continue
+            if sample.tissueType_ == "spheroid" and not cell.type_:
+                continue
+            if cellID in target_cells:
+                continue
+            if len(stress_limits):
+                cell.max_shear_stress_ = stress.calculate_max_shear_stress(sample,cellID)
+                if (cell.max_shear_stress_ < stress_limits[0]):
+                    continue
+                if (cell.max_shear_stress_ > stress_limits[1]):
+                    continue
+            if len(exclude_cells) and cellID in exclude_cells:
+                    continue
+            target_cells.append(cellID)
+            for polygonID in cell.polygons_:
+                polygon = sample.polygons_[polygonID]
+                polygon.vtk_scalar_ = 1
+            if len(target_cells) == n_cells:
+                break
+        np.savetxt("{}target_cells.txt".format(sample.config_dir_), target_cells, fmt='%d')
+        sample.write_cell_collection_vtk(target_cells,"target_cells_isolated.vtk",use_scalar=False)
+    
+    @staticmethod
+    def find_target_cells_in_spheroid(sample, r_sphere = 2, n_cells = 1, stress_limits = [],exclude_cells = []):
+        sample.calculate_periodic_sample_center()
+        frozen_cells = [cellID for cellID,cell in sample.cells_.items() if cell.crossBoundary_ or np.linalg.norm(np.subtract(cell.center_,sample.periodic_sample_center_))>r_sphere]
+        np.savetxt("{}frozen_cells.txt".format(sample.config_dir_), frozen_cells, fmt='%d')
+        # Exclude frozen cells from being target cells - along with any other provided exclude_cells
+        exclude_cells += frozen_cells
+        Patterns.find_random_target_cells(sample, n_cells=n_cells, stress_limits=stress_limits, exclude_cells=exclude_cells)
+        # Also record spheroid cell IDs and an initial vtk
+        spheroid_cells = [cellID for cellID in sample.cells_ if not cellID in frozen_cells]
+        np.savetxt("{}spheroid_cells.txt".format(sample.config_dir_), spheroid_cells, fmt='%d')
+        sample.write_cell_collection_vtk(spheroid_cells,"initial_spheroid.vtk",use_scalar=False)
 
     # def set_random_target_cells(self, n_cells = 1, target_stress = 1, **kwargs):
     #     stress_limits = []
