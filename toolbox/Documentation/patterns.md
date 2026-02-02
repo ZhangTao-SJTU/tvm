@@ -40,14 +40,15 @@ evaluate_cost():
     return average of absolute percentage difference of current cell stresses wrt target cell stresses
 
 initialize():
-    (i) Write cell parameters and check minimization
-    (ii) store minimized.txt as 0000000.bulk.txt. store initial cell parameters as 0000000.cellParameters.input. 
-    (iii) set_initial_config() (function in training class)
-    (iv) self._cost_values = [initial_cost]
+    + Write cell parameters and check minimization
+    + store minimized.txt as 0000000.bulk.txt. store initial cell parameters as 0000000.cellParameters.input. 
+    + set_initial_config() (function in training class)
+    + self._cost_values = [initial_cost]
         self._q_values = [1]
         save to files
-    (v) save initial stresses in 0000000.stresses.csv
-    (vi) self._iter_counter += 1
+    + save initial stresses in 0000000.stresses.csv
+    + self.clear_directory(): this should create files/ and move 0000000.* and copy conf there.
+    + self._iter_counter += 1
 
 solve_cell_s0_for_target_stress(cellID,target_stress):
     ONLY SIDE EFFECT: target cell.s0 gets target stress (in usage this will be slightly overdriven from actual target stress for the cell i.e. from self._target_cell_to_stress)
@@ -95,6 +96,10 @@ run_to_max_iters():
         v. self._iter_counter ++
 
 clear_directory()
-    Move {:07d iter_counter}.bulk.txt, ... to self._dir/files
+    Make files/and copy conf there if doesnt exist
+    Move {:07d iter_counter}.bulk.txt, ... to self._dir/files/ 
     Delete the rest of the files
 
+@staticmethod:
+find_random_target_cells(sample, n_cells = 1, stress_limits = [],exclude_cells = [])
+find_target_cells_in_spheroid(sample, r_sphere = 2, n_cells = 1, stress_limits = [],exclude_cells = [])

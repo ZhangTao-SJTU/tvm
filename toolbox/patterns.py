@@ -37,7 +37,6 @@ class Patterns(Training):
         self._clamping_correction_factor = clamping_correction_factor
     def set_target_cell_to_stress(self,target_cell_to_stress):
         self._target_cell_to_stress = target_cell_to_stress
-        self._config.write_cell_collection_vtk(self._target_cell_to_stress,"target_cells.vtk")
     def set_frozen_cells(self, frozen_cells):
         self._frozen_cells = frozen_cells            
     def set_learning_rate(self,learning_rate):
@@ -232,6 +231,8 @@ class Patterns(Training):
     
     def clear_directory(self):
         os.makedirs("{}files".format(self._dir), exist_ok=True)
+        if not os.path.isfile("{}files/conf".format(self._dir)):
+            os.system("cp {}conf {}files/".format(self._dir,self._dir))
         for filename in ["bulk.txt","cellParameters.input","stresses.csv"]:
             os.system("cp {}{:07d}.{} {}files/".format(self._dir,self._iter_counter,filename,self._dir))
             # remove all other files except the latest one
@@ -271,7 +272,7 @@ class Patterns(Training):
         sample.write_cell_collection_vtk(target_cells,"target_cells_isolated.vtk",use_scalar=False)
     
     @staticmethod
-    def find_target_cells_in_spheroid(sample, r_sphere = 2, n_cells = 1, stress_limits = [],exclude_cells = []):
+    def find_random_target_cells_in_spheroid(sample, r_sphere = 2, n_cells = 1, stress_limits = [],exclude_cells = []):
         sample.calculate_periodic_sample_center()
         frozen_cells = [cellID for cellID,cell in sample.cells_.items() if cell.crossBoundary_ or np.linalg.norm(np.subtract(cell.center_,sample.periodic_sample_center_))>r_sphere]
         np.savetxt("{}frozen_cells.txt".format(sample.config_dir_), frozen_cells, fmt='%d')
