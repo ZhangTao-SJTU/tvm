@@ -47,7 +47,7 @@ def main():
         stresses = np.loadtxt("init/kv_10_l_{}/stresses.txt".format(l))
         target = np.mean(stresses)
         for n_s in n_spheroids:
-            experiment = "/home/mameen/kv_10_l_{}_n_sp_{}/".format(l,n_s)
+            experiment = "/home/mameen/kv_10_l_{}_n_sp_{:03d}/".format(l,n_s)
             for i in range(n_runs):
                 run_dir = experiment + "{:03d}/".format(i)
                 create_exec_file(script,run_dir)
