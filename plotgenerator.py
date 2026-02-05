@@ -582,7 +582,6 @@ def overlap_to_epoch_multiple_patterns():
         plotter.set_yScaled()
         plotter.set_xScaled()
         plotter.set_title(r"$n_A = {}, n_B = {}$".format(a,b))
-
         plotter.initialize_figure()
         plotter.set_xLog()
         # plotter.set_yLog()
@@ -623,20 +622,213 @@ def overlap_to_epoch_multiple_patterns():
         plotter.ax.legend(loc='lower right')
         plotter.save_fig(graph_output)
 
+def overlap_to_epoch_single_pattern_cellwise():
+    for n in [3,4,5,6]:
+        graph_output = "new_graphs/overlap_to_epochs_single_pattern_cellwise_n_{}.jpg".format(n)
+        plotter = manuscriptPlots.plot()
+        plotter.set_ylim(0,1)
+        plotter.set_xlim(0.5,2000)
+        plotter.set_xticks([1000*i for i in range(6)])
+        plotter.set_yticks([0.2*i for i in range(6)])
+        plotter.set_xlabel("Epochs")
+        plotter.set_ylabel(r"$Q_2$")
+        plotter.set_yScaled()
+        plotter.set_xScaled()
+        plotter.set_title(r"$n = {}$".format(n))
+        plotter.initialize_figure()
+        plotter.set_xLog()
+        # plotter.set_yLog()
+        # for size in [4,5,6]:
+        errors_dict = {}
+        max_len = 0
+        for i in range(10):
+            dir = "data/single_pattern_cellwise_n_{}/{:03d}/".format(n,i)
+            if not os.path.isfile(dir+"info.csv"):
+                continue
+            iters = pd.read_csv(dir+"info.csv")["Iter"].to_numpy()
+            all_overlaps = np.loadtxt(dir+"q_values.txt")
+            if not len(all_overlaps):
+                continue
+            errors = [all_overlaps[i] for i in iters]
+            if not len(errors):
+                continue
+            if len(errors)<2:
+                continue
+
+            errors_dict[i] = errors
+            if len(errors)>max_len:
+                max_len = len(errors)
+
+        iter_to_errors = {i: [] for i in range(max_len)}
+        for _, errors_array in errors_dict.items():
+            for iter_idx in range(len(errors_array)):
+                iter_to_errors[iter_idx].append(errors_array[iter_idx])
+        mean_errors = []
+        max_errors = []
+        min_errors = []
+        for iter_idx in range(max_len):
+            mean_errors.append(np.mean(iter_to_errors[iter_idx]))
+            max_errors.append(np.max(iter_to_errors[iter_idx]))
+            min_errors.append(np.min(iter_to_errors[iter_idx]))
+        x_array = [(i+1)/2 for i in range(len(mean_errors))]
+        plotter.plot_max_min_fill(x_array, max_errors, min_errors, color = "blue", alpha = 0.8, label = r"$n_{target}$"+r"$={}$".format(n))
+        plotter.ax.legend(loc='lower right')
+        plotter.save_fig(graph_output)
+
 def multiple_patterns_single_track(input_file,output_graph):
     colors = ["blue","orange","red","purple" ]
+def error_to_epoch_single_pattern_cellwise():
+    for n in [3,4,5,6]:
+        graph_output = "new_graphs/error_to_epochs_single_pattern_cellwise_n_{}.jpg".format(n)
+        plotter = manuscriptPlots.plot()
+        plotter.set_ylim(1e-7,1)
+        plotter.set_xlim(0.5,2000)
+        plotter.set_xticks([1000*i for i in range(6)])
+        plotter.set_yticks([0.2*i for i in range(6)])
+        plotter.set_xlabel("Epochs")
+        plotter.set_ylabel(r"$Q_2$")
+        plotter.set_yScaled()
+        plotter.set_xScaled()
+        plotter.set_title(r"$n = {}$".format(n))
+        plotter.initialize_figure()
+        plotter.set_xLog()
+        plotter.set_yLog()
+        errors_dict = {}
+        max_len = 0
+        for i in range(10):
+            dir = "data/single_pattern_cellwise_n_{}/{:03d}/".format(n,i)
+            if not os.path.isfile(dir+"info.csv"):
+                continue
+            iters = pd.read_csv(dir+"info.csv")["Iter"].to_numpy()
+            all_overlaps = np.loadtxt(dir+"costs.txt")
+            if not len(all_overlaps):
+                continue
+            errors = [all_overlaps[i] for i in iters]
+            if not len(errors):
+                continue
+            if len(errors)<2:
+                continue
+
+            errors_dict[i] = errors
+            if len(errors)>max_len:
+                max_len = len(errors)
+
+        iter_to_errors = {i: [] for i in range(max_len)}
+        for _, errors_array in errors_dict.items():
+            for iter_idx in range(len(errors_array)):
+                iter_to_errors[iter_idx].append(errors_array[iter_idx])
+        mean_errors = []
+        max_errors = []
+        min_errors = []
+        for iter_idx in range(max_len):
+            mean_errors.append(np.mean(iter_to_errors[iter_idx]))
+            max_errors.append(np.max(iter_to_errors[iter_idx]))
+            min_errors.append(np.min(iter_to_errors[iter_idx]))
+        x_array = [(i+1)/n for i in range(len(mean_errors))]
+        plotter.plot_max_min_fill(x_array, max_errors, min_errors, color = "blue", alpha = 0.8, label = r"$n_{target}$"+r"$={}$".format(n))
+        plotter.ax.legend(loc='lower right')
+        plotter.save_fig(graph_output)
+
+def error_to_iter_cellwise_single_tracks():
+    for n_target in [3,4,5,6]:
+        graph_output = "new_graphs/error_to_iters_cellwise_single_tracks_n_target_{}.jpg".format(n_target)
+
+        plotter = manuscriptPlots.plot()
+        plotter.set_ylim(1e-7,5)
+        # plotter.set_ylim(0.6,1)
+
+        plotter.set_xlim(1,100000)
+        plotter.set_xticks([20*i for i in range(150)])
+        plotter.set_yticks([5*i for i in range(1,100)])
+        plotter.set_yticks([0.2*i for i in range(1,100)])
+
+        plotter.set_xlabel("Iterations")
+        plotter.set_ylabel(r"$<|1-\sigma_{target}/\sigma|>$")
+        # plotter.set_ylabel(r"$Q_n$")
+
+        # plotter.set_title(r"$n_{(target)} =$"+ "{}".format(n_target))
+        plotter.set_yScaled()
+
+        plotter.initialize_figure()
+        plotter.ax.set_xscale("log")
+        plotter.ax.set_yscale("log")
+
+        legend_added = False
+        for i in range(10):
+            dir = "data/single_pattern_cellwise_n_{}/{:03d}/".format(n_target,i)
+            if not os.path.isfile(dir+"costs.txt"):
+                continue
+            errors = np.loadtxt(dir+"costs.txt")
+            # if not errors[-1]<1e-4:
+            #     continue
+            # errors = np.loadtxt(dir+"q_values.txt")
+
+            x_array = [i+1 for i in range(len(errors))]
+            plotter.plot_xy(x_array, errors, color = "black", alpha = 0.4,label = "_none")
+            if legend_added:
+                continue
+            plotter.plot_xy(x_array, errors, color = "black", alpha = 0.4, label = r"$n_{(target)}=$"+r'${}$'.format(n_target))
+            legend_added = True
+
+
+        # plotter.plot_errorfill(x_array,df_decrease["mean"].to_numpy(),df_decrease["sem"].to_numpy(),color = "black", alpha = 0.4, label = r"$\sigma_{hidden}^{(initial)}$")
+
+        plotter.ax.legend(loc='lower left')
+        plotter.save_fig(graph_output)
+
+def error_to_iter_cellwise_sample_track():
+    n=5
+    i = 5
+    graph_output = "new_graphs/error_to_iters_cellwise_sample_track_n_{}_{}.jpg".format(n,i)
+
+    plotter = manuscriptPlots.plot()
+    plotter.set_ylim(1e-7,5)
+    # plotter.set_ylim(0.6,1)
+
+    plotter.set_xlim(1,100000)
+    plotter.set_xticks([20*i for i in range(150)])
+    plotter.set_yticks([5*i for i in range(1,100)])
+    plotter.set_yticks([0.2*i for i in range(1,100)])
+
+    plotter.set_xlabel("Iterations")
+    plotter.set_ylabel(r"$<|1-\sigma_{target}/\sigma|>$")
+    # plotter.set_ylabel(r"$Q_n$")
+
+    # plotter.set_title(r"$n_{(target)} =$"+ "{}".format(n_target))
+    plotter.set_yScaled()
+
+    plotter.initialize_figure()
+    plotter.ax.set_xscale("log")
+    plotter.ax.set_yscale("log")
+
+    legend_added = False
+    # for i in range(10):
+
+    dir = "data/single_pattern_cellwise_n_{}/{:03d}/".format(n,i)
+
+    errors = np.loadtxt(dir+"costs.txt")
+    # if not errors[-1]<1e-4:
+    #     continue
+    # errors = np.loadtxt(dir+"q_values.txt")
+
+    x_array = [i+1 for i in range(len(errors))]
+    plotter.plot_xy(x_array, errors, color = "black", alpha = 0.4,label = "_none")
+
+    plotter.plot_xy(x_array, errors, color = "black", alpha = 0.4, label = r"$n_{(target)}=$"+r'${}$'.format(n))
+
+
+    # plotter.plot_errorfill(x_array,df_decrease["mean"].to_numpy(),df_decrease["sem"].to_numpy(),color = "black", alpha = 0.4, label = r"$\sigma_{hidden}^{(initial)}$")
+
+    plotter.ax.legend(loc='lower left')
+    plotter.save_fig(graph_output)
+
+
+
 def main():
     os.makedirs("new_graphs/",exist_ok=True)
-    # error_to_iter_fixed_n_target()
-    # overlap_to_iter_fixed_n_target()
-    # error_to_iter_fixed_n_total()
-    # overlap_to_iter_fixed_n_total()
-    # error_to_iter_multiple_patterns()
-    # overlap_to_iter_multiple_patterns()
-    # error_to_epoch_multiple_patterns()
-    # overlap_to_epoch_multiple_patterns()
-    overlap_to_iter_single_tracks()
-    error_to_iter_single_tracks()
+    error_to_epoch_single_pattern_cellwise()
+    overlap_to_epoch_single_pattern_cellwise()
+    error_to_iter_cellwise_sample_track()
 
 if __name__ == "__main__":
     main()

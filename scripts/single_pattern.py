@@ -200,5 +200,6 @@ def single_pattern(run_dir):
 def main():
     run_dir = sys.argv[1]
     single_pattern(run_dir)
+
 if __name__ == "__main__":
     main()

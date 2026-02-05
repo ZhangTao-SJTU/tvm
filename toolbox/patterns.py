@@ -271,18 +271,41 @@ class Patterns(Training):
         np.savetxt("{}target_cells.txt".format(sample.config_dir_), target_cells, fmt='%d')
         sample.write_cell_collection_vtk(target_cells,"target_cells_isolated.vtk",use_scalar=False)
     
+    # @staticmethod
+    # def find_random_target_cells_in_spheroid(sample, r_sphere = 2, n_cells = 1, stress_limits = [],exclude_cells = []):
+    #     sample.calculate_periodic_sample_center()
+    #     frozen_cells = [cellID for cellID,cell in sample.cells_.items() if cell.crossBoundary_ or np.linalg.norm(np.subtract(cell.center_,sample.periodic_sample_center_))>r_sphere]
+    #     np.savetxt("{}frozen_cells.txt".format(sample.config_dir_), frozen_cells, fmt='%d')
+    #     # Exclude frozen cells from being target cells - along with any other provided exclude_cells
+    #     exclude_cells += frozen_cells
+    #     Patterns.find_random_target_cells(sample, n_cells=n_cells, stress_limits=stress_limits, exclude_cells=exclude_cells)
+    #     # Also record spheroid cell IDs and an initial vtk
+    #     spheroid_cells = [cellID for cellID in sample.cells_ if not cellID in frozen_cells]
+    #     np.savetxt("{}spheroid_cells.txt".format(sample.config_dir_), spheroid_cells, fmt='%d')
+    #     sample.write_cell_collection_vtk(spheroid_cells,"initial_spheroid.vtk",use_scalar=False)
+
     @staticmethod
-    def find_random_target_cells_in_spheroid(sample, r_sphere = 2, n_cells = 1, stress_limits = [],exclude_cells = []):
+    def find_target_cells_in_spheroid(sample, n_spheroid = 2, n_cells = 1, stress_limits = [],exclude_cells = [],random_target_cells = False):
         sample.calculate_periodic_sample_center()
-        frozen_cells = [cellID for cellID,cell in sample.cells_.items() if cell.crossBoundary_ or np.linalg.norm(np.subtract(cell.center_,sample.periodic_sample_center_))>r_sphere]
-        np.savetxt("{}frozen_cells.txt".format(sample.config_dir_), frozen_cells, fmt='%d')
-        # Exclude frozen cells from being target cells - along with any other provided exclude_cells
-        exclude_cells += frozen_cells
-        Patterns.find_random_target_cells(sample, n_cells=n_cells, stress_limits=stress_limits, exclude_cells=exclude_cells)
-        # Also record spheroid cell IDs and an initial vtk
-        spheroid_cells = [cellID for cellID in sample.cells_ if not cellID in frozen_cells]
+        cellID_to_distance = {cellID:np.linalg.norm(np.linalg.norm(np.subtract(cell.center_,sample.periodic_sample_center_))) for cellID,cell in sample.cells_.items() if cell.center_ is not None}
+        if len(cellID_to_distance)< n_spheroid:
+            raise ValueError("find_random_target_cells_in_spheroid: not enough bulk cells!")
+        spheroid_cells =  list(dict(sorted(cellID_to_distance.items(), key=lambda item: (item[1], item[0]))).keys())[:n_spheroid]
+        frozen_cells = [cellID for cellID in sample.cells_ if not cellID in spheroid_cells]
         np.savetxt("{}spheroid_cells.txt".format(sample.config_dir_), spheroid_cells, fmt='%d')
+        np.savetxt("{}frozen_cells.txt".format(sample.config_dir_), frozen_cells, fmt='%d')
         sample.write_cell_collection_vtk(spheroid_cells,"initial_spheroid.vtk",use_scalar=False)
+
+        # Exclude frozen cells from being target cells - along with any other provided exclude_cells
+        if random_target_cells:
+            exclude_cells += frozen_cells
+            Patterns.find_random_target_cells(sample, n_cells=n_cells, stress_limits=stress_limits, exclude_cells=exclude_cells)
+
+        else:
+            #pick center-most cells...
+            target_cells = spheroid_cells[:n_cells]
+            np.savetxt("{}target_cells.txt".format(sample.config_dir_), target_cells, fmt='%d')
+            sample.write_cell_collection_vtk(target_cells,"target_cells_isolated.vtk",use_scalar=False)
 
     # def set_random_target_cells(self, n_cells = 1, target_stress = 1, **kwargs):
     #     stress_limits = []

@@ -1,8 +1,9 @@
 import os
 import sys
 import numpy as np
-from toolbox.pattern_trainer import remove_last_iteration
-
+from toolbox.periodic import PeriodicTissue
+from toolbox.spheroid import Spheroid
+from toolbox.patterns import Patterns
 def create_sub_file(script,dir):
     lines = []
     lines.append("executable = /home/mameen/examples/singularity_wrapper.sh\n")
@@ -36,61 +37,17 @@ def create_exec_file(script,dir):
     # os.system("chmod +x run_job_{}.sh".format(run_num))
     os.system("chmod +x {}run_job.sh".format(dir))
 
-def resubmit(experiment):
-    for i in range(100):
-        run_dir = experiment + "{:03d}/".format(i)
-        if os.path.isfile(run_dir + "error.txt"):
-            if os.path.isfile(run_dir + "costs.txt"):
-                print(run_dir, "error file and costs exists, deleting last iteration and editing conf")
-                remove_last_iteration(run_dir)
-            os.system("rm {}error.txt".format(run_dir))
-        os.system("echo '1e-12' > {}tolerance".format(run_dir))
-        os.system("cd {} && condor_submit {}run_job.sub".format(run_dir,run_dir))
+# def resubmit(experiment):
+#     for i in range(100):
+#         run_dir = experiment + "{:03d}/".format(i)
+#         if os.path.isfile(run_dir + "error.txt"):
+#             if os.path.isfile(run_dir + "costs.txt"):
+#                 print(run_dir, "error file and costs exists, deleting last iteration and editing conf")
+#                 remove_last_iteration(run_dir)
+#             os.system("rm {}error.txt".format(run_dir))
+#         os.system("echo '1e-12' > {}tolerance".format(run_dir))
+#         os.system("cd {} && condor_submit {}run_job.sub".format(run_dir,run_dir))
     
-def main():
-    stresses = np.loadtxt("init/init_homogeneous_6/stresses.txt")
-    target = np.mean(stresses)
-    tolerance = 1e-6
-    # for experiment in ["/home/mameen/3_cells_mean_l_6/"]:
-    #     n_cells = 3
-    #     script = "single_pattern.py"
-    #     for i in range(100):
-    #         run_dir = experiment + "{:03d}/".format(i)
-    #         create_exec_file(script,run_dir)
-    #         create_sub_file(script,run_dir)
-    #         # os.system("echo '0\n{}' > {}stress_limits".format(np.mean(stresses),run_dir))
-    #         # os.system("echo '{}\n100' > {}stress_limits".format(np.mean(stresses),run_dir))
-    #         # os.system("echo '{}' > {}target".format(np.mean(stresses) + 2*np.std(stresses),run_dir))
-    #         # os.system("echo '{}' > {}target".format(np.mean(stresses),run_dir))
-    #         os.system("echo '{}' > {}target".format(target,run_dir))
-    #         os.system("echo '{}' > {}tolerance".format(tolerance,run_dir))
-    #         os.system("echo '{}' > {}n_cells".format(n_cells,run_dir))
-    #         # os.system("rm {}error.txt {}output.txt {}log.txt".format(run_dir,run_dir,run_dir))
-    #         #submit job
-    #         os.system("cd {} && condor_submit {}run_job.sub".format(run_dir,run_dir))
-    for experiment in ["/home/mameen/6_cells_mean_l_6/"]:
-        n_cells = 6
-        script = "single_pattern.py"
-        for i in range(100):
-            run_dir = experiment + "{:03d}/".format(i)
-            create_exec_file(script,run_dir)
-            create_sub_file(script,run_dir)
-            # os.system("echo '0\n{}' > {}stress_limits".format(np.mean(stresses),run_dir))
-            # os.system("echo '{}\n100' > {}stress_limits".format(np.mean(stresses),run_dir))
-            # os.system("echo '{}' > {}target".format(np.mean(stresses) + 2*np.std(stresses),run_dir))
-            # os.system("echo '{}' > {}target".format(np.mean(stresses),run_dir))
-            os.system("echo '{}' > {}target".format(target,run_dir))
-            os.system("echo '{}' > {}tolerance".format(tolerance,run_dir))
-            os.system("echo '{}' > {}n_cells".format(n_cells,run_dir))
-            # os.system("rm {}error.txt {}output.txt {}log.txt".format(run_dir,run_dir,run_dir))
-            #submit job
-            os.system("cd {} && condor_submit {}run_job.sub".format(run_dir,run_dir))
-    # resubmit("/home/mameen/2_cells_mean_l_4/")
-    # resubmit("/home/mameen/2_cells_mean_l_5/")
-    # resubmit("/home/mameen/2_cells_mean_l_6/")
-    # resubmit("/home/mameen/4_cells_mean_l_4/")
-    # resubmit("/home/mameen/4_cells_mean_l_5/")
-    # resubmit("/home/mameen/4_cells_mean_l_6/")
 
 def multiple_patterns():
     script = "multiple_patterns.py"
@@ -151,7 +108,123 @@ def single_pattern_by_cell():
         for i in range(10):
             run_dir = experiment + "{:03d}/".format(i)
             submit_jobs(script,run_dir,target,tolerance,n_cells,max_iters)
-    
+
+def main():
+    script = "single_pattern.py"
+    tolerance = 1e-6
+    system_sizes = [4,5,6]
+    n_cells = [1]
+    n_runs = 100
+    max_iters = 50000
+    clear_interval = 50
+    learning_rate = 10
+    for l in system_sizes:
+        stresses = np.loadtxt("init/kv_10_l_{}/stresses.txt".format(l))
+        target = np.mean(stresses)
+        for n in n_cells:
+            experiment = "/home/mameen/kv_10_l_{}_n_{}/".format(l,n)
+            for i in range(n_runs):
+                run_dir = experiment + "{:03d}/".format(i)
+                create_exec_file(script,run_dir)
+                create_sub_file(script,run_dir)
+                os.system("echo {} > {}target".format(target,run_dir))
+                os.system("echo {} > {}tolerance".format(tolerance,run_dir))
+                os.system("echo {} > {}max_iters".format(max_iters,run_dir))
+                os.system("echo {} > {}clear_interval".format(clear_interval,run_dir))
+                os.system("echo {} > {}learning_rate".format(learning_rate,run_dir))
+                sample = PeriodicTissue.from_config(run_dir, "minimized.txt")
+                Patterns.find_random_target_cells(sample, n_cells = n)
+                #submit job
+                print("Submitting job in dir:", run_dir)
+                os.system("cd {} && condor_submit {}run_job.sub".format(run_dir,run_dir))
+
+def remove_bad_runs():
+    system_sizes = [4,5,6]
+    n_cells = [1,2,3,4,5,6]
+    n_runs = 100
+    to_remove = []
+    for l in system_sizes:
+        for n in n_cells:
+            experiment = "/home/mameen/kv_10_l_{}_n_{}/".format(l,n)
+            for i in range(n_runs):
+                run_dir = experiment + "{:03d}/".format(i)
+                if not os.path.isfile(run_dir + "error.txt"):
+                    continue
+                
+                with open(run_dir + "error.txt", 'r') as f:
+                    lines = f.readlines()
+                    if lines[-1].split()[0] == 'WARNING:':
+                        continue
+                    print(run_dir)
+                    if lines[-1].split()[0] == 'ValueError:':
+                        print("known error")
+                        to_remove.append(run_dir)
+                    elif lines[-1].split()[0] == 'numpy.linalg.LinAlgError:':
+                        print("numpy error")
+                        to_remove.append(run_dir)
+                    elif lines[-1].split()[0] == 'OSError:':
+                        print("OSerror")
+                        to_remove.append(run_dir)
+                    elif lines[-1].split()[0] == 'IndexError:':
+                        print("Index Error")
+                        to_remove.append(run_dir)
+                    elif lines[-1].split()[0] == 'pandas.errors.EmptyDataError:':
+                        print("Pandas Error")
+                        to_remove.append(run_dir)
+                    else:
+                        print("Other error:")
+                        print(lines[-1].split())
+    for dir in to_remove:
+        os.system("rm -rf {}".format(dir))
+    print("Removed bad runs, if any.")
+def check_costs():
+    system_sizes = [4,5,6]
+    n_cells = [1,2,3,4,5,6]
+    n_runs = 100
+    for l in system_sizes:
+        for n in n_cells:
+            experiment = "/home/mameen/kv_10_l_{}_n_{}/".format(l,n)
+            for i in range(n_runs):
+                run_dir = experiment + "{:03d}/".format(i)
+                if not os.path.isdir(run_dir):
+                    continue
+                if os.path.isfile(run_dir + "costs.txt"):
+                    costs = np.loadtxt(run_dir + "costs.txt")
+                    print(run_dir, costs[-1])
+                else:
+                    print(run_dir, " No costs file yet!")
+def resubmit():
+    script = "single_pattern.py"
+    tolerance = 1e-6
+    system_sizes = [4,5,6]
+    n_cells = [1,2,3,4,5,6]
+    n_runs = 100
+    max_iters = 50000
+    clear_interval = 50
+    learning_rate = 10
+    for l in system_sizes:
+        for n in n_cells:
+            experiment = "/home/mameen/kv_10_l_{}_n_{}/".format(l,n)
+            for i in range(n_runs):
+                run_dir = experiment + "{:03d}/".format(i)
+                if os.path.isdir(run_dir):
+                    continue
+                stresses = np.loadtxt("init/kv_10_l_{}/stresses.txt".format(l))
+                target = np.mean(stresses)
+                os.system("cp -r /home/mameen/init/kv_10_l_{}/{:03d} {}".format(l,i, run_dir))
+                create_exec_file(script,run_dir)
+                create_sub_file(script,run_dir)
+                os.system("echo {} > {}target".format(target,run_dir))
+                os.system("echo {} > {}tolerance".format(tolerance,run_dir))
+                os.system("echo {} > {}max_iters".format(max_iters,run_dir))
+                os.system("echo {} > {}clear_interval".format(clear_interval,run_dir))
+                os.system("echo {} > {}learning_rate".format(learning_rate,run_dir))
+                sample = PeriodicTissue.from_config(run_dir, "minimized.txt")
+                Patterns.find_random_target_cells(sample, n_cells = n)
+                #submit job
+                print("Submitting job in dir:", run_dir)
+                os.system("cd {} && condor_submit {}run_job.sub".format(run_dir,run_dir))
 if __name__ == "__main__":
-    single_pattern_by_cell()
-    # resubmit()
+    remove_bad_runs()
+    # check_costs()
+    # main()
