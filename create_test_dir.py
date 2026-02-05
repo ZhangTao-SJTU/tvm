@@ -56,7 +56,7 @@ def create_test_directory_spheroid():
             os.system("echo 10 > {}learning_rate".format(test_dir))
 
             sample = PeriodicTissue.from_config(test_dir, "minimized.txt")
-            training_instance = Patterns.from_sample(sample)
-            training_instance.find_target_cells_in_spheroid(sample, n_spheroid = n_spheroid, n_cells = 1)
+            Patterns.find_target_cells_in_spheroid(sample, n_spheroid = n_spheroid, n_cells = 1)
+
 if __name__ == "__main__":
     create_test_directory_spheroid()
