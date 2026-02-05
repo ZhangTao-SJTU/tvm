@@ -822,7 +822,8 @@ def error_to_iter_cellwise_sample_track():
     plotter.ax.legend(loc='lower left')
     plotter.save_fig(graph_output)
 
-
+    
+    
 
 def main():
     os.makedirs("new_graphs/",exist_ok=True)
