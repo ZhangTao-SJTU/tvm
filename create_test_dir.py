@@ -57,6 +57,46 @@ def create_test_directory_spheroid():
 
             sample = PeriodicTissue.from_config(test_dir, "minimized.txt")
             Patterns.find_target_cells_in_spheroid(sample, n_spheroid = n_spheroid, n_cells = 1)
+def create_test_directory_spheroid_increase():
+    os.makedirs("runs/",exist_ok=True)
+    l = 5
+    for n_spheroid in [30]:
+        os.makedirs("runs/kv_10_l_{}_n_hidden_{:03d}_increase/".format(l,n_spheroid),exist_ok=True)
+        for i in range(20):
+            test_dir = "runs/kv_10_l_{}_n_hidden_{:03d}_increase/{:03d}/".format(l,n_spheroid,i)
+            os.makedirs(test_dir,exist_ok=True)
+            stresses = np.loadtxt("init/init_homogeneous_{}/stresses.txt".format(l))
+            os.system("rm -rf {}".format(test_dir))
+            os.system("cp -r init/init_homogeneous_{}/{:03d} {}".format(l,i,test_dir))
+            os.system("echo {} > {}target".format(np.mean(stresses)+2*np.std(stresses), test_dir))
+            os.system("echo 1e-6 > {}tolerance".format(test_dir))
+            os.system("echo 10000 > {}max_iters".format(test_dir))
+            os.system("echo 10 > {}clear_interval".format(test_dir))
+            os.system("echo 10 > {}learning_rate".format(test_dir))
+
+            sample = PeriodicTissue.from_config(test_dir, "minimized.txt")
+            Patterns.find_target_cells_in_spheroid(sample, n_spheroid = n_spheroid, n_cells = 1)
+
+def create_test_directory_spheroid_decrease():
+    os.makedirs("runs/",exist_ok=True)
+    l = 5
+    for n_spheroid in [30]:
+        os.makedirs("runs/kv_10_l_{}_n_hidden_{:03d}_decrease/".format(l,n_spheroid),exist_ok=True)
+        for i in range(20):
+            test_dir = "runs/kv_10_l_{}_n_hidden_{:03d}_decrease/{:03d}/".format(l,n_spheroid,i)
+            os.makedirs(test_dir,exist_ok=True)
+            stresses = np.loadtxt("init/init_homogeneous_{}/stresses.txt".format(l))
+            os.system("rm -rf {}".format(test_dir))
+            os.system("cp -r init/init_homogeneous_{}/{:03d} {}".format(l,i,test_dir))
+            os.system("echo {} > {}target".format(np.mean(stresses)-2*np.std(stresses), test_dir))
+            os.system("echo 1e-6 > {}tolerance".format(test_dir))
+            os.system("echo 10000 > {}max_iters".format(test_dir))
+            os.system("echo 10 > {}clear_interval".format(test_dir))
+            os.system("echo 10 > {}learning_rate".format(test_dir))
+
+            sample = PeriodicTissue.from_config(test_dir, "minimized.txt")
+            Patterns.find_target_cells_in_spheroid(sample, n_spheroid = n_spheroid, n_cells = 1)
 
 if __name__ == "__main__":
-    create_test_directory_spheroid()
+    create_test_directory_spheroid_increase()
+    create_test_directory_spheroid_decrease()

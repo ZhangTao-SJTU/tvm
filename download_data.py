@@ -54,19 +54,21 @@ def download_single_pattern_cellwise():
                 os.system("scp {} /Users/shabeebameen/Projects/tvm-fire/{}".format(cluster_folder+file,subfolder))
 
 def download_single_patterns():
-    for l in [4,5,6]:
+    for l in [6]:
         for n in [i for i in range(1,7)]:
             local_folder = "data/kv_10_l_{}_n_{}/".format(l,n)
             os.makedirs(local_folder,exist_ok=True)
-            for i in range(100):
+            f = 0
+            for i in range(20):
                 subfolder = local_folder + "{:03d}/".format(i)
                 os.makedirs(subfolder,exist_ok=True)
                 cluster_folder = "mameen@smatter-login.syr.edu:/home/mameen/kv_10_l_{}_n_{}/{:03d}/".format(l,n,i)
-                for file in ["q_values.txt","costs.txt"]:
-                    if os.path.isfile("/Users/shabeebameen/Projects/tvm-fire/{}".format(subfolder+file)):
-                        print("{} already exists".format(subfolder+file))
-                        continue
+                for file in ["q_values.txt","costs.txt","minimized.txt"]:
+                    # if os.path.isfile("/Users/shabeebameen/Projects/tvm-fire/{}".format(subfolder+file)):
+                    #     print("{} already exists".format(subfolder+file))
+                    #     continue
+                    # if not os.path.isfile(cluster_folder + "minimized.txt"):
+                    #     continue
                     os.system("scp {} /Users/shabeebameen/Projects/tvm-fire/{}".format(cluster_folder+file,subfolder))
-
 if __name__ == "__main__":
     download_single_patterns()
