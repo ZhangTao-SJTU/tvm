@@ -63,7 +63,9 @@ def download_single_patterns():
                 subfolder = local_folder + "{:03d}/".format(i)
                 os.makedirs(subfolder,exist_ok=True)
                 cluster_folder = "mameen@smatter-login.syr.edu:/home/mameen/kv_10_l_{}_n_{}/{:03d}/".format(l,n,i)
-                for file in ["q_values.txt","costs.txt","minimized.txt"]:
+                # for file in ["q_values.txt","costs.txt","minimized.txt"]:
+                for file in ["cellParameters.input"]:
+
                     # if os.path.isfile("/Users/shabeebameen/Projects/tvm-fire/{}".format(subfolder+file)):
                     #     print("{} already exists".format(subfolder+file))
                     #     continue

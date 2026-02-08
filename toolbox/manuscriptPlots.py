@@ -71,8 +71,8 @@ class plot:
         self.ax.set_xlabel(self.xlabel)
         self.ax.set_ylabel(self.ylabel)
 
-    def plot_xy(self,x_array,y_array, color = "#7d878a", label = "plot",alpha = 0.8):
-        self.ax.plot(x_array,y_array, color = color, label = label,alpha = alpha)
+    def plot_xy(self,x_array,y_array, color = "#7d878a", label = "plot",alpha = 0.8,linewidth = 7):
+        self.ax.plot(x_array,y_array, color = color, label = label,alpha = alpha,linewidth = linewidth)
     def plot_scatter(self,x_array,y_array, color = "#7d878a", label = "plot",alpha = 0.8):
         self.ax.scatter(x_array,y_array, color = color, label = label,alpha = alpha,s = 1000)
 
