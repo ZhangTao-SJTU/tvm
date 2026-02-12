@@ -545,7 +545,12 @@ def stress_histogram_spheroid(l_vals = [5,6],n_spheroid_cells = [5,10,20,40]):
         plotter.save_fig(savefile)
 
 
-
+def write_final_area(l,n,i):
+    test_dir ="data/kv_10_l_{}_n_sp_{:03d}/{:03d}/".format(l,n,i)
+    if not os.path.isfile(test_dir+"minimized.txt"):
+        return
+    
+    sample = PeriodicTissue.from_config
 def main():
     stress_histogram_spheroid()
     # error_to_iters_spheroid()
