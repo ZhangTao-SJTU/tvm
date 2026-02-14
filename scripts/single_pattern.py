@@ -13,12 +13,12 @@ def train_target_cell_to_stress(
         run_dir, 
         target_cell_to_stress,
         tissue,
-        cpp_executable_dir = "/home/shabeeb/Projects/tvm-fire/build/",
-        tolerance = 1e-8,
-        learning_rate = 10,
-        clear_interval = 10,
-        max_iters = 2000,
-        frozen_cells = []):
+        cpp_executable_dir,
+        tolerance,
+        learning_rate,
+        clear_interval,
+        max_iters,
+        frozen_cells):
     print("Training random cells in directory:", run_dir)
     print("     Parameters for training:")
     print("     cpp_executable_dir:", cpp_executable_dir)
@@ -37,111 +37,114 @@ def train_target_cell_to_stress(
     training_instance.initialize()
     training_instance.run_to_max_iters(max_iters)
 
-# resume from the last valid iteration completely transferred to files/
-def resume_run(
-        run_dir, 
-        tissue_type = "periodic",
-        cpp_executable_dir = "/home/shabeeb/Projects/tvm-fire/build/",
-        clear_interval = 10):
-    with open("{}costs.txt".format(run_dir), 'r') as f:
-        costs = [float(line.strip()) for line in f.readlines()]
-    with open("{}q_values.txt".format(run_dir), 'r') as f:
-        q_values = [float(line.strip()) for line in f.readlines()]
+# # resume from the last valid iteration completely transferred to files/
+# def resume_run(
+#         run_dir, 
+#         tissue_type = "periodic",
+#         cpp_executable_dir = "/home/shabeeb/Projects/tvm-fire/build/",
+#         clear_interval = 10):
+#     with open("{}costs.txt".format(run_dir), 'r') as f:
+#         costs = [float(line.strip()) for line in f.readlines()]
+#     with open("{}q_values.txt".format(run_dir), 'r') as f:
+#         q_values = [float(line.strip()) for line in f.readlines()]
 
     
-    def files_exist(iteration):
-        return all([os.path.isfile("{}files/{:07d}.{}".format(run_dir, iteration, filename)) for filename in ["stresses.csv","bulk.txt","cellParameters.input"]])
+#     def files_exist(iteration):
+#         return all([os.path.isfile("{}files/{:07d}.{}".format(run_dir, iteration, filename)) for filename in ["stresses.csv","bulk.txt","cellParameters.input"]])
     
-    last_valid_iteration = -1
-    for i in range(len(costs)-1, -1, -1):
-        if files_exist(i):
-            last_valid_iteration = i
-            break
-    if last_valid_iteration == -1:
-        print("No valid iteration files found. Cannot resume.")
-        return
-    print("Resuming from iteration:", last_valid_iteration)
-    os.system("cp {}files/{:07d}.bulk.txt {}minimized.txt".format(run_dir, last_valid_iteration, run_dir))
-    os.system("cp {}files/{:07d}.cellParameters.input {}cellParameters.input".format(run_dir, last_valid_iteration, run_dir))
+#     last_valid_iteration = -1
+#     for i in range(len(costs)-1, -1, -1):
+#         if files_exist(i):
+#             last_valid_iteration = i
+#             break
+#     if last_valid_iteration == -1:
+#         print("No valid iteration files found. Cannot resume.")
+#         return
+#     print("Resuming from iteration:", last_valid_iteration)
+#     os.system("cp {}files/{:07d}.bulk.txt {}minimized.txt".format(run_dir, last_valid_iteration, run_dir))
+#     os.system("cp {}files/{:07d}.cellParameters.input {}cellParameters.input".format(run_dir, last_valid_iteration, run_dir))
     
-def resume_run_legacy(run_dir, **kwargs):
-    print("Resuming runs in directory:", run_dir)
-    #default parameters
-    cpp_executable_dir = "/home/shabeeb/Projects/tvm-fire/build/"
-    tolerance = 1e-8
-    max_iters = 2000
-    learning_rate = 10
-    target_cell_to_stress = None
-    frozen_cells = []
-    if "frozen_cells" in kwargs:    
-        frozen_cells = kwargs["frozen_cells"]
-    if "cpp_executable_dir" in kwargs:
-        cpp_executable_dir = kwargs["cpp_executable_dir"]
-    if "tolerance" in kwargs:
-        tolerance = kwargs["tolerance"]
-    if "learning_rate" in kwargs:
-        learning_rate = kwargs["learning_rate"]
-    if "max_iters" in kwargs:
-        max_iters = kwargs["max_iters"]
-    if "target_cell_to_stress" in kwargs:
-        target_cell_to_stress = kwargs["target_cell_to_stress"]
+# def resume_run_legacy(run_dir, **kwargs):
+#     print("Resuming runs in directory:", run_dir)
+#     #default parameters
+#     cpp_executable_dir = "/home/shabeeb/Projects/tvm-fire/build/"
+#     tolerance = 1e-8
+#     max_iters = 2000
+#     learning_rate = 10
+#     target_cell_to_stress = None
+#     frozen_cells = []
+#     if "frozen_cells" in kwargs:    
+#         frozen_cells = kwargs["frozen_cells"]
+#     if "cpp_executable_dir" in kwargs:
+#         cpp_executable_dir = kwargs["cpp_executable_dir"]
+#     if "tolerance" in kwargs:
+#         tolerance = kwargs["tolerance"]
+#     if "learning_rate" in kwargs:
+#         learning_rate = kwargs["learning_rate"]
+#     if "max_iters" in kwargs:
+#         max_iters = kwargs["max_iters"]
+#     if "target_cell_to_stress" in kwargs:
+#         target_cell_to_stress = kwargs["target_cell_to_stress"]
 
-    print("     Parameters for training:")
-    print("     cpp_executable_dir:", cpp_executable_dir)
-    print("     tolerance:", tolerance)
-    print("     learning_rate:", learning_rate)
-    print("     max iters:", max_iters)
+#     print("     Parameters for training:")
+#     print("     cpp_executable_dir:", cpp_executable_dir)
+#     print("     tolerance:", tolerance)
+#     print("     learning_rate:", learning_rate)
+#     print("     max iters:", max_iters)
 
-    costs = np.loadtxt("{}costs.txt".format(run_dir))
-    # if costs[-1]<tolerance:
-    #     print("The last iteration already meets the tolerance requirement. No need to resume.")
-    #     return
-    q_values = np.loadtxt("{}q_values.txt".format(run_dir))
-    last_iteration = len(costs) - 1
-    config_file = "{:07d}.bulk.txt".format(last_iteration)
-    print("Loading configuration from: ", config_file)
-    sample = PeriodicTissue.from_config(run_dir,config_file)
-    training_instance = Patterns.periodic_tissue(sample)
-    training_instance._cost_values = list(costs)
-    training_instance._q_values = list(q_values)
-    training_instance.set_initial_config(PeriodicTissue.from_config(training_instance._dir,"init_config.txt".format(training_instance._dir)))
-    training_instance.set_cpp_executable_dir(cpp_executable_dir)
-    training_instance.set_tolerance(tolerance)
-    training_instance.set_learning_rate(learning_rate)
-    cell_parameters_file = "{:07d}.cellParameters.input".format(last_iteration)
-    print("Loading cell parameters from: ", cell_parameters_file)
-    training_instance.load_cell_parameters(cell_parameters_file)
-    os.system("cp {}{} {}cellParameters.input".format(run_dir,cell_parameters_file,run_dir))
-    training_instance.set_iter_counter(last_iteration+1)
-    if target_cell_to_stress is None:
-        df = pd.read_csv("{}{:07d}.stresses.csv".format(run_dir,0))
-        target_cell_to_stress = dict(zip(df['CellID'], df['Target']))
-    training_instance.set_target_cell_to_stress(target_cell_to_stress)
-    training_instance.set_frozen_cells(frozen_cells)
-    training_instance.run_to_max_iters(max_iters=max_iters)
+#     costs = np.loadtxt("{}costs.txt".format(run_dir))
+#     # if costs[-1]<tolerance:
+#     #     print("The last iteration already meets the tolerance requirement. No need to resume.")
+#     #     return
+#     q_values = np.loadtxt("{}q_values.txt".format(run_dir))
+#     last_iteration = len(costs) - 1
+#     config_file = "{:07d}.bulk.txt".format(last_iteration)
+#     print("Loading configuration from: ", config_file)
+#     sample = PeriodicTissue.from_config(run_dir,config_file)
+#     training_instance = Patterns.periodic_tissue(sample)
+#     training_instance._cost_values = list(costs)
+#     training_instance._q_values = list(q_values)
+#     training_instance.set_initial_config(PeriodicTissue.from_config(training_instance._dir,"init_config.txt".format(training_instance._dir)))
+#     training_instance.set_cpp_executable_dir(cpp_executable_dir)
+#     training_instance.set_tolerance(tolerance)
+#     training_instance.set_learning_rate(learning_rate)
+#     cell_parameters_file = "{:07d}.cellParameters.input".format(last_iteration)
+#     print("Loading cell parameters from: ", cell_parameters_file)
+#     training_instance.load_cell_parameters(cell_parameters_file)
+#     os.system("cp {}{} {}cellParameters.input".format(run_dir,cell_parameters_file,run_dir))
+#     training_instance.set_iter_counter(last_iteration+1)
+#     if target_cell_to_stress is None:
+#         df = pd.read_csv("{}{:07d}.stresses.csv".format(run_dir,0))
+#         target_cell_to_stress = dict(zip(df['CellID'], df['Target']))
+#     training_instance.set_target_cell_to_stress(target_cell_to_stress)
+#     training_instance.set_frozen_cells(frozen_cells)
+#     training_instance.run_to_max_iters(max_iters=max_iters)
 
-def remove_last_iteration(run_dir):
-    costs = np.loadtxt("{}costs.txt".format(run_dir))
-    q_values = np.loadtxt("{}q_values.txt".format(run_dir))
-    last_iteration = len(costs)-1
-    costs = costs[:-1]
-    q_values = q_values[:-1]
-    np.savetxt("{}costs.txt".format(run_dir), costs,fmt='%.2e')
-    np.savetxt("{}q_values.txt".format(run_dir), q_values,fmt='%.4f')
-    if os.path.isfile("{}{:07d}.cellParameters.input".format(run_dir,last_iteration)):
-        os.remove("{}{:07d}.cellParameters.input".format(run_dir,last_iteration))
-    if os.path.isfile("{}{:07d}.stresses.csv".format(run_dir, last_iteration)):
-        os.remove("{}{:07d}.stresses.csv".format(run_dir, last_iteration))
-    if os.path.isfile("{}{:07d}.bulk.txt".format(run_dir, last_iteration)):
-        os.remove("{}{:07d}.bulk.txt".format(run_dir, last_iteration))
-    print("Removed iteration {}".format(last_iteration))
+# def remove_last_iteration(run_dir):
+#     costs = np.loadtxt("{}costs.txt".format(run_dir))
+#     q_values = np.loadtxt("{}q_values.txt".format(run_dir))
+#     last_iteration = len(costs)-1
+#     costs = costs[:-1]
+#     q_values = q_values[:-1]
+#     np.savetxt("{}costs.txt".format(run_dir), costs,fmt='%.2e')
+#     np.savetxt("{}q_values.txt".format(run_dir), q_values,fmt='%.4f')
+#     if os.path.isfile("{}{:07d}.cellParameters.input".format(run_dir,last_iteration)):
+#         os.remove("{}{:07d}.cellParameters.input".format(run_dir,last_iteration))
+#     if os.path.isfile("{}{:07d}.stresses.csv".format(run_dir, last_iteration)):
+#         os.remove("{}{:07d}.stresses.csv".format(run_dir, last_iteration))
+#     if os.path.isfile("{}{:07d}.bulk.txt".format(run_dir, last_iteration)):
+#         os.remove("{}{:07d}.bulk.txt".format(run_dir, last_iteration))
+#     print("Removed iteration {}".format(last_iteration))
 
 def single_pattern(run_dir):
     # Default parameters, can be overridden by files in run_dir
-    max_iters = 100000
+    
     tolerance = 1e-7
     learning_rate = 10
     clear_interval = 10
+    max_iters = 100000
+    frozen_cells = []
+    
     if os.path.isdir("/Users/shabeebameen/Projects/tvm-fire/build/"):
         cpp_executable_dir = "/Users/shabeebameen/Projects/tvm-fire/build/"
     elif os.path.isdir("/home/shabeeb/Projects/tvm-fire/build/"):
@@ -152,7 +155,7 @@ def single_pattern(run_dir):
     target_stress = np.loadtxt("{}target".format(run_dir))
     with open("{}target_cells.txt".format(run_dir), 'r') as f:
         target_cells = [int(line.strip()) for line in f.readlines()]
-    frozen_cells = []
+    
     if os.path.isfile("{}frozen_cells.txt".format(run_dir)):
         with open("{}frozen_cells.txt".format(run_dir), 'r') as f:
             frozen_cells = [int(line.strip()) for line in f.readlines()]
@@ -190,12 +193,12 @@ def single_pattern(run_dir):
         run_dir,
         target_cell_to_stress = dict(zip(target_cells, [target_stress]*len(target_cells))),
         tissue = PeriodicTissue.from_config(run_dir,"minimized.txt"),
-        frozen_cells = frozen_cells,
+        cpp_executable_dir = cpp_executable_dir,
         tolerance = tolerance, 
         learning_rate = learning_rate,
         clear_interval = clear_interval,
-        cpp_executable_dir = cpp_executable_dir,
-        max_iters = max_iters)
+        max_iters = max_iters,
+        frozen_cells = frozen_cells)
 
 def main():
     run_dir = sys.argv[1]

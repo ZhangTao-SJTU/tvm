@@ -13,7 +13,7 @@ lwmap = {1:15,2:10,3:5,4:5,5:5,6:5}
 lw_sp_map = {40:15,20:10,10:5, 5:20}
 n_spheroid_color_map = {40:"blue", 20:"orange", 10:"red", 5: "green" }
 n_cells_color_map = {1:"blue",2:"orange",3:"purple", 4:"red" ,5:"yellow",6:"green"}
-
+n_runs = 100
 def error_to_iters_spheroid(l_vals = [5,6], n_spheroid = [5,10,20,40]):
     for l in l_vals:
         savefile = "spheroid_graphs/error_to_iters_spheroid_l_{}.png".format(l)
@@ -544,15 +544,206 @@ def stress_histogram_spheroid(l_vals = [5,6],n_spheroid_cells = [5,10,20,40]):
         plotter.ax.legend()
         plotter.save_fig(savefile)
 
-
-def write_final_area(l,n,i):
-    test_dir ="data/kv_10_l_{}_n_sp_{:03d}/{:03d}/".format(l,n,i)
+def calculate_surface_area(sample, spheroid_cells, frozen_cells):
+    frozen_polygons = {
+        polygon_id
+        for cell_id in frozen_cells
+        for polygon_id in sample.cells_[cell_id].polygons_
+    }
+    spheroid_polygons = {
+        polygon_id
+        for cell_id in spheroid_cells
+        for polygon_id in sample.cells_[cell_id].polygons_
+    }
+    
+    common_polygons = frozen_polygons & spheroid_polygons
+    try:
+        return sum(sample.polygons_[polygon_id].area_ for polygon_id in common_polygons)
+    except:
+        return None
+def write_init_and_final_surface_areas(test_dir):
     if not os.path.isfile(test_dir+"minimized.txt"):
         return
-    
-    sample = PeriodicTissue.from_config
+    spheroid_cells = np.loadtxt(test_dir+"spheroid_cells.txt")
+    frozen_cells = np.loadtxt(test_dir+"frozen_cells.txt")
+    areas = [calculate_surface_area(PeriodicTissue.from_config(test_dir,file),spheroid_cells,frozen_cells) for file in ["initial_config.txt","minimized.txt"]]
+    if None in areas:
+        return
+    np.savetxt(test_dir+"areas.txt",areas)
+
+def write_all_areas():
+    for l in [6]:
+        for n in [5,10,20,40]:
+            for i in range(100):
+                test_dir ="data/kv_10_l_{}_n_sp_{:03d}/{:03d}/".format(l,n,i)
+                write_init_and_final_surface_areas(test_dir)
+
+def write_stresses_spheroid(l_vals = [5,6],n_spheroid_cells = [5,10,20,40]):
+    n_runs = 100
+    for l in l_vals:
+        for t in n_spheroid_cells:
+            stress_vals = []
+            for i in range(n_runs):
+                test_dir ="data/kv_10_l_{}_n_sp_{:03d}/{:03d}/".format(l,t,i)
+                if not os.path.isfile(test_dir+"minimized.txt"):
+                    continue
+                if not os.path.isfile(test_dir + "cellParameters.input"):
+                    continue
+                if not os.path.isfile(test_dir + "costs.txt"):
+                    continue
+                costs = np.loadtxt(test_dir + "costs.txt")
+                if costs.shape == ():
+                    continue
+                if costs[-1]>tolerance:
+                    continue
+                spheroid_cells = np.loadtxt("data/kv_10_l_{}_n_sp_{:03d}/{:03d}/spheroid_cells.txt".format(l,t,i))
+                sample = PeriodicTissue.from_config(test_dir,"minimized.txt")
+                tr = Training.from_sample(sample)
+                tr.load_cell_parameters()
+                stress_vals += [calculate_max_shear_stress(tr._config,cellID) for cellID in spheroid_cells]
+            if not len(stress_vals):
+                continue
+            np.savetxt("data/kv_10_l_{}_n_sp_{:03d}/final_stresses.txt".format(l,t),stress_vals)
+
+def write_stresses_periodic(l_vals = [4,5,6],n_target_cells = [1,2,3,4,5,6]):
+    n_runs = 100
+    for l in l_vals:
+        for t in n_target_cells:
+            stress_vals = []
+            for i in range(n_runs):
+                test_dir ="data/kv_10_l_{}_n_{}/{:03d}/".format(l,t,i)
+                if not os.path.isfile(test_dir+"minimized.txt"):
+                    continue
+                if not os.path.isfile(test_dir + "cellParameters.input"):
+                    continue
+                if not os.path.isfile(test_dir + "costs.txt"):
+                    continue
+                costs = np.loadtxt(test_dir + "costs.txt")
+                if costs.shape == ():
+                    continue
+                if costs[-1]>tolerance:
+                    continue
+                sample = PeriodicTissue.from_config(test_dir,"minimized.txt")
+                tr = Training.from_sample(sample)
+                tr.load_cell_parameters()
+                stress_vals += [calculate_max_shear_stress(tr._config,cellID) for cellID in tr._config.cells_]
+            if not len(stress_vals):
+                continue
+            np.savetxt("data/kv_10_l_{}_n_{}/final_stresses.txt".format(l,t),stress_vals)
+
+def write_final_s0(l_vals = [5,6],n_cells = [5,10,20,40], spheroid = True):
+    for l in l_vals:
+        for n in n_cells:
+            s0_vals = []
+            if spheroid: 
+                savefile = "data/kv_10_l_{}_n_sp_{:03d}/final_s0.txt".format(l,n)
+            else:
+                savefile = "data/kv_10_l_{}_n_{}/final_s0.txt".format(l,n)
+            for i in range(n_runs):
+                if spheroid:
+                    test_dir ="data/kv_10_l_{}_n_sp_{:03d}/{:03d}/".format(l,n,i)
+                else:
+                    test_dir ="data/kv_10_l_{}_n_{}/{:03d}/".format(l,n,i)
+                if not os.path.isfile(test_dir+"minimized.txt"):
+                    continue
+                if not os.path.isfile(test_dir + "cellParameters.input"):
+                    continue
+                if not os.path.isfile(test_dir + "costs.txt"):
+                    continue
+                costs = np.loadtxt(test_dir + "costs.txt")
+                if costs.shape == ():
+                    continue
+                if costs[-1]>tolerance:
+                    continue
+                if spheroid:
+                    spheroid_cells = np.loadtxt(test_dir+"spheroid_cells.txt".format(l,n,i))
+                    df = pd.read_csv(test_dir+"cellParameters.input", sep = " ", header=None)
+                    for i,row in df.iterrows():
+                        if not row[0] in spheroid_cells:
+                            continue
+                        s0_vals.append(row[2])
+                else:
+                    df = pd.read_csv(test_dir+"cellParameters.input", sep = " ", header=None)
+                    s0_vals += df[2].to_list()
+
+            if not len(s0_vals):
+                continue
+            np.savetxt(savefile,s0_vals)
+
+
+
+def area_change_to_stress_change(l_vals = [5,6],n_spheroid_cells = [5,10,20,40]):
+    for l in l_vals:
+        savefile = "spheroid_graphs/area_change_to_stress_change_{}.png".format(l)
+        plotter = manuscriptPlots.plot()
+        plotter.set_xlim(-1,1)
+        plotter.set_ylim(-.1,.1)
+        plotter.set_xticks([0.5*i for i in range(-2,3)])
+        plotter.set_yticks([0.1*i for i in range(-2,3)])
+        plotter.set_xlabel(r"$(\sigma_T - \sigma_{0})/\sigma_{0}$")
+        plotter.set_ylabel(r"$(S_{T} - S_{0})/S_{0}$")
+        plotter.set_title("l = {}, ".format(l)+ r"$n_T = 1$")
+
+        plotter.initialize_figure()
+        for n in n_spheroid_cells:
+            del_A = []
+            del_stress = []
+            for i in range(100):
+                test_dir ="data/kv_10_l_{}_n_sp_{:03d}/{:03d}/".format(l,n,i)
+                if not os.path.isfile(test_dir + "areas.txt"):
+                    continue
+                if not os.path.isfile(test_dir + "0000000.stresses.csv"):
+                    continue
+                areas = np.loadtxt(test_dir + "areas.txt")
+                df = pd.read_csv(test_dir + "0000000.stresses.csv", sep = ",")
+                del_A.append(areas[1]/areas[0]-1)
+                del_stress.append(df["Target"].to_list()[0]/df["Current"].to_list()[0] - 1)
+            plotter.plot_scatter(del_stress,del_A, color = n_spheroid_color_map[n], label = r"$n_{sp}=$"+ "{}".format(n))
+        plotter.ax.legend()
+        plotter.save_fig(savefile)
+
+def SD_s0_to_n_cells(l_vals = [4,5,6], n_cells = [1,2,3,4,5,6], spheroid = False):
+    for l in l_vals:
+        if spheroid:
+            savefile = "spheroid_graphs/sd_s0_to_n_spheroid_l_{}.png".format(l)
+            n_cell_to_final_s0 = {n:np.loadtxt("data/kv_10_l_{}_n_sp_{:03d}/final_s0.txt".format(l,n)) for n in n_cells}
+        else:
+            savefile = "spheroid_graphs/sd_s0_to_n_cells_l_{}.png".format(l)
+            n_cell_to_final_s0 = {n:np.loadtxt("data/kv_10_l_{}_n_{}/final_s0.txt".format(l,n)) for n in n_cells}
+        plotter = manuscriptPlots.plot()
+        plotter.set_xticks(n_cells)
+        if spheroid:
+            plotter.set_yticks([0.5*i for i in range(1,10)])
+            plotter.set_xlim(3,42)
+            plotter.set_ylim(0.2,1.3)
+            plotter.set_xlabel(r"$n_{sp}$")
+        else:
+            plotter.set_yticks([0.5*i for i in range(1,10)])
+            plotter.set_xlim(0,7)
+            plotter.set_ylim(0.1,0.5)
+            plotter.set_xlabel(r"$n_T$")
+        plotter.set_ylabel(r"$SD(s_0)$")
+        # plotter.set_ylabel(r"$Q_n$")
+
+        plotter.set_title(r"$n_{(total)} =$"+ "{}".format(l**3))
+        plotter.set_yScaled()
+
+        plotter.initialize_figure()
+
+
+        print([np.std(n_cell_to_final_s0[n]) for n in n_cells])
+        plotter.plot_scatter(
+            n_cells,
+            [np.std(n_cell_to_final_s0[n]) for n in n_cells],
+            marker = 'd',
+            s = 500,
+            color = "black")
+
+        plotter.save_fig(savefile)
+
 def main():
-    stress_histogram_spheroid()
+    # stress_histogram_spheroid()
+    # write_all_areas()
     # error_to_iters_spheroid()
     # overlap_to_iters_spheroid()
     # error_to_iters_periodic(n_target_cells=[1,2,4])
@@ -563,6 +754,11 @@ def main():
     # final_overlap_to_n_cells_periodic()
     # s0_histogram_spheroid()
     # s0_histogram_periodic(n_target_cells=[1,2,4])
-    
+    # area_change_to_stress_change()
+    # write_stresses_periodic()
+    # write_final_s0(l_vals = [5,6],n_cells = [5,10,20,40], spheroid=True)
+    # write_final_s0(l_vals = [4,5,6],n_cells = [1,2,3,4,5,6], spheroid=False)
+    SD_s0_to_n_cells(l_vals = [4,5,6], n_cells = [1,2,3,4,5,6], spheroid = False)
+    SD_s0_to_n_cells(l_vals = [5,6], n_cells = [5,10,20,40], spheroid = True)
 if __name__ == "__main__":
     main()

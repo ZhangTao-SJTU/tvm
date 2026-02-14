@@ -73,8 +73,8 @@ class plot:
 
     def plot_xy(self,x_array,y_array, color = "#7d878a", label = "plot",alpha = 0.8,linewidth = 7):
         self.ax.plot(x_array,y_array, color = color, label = label,alpha = alpha,linewidth = linewidth)
-    def plot_scatter(self,x_array,y_array, color = "#7d878a", label = "plot",alpha = 0.8):
-        self.ax.scatter(x_array,y_array, color = color, label = label,alpha = alpha,s = 1000)
+    def plot_scatter(self, x_array,y_array,**kwargs):
+        self.ax.scatter(x_array,y_array,**kwargs)
     def plot_errorbar(self,x_array,y_array, err_array, **kwargs):
         self.ax.errorbar(x_array, y_array, err_array,**kwargs)
 

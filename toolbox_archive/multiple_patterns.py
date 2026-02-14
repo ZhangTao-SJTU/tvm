@@ -11,10 +11,12 @@ import sys
 class multiple_patterns:
     def __init__(self):
         self._run_dir = None
-        self._target_cell_to_stress = None
+        self._target_cell_to_stress_A = None
+        self._target_cell_to_stress_B = None
         self._target_stress = None
-        self._tolerance = 1e-6
-        self._n_cells = None
+        self._tolerance = 1e-8
+        self._n_cells_A = 2
+        self._n_cells_B = 2
         self._max_iters = 10
         self._convergence_check_interval = 10
         self._learning_rate = 10
