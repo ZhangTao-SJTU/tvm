@@ -228,6 +228,11 @@ class Patterns(Training):
                 self.clear_directory()
             self._iter_counter += 1
         print("Final cost: {:.2e}".format(cost))
+        # the for-loop is exited either by reaching max iters or cost is lower than tolerance
+        # Either way, self._iter_counter is 1 more than the final iteration. (this iteration did not commence)
+        # hence, reset iter counter to final value and clear directory.
+        self._iter_counter -=1
+        self.clear_directory()
     
     def clear_directory(self):
         os.makedirs("{}files".format(self._dir), exist_ok=True)
