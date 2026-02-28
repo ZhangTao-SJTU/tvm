@@ -22,6 +22,13 @@ class Training(FIREminimization):
     def set_initial_config(self,config):
         self._initial_config = config
         self._initial_config.evaluate_cell_neighbors()
+    def get_iter_counter(self):
+        return self._iter_counter
+    def get_last_overlap(self):
+        return self._q_values[-1]
+    def get_tolerance(self):
+        return self._tolerance
+    
     def write_cell_parameters(self,filename = "cellParameters.input"):
         with open("{}{}".format(self._dir,filename),"w") as f:
             for cellID, cell in self._config.cells_.items():

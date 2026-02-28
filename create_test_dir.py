@@ -97,14 +97,13 @@ def create_test_directory_spheroid_decrease():
             sample = PeriodicTissue.from_config(test_dir, "minimized.txt")
             Patterns.find_target_cells_in_spheroid(sample, n_spheroid = n_spheroid, n_cells = 1)
 def create_test_directory_multiple_patterns():
-
-
-    subpattern_n_cells =[1,1,2]
+    subpattern_n_cells =[1,1]
     n_cells = sum(subpattern_n_cells)
     test_dir = "tests/kv_10_l_4_p"
     for p in subpattern_n_cells:
         test_dir+="_{}".format(p)
-    test_dir+="/"
+    # test_dir+="/"
+    test_dir+="_run3/"
     tolerance = 1e-6
     max_iters = 10000
     clear_interval = 100

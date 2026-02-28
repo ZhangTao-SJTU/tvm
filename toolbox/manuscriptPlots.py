@@ -1,4 +1,7 @@
 #plotting class
+from cProfile import label
+from turtle import color
+
 import matplotlib.pyplot as plt
 from matplotlib.ticker import ScalarFormatter
 
@@ -18,16 +21,15 @@ class plot:
         self.height = 0.87-self.bottomMargin
         self.xlabel = 'X-axis'
         self.ylabel = 'Y-axis'
-        self.x0 = 0
-        self.x1 = 1
-        self.y0 = 0
-        self.y1 = 1
+        self.xlim = None
+        self.ylim = None
         self.xticks = [0.5 * i for i in range(1,5)]
         self.yticks = [1+0.2*i for i in range(4)]
         self.xScaled= False
         self.yScaled = False
         self.fig = None
         self.ax = None
+        self.transparent = True
     def set_xLog(self):
         self.ax.set_xscale("log")
     def set_yLog(self):
@@ -40,12 +42,12 @@ class plot:
         self.xlabel = xlabel
     def set_ylabel(self,ylabel):
         self.ylabel = ylabel
-    def set_xlim(self,x0,x1):
-        self.x0 = x0
-        self.x1 = x1
-    def set_ylim(self,y0,y1):
-        self.y0 = y0
-        self.y1 = y1
+
+    def set_xlim(self,xlim):
+        self.xlim = xlim
+    def set_ylim(self,ylim):
+        self.ylim = ylim
+
     def set_xticks(self,xticks):
         self.xticks = xticks
     def set_yticks(self,yticks):
@@ -66,13 +68,26 @@ class plot:
             self.ax.xaxis.set_major_formatter(formatter)
         if self.yScaled:
             self.ax.yaxis.set_major_formatter(formatter)
-        self.ax.set_xlim(self.x0, self.x1)
-        self.ax.set_ylim(self.y0, self.y1)
+        self.ax.set_xlim(self.xlim[0],self.xlim[1])
+        self.ax.set_ylim(self.ylim[0],self.ylim[1])
         self.ax.set_xlabel(self.xlabel)
         self.ax.set_ylabel(self.ylabel)
 
     def plot_xy(self,x_array,y_array, color = "#7d878a", label = "plot",alpha = 0.8,linewidth = 7):
         self.ax.plot(x_array,y_array, color = color, label = label,alpha = alpha,linewidth = linewidth)
+    # def plot_xy(self, x_array, y_array,
+    #         color="#7d878a",
+    #         label="plot",
+    #         alpha=0.8,
+    #         linewidth=7,
+    #         where=None):
+    #     ax = self._get_axis(where)
+    #     ax.plot(x_array, y_array,
+    #             color=color,
+    #             label=label,
+    #             alpha=alpha,
+    #             linewidth=linewidth)
+        
     def plot_scatter(self, x_array,y_array,**kwargs):
         self.ax.scatter(x_array,y_array,**kwargs)
     def plot_errorbar(self,x_array,y_array, err_array, **kwargs):
@@ -97,7 +112,7 @@ class plot:
             data.plot(ax = self.ax, kind = "kde", label = "_hidden", color = kwargs["color"])
         elif fit_type == "gamma":
             a, loc, scale = stats.gamma.fit(data, floc=0)
-            x = np.linspace(self.x0, self.x1, 500)
+            x = np.linspace(self.xlim[0], self.xlim[1], 500)
             pdf = stats.gamma.pdf(x, a, loc=loc, scale=scale)
             # gamma_label = r'$\alpha={:.2f}, \theta={:.2e}$'.format(a, scale)
             gamma_label = "_None"
@@ -107,7 +122,69 @@ class plot:
         df = pd.DataFrame({"data":array})
         self.histogram_from_dataframe(df["data"], fit_type = fit_type,  label = label, **kwargs)
 
-    def save_fig(self,filename = "test.png",transparent = True):
+    def save_fig(self,filename = "test.png"):
         # self.ax.legend()
-        self.fig.savefig(fname=filename, transparent=transparent)
+        self.fig.savefig(fname=filename, transparent=self.transparent)
         plt.close(self.fig)
+
+class plot_shared_x_axis(plot):
+    def __init__(self):
+        super().__init__()
+        self.sharedx = True
+        self.ax_top = None
+        self.ax_bottom = None
+        self.ylabel_top = None
+        self.ylabel_bottom = None
+        self.yticks_top = None
+        self.yticks_bottom = None
+        self.ylim_top = None
+        self.ylim_bottom = None
+        
+    def set_ylabel_top(self,ylabel):
+        self.ylabel_top = ylabel
+    def set_ylabel_bottom(self,ylabel):
+        self.ylabel_bottom = ylabel
+    def set_ylim_top(self,ylim):
+        self.ylim_top = ylim
+    def set_yticks_top(self,ticks):
+        self.yticks_top = ticks
+    def set_yticks_bottom(self,ticks):
+        self.yticks_bottom = ticks
+    def set_ylim_bottom(self,ylim):
+        self.ylim_bottom = ylim
+    def set_yLog_top(self):
+        self.ax_top.set_yscale("log")
+    def set_yLog_bottom(self):
+        self.ax_bottom.set_yscale("log")  
+    def _get_axis(self, where=None):
+        if where == "top":
+            return self.ax_top
+        elif where == "bottom":
+            return self.ax_bottom
+        else:
+            raise ValueError("Must specify where='top' or 'bottom' when using sharedx mode.")
+    def initialize_sharedx_figure(self, height_ratios=[1,1]):
+        self.sharedx = True
+        self.fig, (self.ax_top, self.ax_bottom) = plt.subplots(
+            2, 1,
+            sharex=True,
+            # figsize=(15,15),
+            height_ratios=height_ratios
+        )
+        plt.subplots_adjust(
+            left=self.leftMargin,
+            bottom=self.bottomMargin,
+            right=self.leftMargin + self.width,
+            top=self.bottomMargin + self.height,
+            hspace=0.05
+        )
+        # Remove touching spines for clean look
+        self.ax_top.spines["bottom"].set_visible(False)
+        self.ax_bottom.spines["top"].set_visible(False)
+
+        self.ax_top.tick_params(labelbottom=False)
+        # Labels
+        self.ax_bottom.set_xlabel(self.xlabel)
+        self.ax_top.set_ylabel(self.ylabel_top)
+        self.ax_bottom.set_ylabel(self.ylabel_bottom)
+

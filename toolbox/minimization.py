@@ -19,7 +19,8 @@ class FIREminimization:
         self._cpp_executable_dir = cpp_executable_dir
     def set_config(self, tissue:PeriodicTissue):
         self._config = copy.deepcopy(tissue)
-        
+    def get_dir(self):
+        return self._dir
     def minimize_config(self, FIRE_only = False):
         self.write_configuration("sample.topo")
         # tvm produces a new minimized.txt in self._dir

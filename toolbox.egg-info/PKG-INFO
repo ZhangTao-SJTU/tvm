@@ -1,0 +1,9 @@
+Metadata-Version: 2.4
+Name: toolbox
+Version: 0.1
+License-File: LICENSE.md
+Requires-Dist: numpy
+Requires-Dist: pandas
+Requires-Dist: scipy
+Dynamic: license-file
+Dynamic: requires-dist
