@@ -1,10 +1,6 @@
 #plotting class
-from cProfile import label
-from turtle import color
-
 import matplotlib.pyplot as plt
 from matplotlib.ticker import ScalarFormatter
-
 plt.style.use("toolbox/manuscript.mplstyle")
 # plt.rcParams['text.usetex'] = True
 from scipy import stats
@@ -27,17 +23,19 @@ class plot:
         self.yticks = [1+0.2*i for i in range(4)]
         self.xScaled= False
         self.yScaled = False
+        self.xLog = False
+        self.yLog = False
         self.fig = None
         self.ax = None
         self.transparent = True
-    def set_xLog(self):
-        self.ax.set_xscale("log")
-    def set_yLog(self):
-        self.ax.set_yscale("log")
-    def set_xScaled(self,yeah = True):
-        self.xScaled = yeah
-    def set_yScaled(self,yeah = True):
-        self.yScaled = yeah
+    def set_xLog(self, isLog:bool = True):
+        self.xLog = isLog
+    def set_yLog(self, isLog:bool = True):
+        self.yLog = isLog
+    def set_xScaled(self,isScaled:bool = True):
+        self.xScaled = isScaled
+    def set_yScaled(self,isScaled:bool = True):
+        self.yScaled = isScaled
     def set_xlabel(self,xlabel):
         self.xlabel = xlabel
     def set_ylabel(self,ylabel):
@@ -47,7 +45,6 @@ class plot:
         self.xlim = xlim
     def set_ylim(self,ylim):
         self.ylim = ylim
-
     def set_xticks(self,xticks):
         self.xticks = xticks
     def set_yticks(self,yticks):
@@ -70,23 +67,16 @@ class plot:
             self.ax.yaxis.set_major_formatter(formatter)
         self.ax.set_xlim(self.xlim[0],self.xlim[1])
         self.ax.set_ylim(self.ylim[0],self.ylim[1])
-        self.ax.set_xlabel(self.xlabel)
-        self.ax.set_ylabel(self.ylabel)
+        if self.xLog:
+            self.ax.set_xscale("log")
+        if self.yLog:
+            self.ax.set_yscale("log")
+        self.fig.supxlabel(self.xlabel)
+        self.fig.supylabel(self.ylabel)
 
     def plot_xy(self,x_array,y_array, color = "#7d878a", label = "plot",alpha = 0.8,linewidth = 7):
         self.ax.plot(x_array,y_array, color = color, label = label,alpha = alpha,linewidth = linewidth)
-    # def plot_xy(self, x_array, y_array,
-    #         color="#7d878a",
-    #         label="plot",
-    #         alpha=0.8,
-    #         linewidth=7,
-    #         where=None):
-    #     ax = self._get_axis(where)
-    #     ax.plot(x_array, y_array,
-    #             color=color,
-    #             label=label,
-    #             alpha=alpha,
-    #             linewidth=linewidth)
+
         
     def plot_scatter(self, x_array,y_array,**kwargs):
         self.ax.scatter(x_array,y_array,**kwargs)
@@ -130,7 +120,6 @@ class plot:
 class plot_shared_x_axis(plot):
     def __init__(self):
         super().__init__()
-        self.sharedx = True
         self.ax_top = None
         self.ax_bottom = None
         self.ylabel_top = None
@@ -139,7 +128,8 @@ class plot_shared_x_axis(plot):
         self.yticks_bottom = None
         self.ylim_top = None
         self.ylim_bottom = None
-        
+        self.yLog_top = False
+        self.yLog_bottom = False
     def set_ylabel_top(self,ylabel):
         self.ylabel_top = ylabel
     def set_ylabel_bottom(self,ylabel):
@@ -152,39 +142,84 @@ class plot_shared_x_axis(plot):
         self.yticks_bottom = ticks
     def set_ylim_bottom(self,ylim):
         self.ylim_bottom = ylim
-    def set_yLog_top(self):
-        self.ax_top.set_yscale("log")
-    def set_yLog_bottom(self):
-        self.ax_bottom.set_yscale("log")  
-    def _get_axis(self, where=None):
-        if where == "top":
-            return self.ax_top
-        elif where == "bottom":
-            return self.ax_bottom
-        else:
-            raise ValueError("Must specify where='top' or 'bottom' when using sharedx mode.")
+    def set_yLog_top(self, isLog:bool = True):
+        self.yLog_top = isLog
+    def set_yLog_bottom(self, isLog:bool = True):
+        self.yLog_bottom = isLog
+
     def initialize_sharedx_figure(self, height_ratios=[1,1]):
-        self.sharedx = True
         self.fig, (self.ax_top, self.ax_bottom) = plt.subplots(
             2, 1,
             sharex=True,
-            # figsize=(15,15),
             height_ratios=height_ratios
         )
-        plt.subplots_adjust(
+        self.fig.subplots_adjust(
             left=self.leftMargin,
             bottom=self.bottomMargin,
             right=self.leftMargin + self.width,
             top=self.bottomMargin + self.height,
-            hspace=0.05
+            hspace=0
         )
+        formatter = ScalarFormatter(useMathText=True)
+        formatter.set_scientific(True)
+        formatter.set_powerlimits((0,0))
         # Remove touching spines for clean look
-        self.ax_top.spines["bottom"].set_visible(False)
+        self.ax_top.spines["bottom"].set_visible(True)
         self.ax_bottom.spines["top"].set_visible(False)
-
         self.ax_top.tick_params(labelbottom=False)
-        # Labels
-        self.ax_bottom.set_xlabel(self.xlabel)
+        self.ax_top.set_xlim(self.xlim[0],self.xlim[1])
+        self.ax_top.set_ylim(self.ylim_top[0],self.ylim_top[1])
+        self.ax_bottom.set_ylim(self.ylim_bottom[0],self.ylim_bottom[1])
+        self.fig.supxlabel(self.xlabel)
         self.ax_top.set_ylabel(self.ylabel_top)
         self.ax_bottom.set_ylabel(self.ylabel_bottom)
+        self.ax_top.set_xticks(self.xticks)
 
+        if self.yticks_top is not None:
+            self.ax_top.set_yticks(self.yticks_top)
+        if self.yticks_bottom is not None:
+            self.ax_bottom.set_yticks(self.yticks_bottom)
+        if self.xLog:
+            self.ax_top.set_xscale("log")
+            self.ax_bottom.set_xscale("log")
+        if self.yLog_top:
+            self.ax_top.set_yscale("log")
+        if self.yLog_bottom:
+            self.ax_bottom.set_yscale("log")
+            
+# after setting ylabels
+        offset = -0.18
+        self.ax_top.yaxis.set_label_coords(offset, 0.5)
+        self.ax_bottom.yaxis.set_label_coords(offset, 0.5)
+def plot_single():
+
+    plotter = plot()
+
+    plotter.set_xlim([1,2500])
+    plotter.set_ylim([0.5,1])
+    plotter.set_yticks([0.5,0.8,0.9,1])
+    plotter.set_xlabel("X")
+    plotter.set_ylabel("Y")
+    plotter.set_xLog(True)
+    plotter.initialize_figure()
+    plotter.save_fig("test1.png")
+
+def plot_split():
+    plotter = plot_shared_x_axis()
+    plotter.set_xlim([1,2500])
+    plotter.set_ylim_top([1e-9,1e1])
+    plotter.set_ylim_bottom([0.5,1.1])
+    plotter.set_yticks_bottom([0.5,0.8,0.9,1])
+    plotter.set_xLog(True)
+    plotter.set_yLog_top(True)
+    plotter.set_xlabel("test")
+    plotter.set_ylabel_top("Top Y")
+    plotter.set_ylabel_bottom("Bottom Y")
+    plotter.initialize_sharedx_figure()
+
+    plotter.transparent = False
+    plotter.save_fig("test2.png")
+
+if __name__ == "__main__":
+    plot_single()
+    plot_split()
