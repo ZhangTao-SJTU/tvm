@@ -9,11 +9,6 @@ tests/
 init/
 init_homogeneous_4/
 test/
-test_2_cells/
-test_4_cells/
-test_5_cells/
-test_decrease/
-test_increase/
 data/
-data_legacy/
 runs/
+Panels/

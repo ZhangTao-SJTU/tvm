@@ -13,9 +13,10 @@ def create_sub_file(script,dir):
     lines.append("output     = output.txt\n")
     lines.append("error      = error.txt\n")
     lines.append("log        = log.txt\n")
+    lines.append("Requirements = TARGET.vm_name == \"its-u20-nfs-20210413\" && regexp(\"CRUSH\", TARGET.name)\n")
     lines.append("getenv     = True\n")
     lines.append("request_cpus = 1\n")
-    lines.append("request_memory = 500 MB\n")
+    lines.append("request_memory = 150 MB\n")
     # lines.append('Requirements = TARGET.vm_name == "its-u20-nfs-20210413" && regexp("CRUSH", TARGET.name)\n')
     lines.append("queue \n")
     # with open("job_{}.sub".format(run_num), "w") as f:

@@ -125,6 +125,7 @@ def inset_s0_plot():
         inset_pos =[0.38, 0.32,width,width]
         create_inset_plot(main_plot_file,inset_plot_file,inset_pos,filename)
 def main():
+    os.makedirs("Panel_5",exist_ok=True)
     error_to_iters_spheroid()
     s0_histogram_spheroid_combined()
     SD_s0_scatter_spheroid()
@@ -133,5 +134,4 @@ def main():
     inset_s0_plot()
 
 if __name__ == "__main__":
-    os.makedirs("Panel_5",exist_ok=True)
     main()

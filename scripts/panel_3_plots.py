@@ -51,10 +51,7 @@ def s0_histogram_periodic_combined():
             label_to_data[r"$n_T=$"+"{}".format(n)]={"dir":"data/kv_10_l_{}_n_{}/".format(l,n), "color":n_cells_color_map[n], "bins":30, "alpha":0.1}
             for pattern in n_cell_to_patterns[n]:
                 dir = construct_multiple_pattern_foldername("data/kv_10_l_{}_p".format(l),pattern)
-                # print(dir)
-            # savefile = "Panel_2/s0_histogram_periodic_l_{}.png".format(l)
                 label_to_data[label_writer(pattern)] = {"dir":dir, "color":n_cells_color_map[n], "bins":30}
-            # print(label_to_data)
             title = r"$n_{total} = $"+"{}".format(l**3)
             hist = histogram(   label_to_data=label_to_data,
                                 input_filename=input_filename,
@@ -75,15 +72,6 @@ def error_to_iters_single_pattern():
             title = r"$n_{total} = $"+"{}".format(l**3)
             dirlist = find_complete_runs(["data/kv_10_l_{}_n_{}/{:03d}/".format(l,n,i) for i in range(100)])
             label_to_data[r"$n_T=$"+"{}".format(n)]={"dirlist":dirlist, "color":n_cells_color_map[n]}
-            # for i,pattern in enumerate(n_cell_to_patterns[n]):
-
-            #     dirlist = []
-            #     for j in range(100):
-            #         dirlist.append(construct_multiple_pattern_foldername("data/new_kv_10_l_{}_p".format(l),pattern)+"{:03d}/".format(j))
-            #     dirlist = find_complete_runs(dirlist)
-            # # savefile = "Panel_2/s0_histogram_periodic_l_{}.png".format(l)
-            #     label_to_data[label_writer(pattern)] = {"dirlist":dirlist, "color":n_cells_color_map[n], "linestyle":linestyles[i], "alpha":alphas[i]}
-
         single_tracks_to_iters(label_to_data=label_to_data,title=title,savefile=savefile,)
 
 def final_iteration_to_final_overlap_periodic():
@@ -98,14 +86,9 @@ def final_iteration_to_final_overlap_periodic():
         label_to_dir[r"$n_T=$"+"{}".format(n)]= {"x_array":x_array,"y_array":y_array,"marker":"o","color":n_cells_color_map[n],"s":3000,"alpha":0.5}
         for i,pattern in enumerate(n_cell_to_patterns[n]):
             print(n,pattern)
-            # dirlist = []
-            # for j in range(100):
-            #     dirlist.append(construct_multiple_pattern_foldername("data/new_kv_10_l_{}_p".format(l),pattern)+"{:03d}/".format(j))
-            # dirlist = find_complete_runs_multiple_patterns(dirlist)
             dirlist = find_complete_runs_multiple_patterns([construct_multiple_pattern_foldername("data/kv_10_l_{}_p".format(l),pattern)+"{:03d}/".format(j) for j in range(100)])
             x_array = [len(np.loadtxt(dir+"costs.txt"))for dir in dirlist]
             y_array = [np.loadtxt(dir+"q_values.txt")[-1] for dir in dirlist]
-        # savefile = "Panel_2/s0_histogram_periodic_l_{}.png".format(l)
             label_to_dir[label_writer(pattern)] = {"x_array":x_array,"y_array":y_array,"marker":markers[i],"color":n_cells_color_map[n],"alpha":0.7}
 
         
@@ -147,9 +130,9 @@ def SD_s0_scatter_all_patterns():
 
 def main():
     os.makedirs("Panel_3",exist_ok=True)
-    # error_to_iters_single_pattern()
     write_final_s0_multiple_patterns()
     final_iteration_to_final_overlap_periodic()
     SD_s0_scatter_all_patterns()
+    return
 if __name__ == "__main__":
     main()

@@ -129,7 +129,6 @@ def SD_s0_scatter_all_patterns():
 
 def main():
     os.makedirs("Panel_3_new",exist_ok=True)
-    # error_to_iters_single_pattern()
     write_final_s0_multiple_patterns()
     final_iteration_to_final_overlap_periodic()
     SD_s0_scatter_all_patterns()

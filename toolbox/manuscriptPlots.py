@@ -19,7 +19,7 @@ class plot:
         self.ylabel = 'Y-axis'
         self.xlim = None
         self.ylim = None
-        self.xticks = [0.5 * i for i in range(1,5)]
+        self.xticks = None
         self.yticks = [1+0.2*i for i in range(4)]
         self.xScaled= False
         self.yScaled = False
@@ -168,13 +168,15 @@ class plot_shared_x_axis(plot):
         self.ax_bottom.spines["top"].set_visible(False)
         self.ax_top.tick_params(labelbottom=False)
         self.ax_top.set_xlim(self.xlim[0],self.xlim[1])
+        self.ax_bottom.set_xlim(self.xlim[0],self.xlim[1])
+
         self.ax_top.set_ylim(self.ylim_top[0],self.ylim_top[1])
         self.ax_bottom.set_ylim(self.ylim_bottom[0],self.ylim_bottom[1])
         self.fig.supxlabel(self.xlabel)
         self.ax_top.set_ylabel(self.ylabel_top)
         self.ax_bottom.set_ylabel(self.ylabel_bottom)
-        self.ax_top.set_xticks(self.xticks)
-
+        if self.xticks is not None:
+            self.ax_top.set_xticks(self.xticks)
         if self.yticks_top is not None:
             self.ax_top.set_yticks(self.yticks_top)
         if self.yticks_bottom is not None:
@@ -186,40 +188,16 @@ class plot_shared_x_axis(plot):
             self.ax_top.set_yscale("log")
         if self.yLog_bottom:
             self.ax_bottom.set_yscale("log")
+        if self.title is not None:
+            self.ax_top.set_title(self.title)
             
 # after setting ylabels
         offset = -0.18
         self.ax_top.yaxis.set_label_coords(offset, 0.5)
         self.ax_bottom.yaxis.set_label_coords(offset, 0.5)
-def plot_single():
 
-    plotter = plot()
+    def plot_xy_top(self,x_array,y_array, **kwargs):
+        self.ax_top.plot(x_array,y_array, **kwargs)
+    def plot_xy_bottom(self,x_array,y_array, **kwargs):
+        self.ax_bottom.plot(x_array,y_array, **kwargs)
 
-    plotter.set_xlim([1,2500])
-    plotter.set_ylim([0.5,1])
-    plotter.set_yticks([0.5,0.8,0.9,1])
-    plotter.set_xlabel("X")
-    plotter.set_ylabel("Y")
-    plotter.set_xLog(True)
-    plotter.initialize_figure()
-    plotter.save_fig("test1.png")
-
-def plot_split():
-    plotter = plot_shared_x_axis()
-    plotter.set_xlim([1,2500])
-    plotter.set_ylim_top([1e-9,1e1])
-    plotter.set_ylim_bottom([0.5,1.1])
-    plotter.set_yticks_bottom([0.5,0.8,0.9,1])
-    plotter.set_xLog(True)
-    plotter.set_yLog_top(True)
-    plotter.set_xlabel("test")
-    plotter.set_ylabel_top("Top Y")
-    plotter.set_ylabel_bottom("Bottom Y")
-    plotter.initialize_sharedx_figure()
-
-    plotter.transparent = False
-    plotter.save_fig("test2.png")
-
-if __name__ == "__main__":
-    plot_single()
-    plot_split()

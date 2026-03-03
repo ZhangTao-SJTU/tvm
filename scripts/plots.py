@@ -1,6 +1,3 @@
-import matplotlib.pyplot as plt
-from matplotlib.image import imread
-from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from toolbox import manuscriptPlots
 from toolbox.stress import calculate_max_shear_stress
 import math
@@ -26,7 +23,9 @@ l_to_color = {4:"black", 5: "purple", 6:"green"}
 n_runs = 100
 
 def create_inset_plot(main_plot_file,inset_plot_file,inset_position,filename):
-    # Load images
+    import matplotlib.pyplot as plt
+    from matplotlib.image import imread
+    from mpl_toolkits.axes_grid1.inset_locator import inset_axes    
     img_main = imread(main_plot_file)
     img_inset = imread(inset_plot_file)
 
@@ -191,13 +190,13 @@ def scatter_plot(label_to_data,
     if title is not None:
         plotter.set_title(title)
     # plotter.set_yScaled()
-
-    plotter.initialize_figure()
-    # plotter.ax.set_yscale("log")
     if xlog:
         plotter.set_xLog()
     if ylog:
         plotter.set_yLog()
+    plotter.initialize_figure()
+    # plotter.ax.set_yscale("log")
+
 
     # for label,data in label_to_data.items():
     #     plotter.plot_scatter(
@@ -238,7 +237,5 @@ def scatter_plot(label_to_data,
         )
 
     return plotter
-
-
 
 
