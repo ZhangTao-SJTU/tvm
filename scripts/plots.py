@@ -1,3 +1,5 @@
+from turtle import title
+
 from toolbox import manuscriptPlots
 from toolbox.stress import calculate_max_shear_stress
 import math
@@ -189,7 +191,6 @@ def scatter_plot(label_to_data,
     plotter.set_xlabel(xlabel)
     if title is not None:
         plotter.set_title(title)
-    # plotter.set_yScaled()
     if xlog:
         plotter.set_xLog()
     if ylog:
@@ -238,4 +239,20 @@ def scatter_plot(label_to_data,
 
     return plotter
 
+def stacked_plot(**kwargs):
+    plotter = manuscriptPlots.plot_shared_x_axis()
+    plotter.set_xlim(kwargs.get("xlim", [10,10000]))
+    plotter.set_ylim_top(kwargs.get("ylim_top", [1e-8,1e1]))
+    plotter.set_ylim_bottom(kwargs.get("ylim_bottom", [0.5,1.1]))
+    plotter.set_yticks_top(kwargs.get("yticks_top", None))
+    plotter.set_yticks_bottom(kwargs.get("yticks_bottom", [0.6,0.8,1]))
+    plotter.set_xLog(kwargs.get("xlog", True))
+    plotter.set_yLog_top(kwargs.get("ylog_top", True))
+    plotter.set_yLog_bottom(kwargs.get("ylog_bottom", False))
+    plotter.set_xlabel(kwargs.get("xlabel", "Iterations"))
+    plotter.set_ylabel_top(kwargs.get("ylabel_top", r"$<|1-\sigma_{T}/\sigma|>$"))
+    plotter.set_ylabel_bottom(kwargs.get("ylabel_bottom", r"$Q_2$"))
+    plotter.set_title(kwargs.get("title", None))
+    plotter.initialize_sharedx_figure()
+    return plotter
 
