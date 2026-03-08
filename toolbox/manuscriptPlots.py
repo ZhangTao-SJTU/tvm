@@ -132,6 +132,12 @@ class plot_shared_x_axis(plot):
         self.ylim_bottom = None
         self.yLog_top = False
         self.yLog_bottom = False
+        ## right y axis
+        self.ax_bottom_right = None
+        self.ylabel_bottom_right = None
+        self.yticks_bottom_right = None
+        self.ylim_bottom_right = None
+        self.yLog_bottom_right = False
     def set_ylabel_top(self,ylabel):
         self.ylabel_top = ylabel
     def set_ylabel_bottom(self,ylabel):
@@ -148,6 +154,17 @@ class plot_shared_x_axis(plot):
         self.yLog_top = isLog
     def set_yLog_bottom(self, isLog:bool = True):
         self.yLog_bottom = isLog
+    def set_ylabel_bottom_right(self, ylabel):
+        self.ylabel_bottom_right = ylabel
+
+    def set_ylim_bottom_right(self, ylim):
+        self.ylim_bottom_right = ylim
+
+    def set_yticks_bottom_right(self, ticks):
+        self.yticks_bottom_right = ticks
+
+    def set_yLog_bottom_right(self, isLog: bool = True):
+        self.yLog_bottom_right = isLog
 
     def initialize_sharedx_figure(self, height_ratios=[1,1]):
         self.fig, (self.ax_top, self.ax_bottom) = plt.subplots(
@@ -192,7 +209,19 @@ class plot_shared_x_axis(plot):
             self.ax_bottom.set_yscale("log")
         if self.title is not None:
             self.ax_top.set_title(self.title)
-            
+        self.ax_bottom_right = self.ax_bottom.twinx()
+        
+        if self.ylim_bottom_right is not None:
+            self.ax_bottom_right.set_ylim(self.ylim_bottom_right[0], self.ylim_bottom_right[1])
+
+        if self.yticks_bottom_right is not None:
+            self.ax_bottom_right.set_yticks(self.yticks_bottom_right)
+
+        if self.ylabel_bottom_right is not None:
+            self.ax_bottom_right.set_ylabel(self.ylabel_bottom_right)
+
+        if self.yLog_bottom_right:
+            self.ax_bottom_right.set_yscale("log")
 # after setting ylabels
         offset = -0.18
         self.ax_top.yaxis.set_label_coords(offset, 0.5)
@@ -203,3 +232,5 @@ class plot_shared_x_axis(plot):
     def plot_xy_bottom(self,x_array,y_array, **kwargs):
         self.ax_bottom.plot(x_array,y_array, **kwargs)
 
+    def plot_xy_bottom_right(self, x_array, y_array, **kwargs):
+        self.ax_bottom_right.plot(x_array, y_array, **kwargs)
