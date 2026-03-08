@@ -1,9 +1,9 @@
 from plots import *
 import os
 
+output_folder = "Panels/Panel_3_new/"
 n_cell_to_patterns = {2:[[1,1]], 3:[[1,1,1],[1,2]], 4:[[1,1,1,1],[1,1,2],[1,3],[2,2]]}
 markersize = 1000
-
 patterns = [{"pattern":[1,1],"marker":"o"},
             {"pattern":[1,1,1],"marker":"x"},
             {"pattern":[1,2],"marker":"h"},
@@ -25,9 +25,9 @@ def label_writer(pattern):
     return r"${}$".format(label)
 
 def construct_multiple_pattern_foldername(header = "", pattern = [1,1]):
-    dir = "{}".format(header)
+    dir = f"{header}"
     for p in pattern:
-        dir+="_{}".format(p)
+        dir+=f"_{p}"
     dir +="/"
     return dir
 
@@ -46,7 +46,7 @@ def s0_histogram_periodic_combined():
     input_filename = "final_s0.txt"
     for l in [4]:
         for n in [2,3,4]:
-            savefile = "Panel_3_new/s0_histogram_periodic_l_{}_n_{}.png".format(l,n)
+            savefile = f"{output_folder}s0_histogram_periodic_l_{l}_n_{n}.png"
             label_to_data = {}
             label_to_data[r"$n_T=$"+"{}".format(n)]={"dir":"data/new_kv_10_l_{}_n_{}/".format(l,n), "color":n_cells_color_map[n], "bins":30, "alpha":0.1}
             for pattern in n_cell_to_patterns[n]:
@@ -67,7 +67,7 @@ def error_to_iters_single_pattern():
     for l in [4]:
         label_to_data = {}
         for n in [1,2,4]:
-            savefile = "Panel_3_new/error_to_iters_periodic_l_{}_n_{}.png".format(l,n)
+            savefile = f"{output_folder}error_to_iters_periodic_l_{l}_n_{n}.png"
             title = r"$n_{total} = $"+"{}".format(l**3)
             dirlist = find_complete_runs(["data/new_kv_10_l_{}_n_{}/{:03d}/".format(l,n,i) for i in range(100)])
             label_to_data[r"$n_T=$"+"{}".format(n)]={"dirlist":dirlist, "color":n_cells_color_map[n]}
@@ -77,7 +77,7 @@ def final_iteration_to_final_overlap_periodic():
     l = 4
     for n in [2,3,4]: 
         label_to_dir = {}
-        savefile = "Panel_3_new/final_iterations_to_final_overlap_l_{}_n_{}.png".format(l,n)
+        savefile = f"{output_folder}final_iterations_to_final_overlap_l_{l}_n_{n}.png"
         title = r"$n_{total} = $"+"{}".format(l**3)
         dirlist = find_complete_runs(["data/kv_10_l_{}_n_{}/{:03d}/".format(l,n,i) for i in range(100)])
         x_array = [len(np.loadtxt(dir+"costs.txt"))for dir in dirlist]
@@ -104,7 +104,7 @@ def SD_s0_scatter_all_patterns():
     l = 4
     n_cells =[2,3,4]
     header = "data/new_kv_10_l_{}_p".format(l)
-    savefile = "Panel_3_new/SD_s0_scatter_patterns_l_{}.png".format(l)
+    savefile = f"{output_folder}SD_s0_scatter_patterns_l_{l}.png"
     label_to_dir = {}
     for n in n_cells:
         #single pattern
@@ -128,7 +128,7 @@ def SD_s0_scatter_all_patterns():
 
 
 def main():
-    os.makedirs("Panel_3_new",exist_ok=True)
+    os.makedirs(output_folder,exist_ok=True)
     write_final_s0_multiple_patterns()
     final_iteration_to_final_overlap_periodic()
     SD_s0_scatter_all_patterns()

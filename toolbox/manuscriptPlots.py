@@ -20,7 +20,7 @@ class plot:
         self.xlim = None
         self.ylim = None
         self.xticks = None
-        self.yticks = [1+0.2*i for i in range(4)]
+        self.yticks = None
         self.xScaled= False
         self.yScaled = False
         self.xLog = False
@@ -59,8 +59,10 @@ class plot:
         self.ax.set_position([self.leftMargin, self.bottomMargin, self.width, self.height]) 
         if self.title is not None:
             self.ax.set_title(self.title)
-        self.ax.set_xticks(self.xticks)
-        self.ax.set_yticks(self.yticks)
+        if self.xticks is not None:
+            self.ax.set_xticks(self.xticks)
+        if self.yticks is not None:
+            self.ax.set_yticks(self.yticks)
         if self.xScaled:
             self.ax.xaxis.set_major_formatter(formatter)
         if self.yScaled:
@@ -74,8 +76,8 @@ class plot:
         self.fig.supxlabel(self.xlabel)
         self.fig.supylabel(self.ylabel)
 
-    def plot_xy(self,x_array,y_array, color = "#7d878a", label = "plot",alpha = 0.8,linewidth = 7):
-        self.ax.plot(x_array,y_array, color = color, label = label,alpha = alpha,linewidth = linewidth)
+    def plot_xy(self,x_array,y_array, **kwargs):
+        self.ax.plot(x_array,y_array, **kwargs)
 
         
     def plot_scatter(self, x_array,y_array,**kwargs):
