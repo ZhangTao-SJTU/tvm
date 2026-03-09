@@ -57,14 +57,32 @@ def stacked_multiple_pattern_plots():
                 costs = df["Error"].to_list()
                 q_values = df["Overlap"].to_list()
                 s0_overlap = df["Distance"].to_list()
+                # add initial values to iters, costs, q_values, s0_overlap:
+                # first element of iters is 1, 
+                # first element of costs is initial cost
+                # , first element of q_values is 1
+                # , first element of s0_overlap is 0.
+                def initial_cost():
+                    init_stresses = dir+"0000000.stresses.csv"
+                    df = pd.read_csv(init_stresses)
+                    target = df["Target"].to_numpy()
+                    current = df["Current"].to_numpy()
+                    error = np.sqrt(np.sum((current-target)**2))
+                    return error
+
+                iters = [1] + iters
+                costs = [initial_cost()] + costs
+                q_values = [1] + q_values
+                s0_overlap = [0] + s0_overlap
                 # 1. error and q values from info.csv
                 savefile = output_subfolder+"{:03d}_error_overlap.png".format(int(os.path.basename(os.path.dirname(dir))))
                 label_to_data = {}
-                label_to_data["Error"] = {"x": iters, "y": costs, "loc": "top"}
+                label_to_data["Error"] = {"x": iters, "y": costs, "loc": "top", "color": "blue"}
                 label_to_data["Overlap"] = {"x": iters, "y": q_values, "loc": "bottom", "color": "blue"}
                 label_to_data["Distance"] = {"x": iters, "y": s0_overlap, "loc": "bottom right", "color": "red"}
-                plotter = single_run_stacked_plot(label_to_data, title=title, xlim = [10,20000], ylim_top = [1e-8,1e1], ylim_bottom = [0.5,1.1], yticks_bottom = [0.6,0.8,1])
+                plotter = single_run_stacked_plot(label_to_data, title=title, xlim = [1,20000], ylim_top = [1e-8,1e1], ylim_bottom = [0,1.1], ylim_bottom_right = [0,0.4], yticks_bottom = [0, 0.5, 1])
                 plotter.ax_bottom.hlines(y=1, xmin = plotter.xlim[0], xmax = plotter.xlim[1], color="black", linestyle="--",alpha = 0.5)
+                plotter.legend_top()
                 plotter.save_fig(savefile)
                 
                 # # 2. error and s0 from info.csv

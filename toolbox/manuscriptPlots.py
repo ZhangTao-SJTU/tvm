@@ -11,10 +11,10 @@ class plot:
     def __init__(self):
         self.title = None
         self.neutralColor = "#7d878a"
-        self.leftMargin = 0.2
-        self.bottomMargin = 0.13
-        self.width = 0.9-self.leftMargin
-        self.height = 0.87-self.bottomMargin
+        # self.leftMargin = 0.2
+        # self.bottomMargin = 0.13
+        # self.width = 0.9-self.leftMargin
+        # self.height = 0.87-self.bottomMargin
         self.xlabel = 'X-axis'
         self.ylabel = 'Y-axis'
         self.xlim = None
@@ -56,7 +56,7 @@ class plot:
         formatter = ScalarFormatter(useMathText=True)
         formatter.set_scientific(True)
         formatter.set_powerlimits((0,0))
-        self.ax.set_position([self.leftMargin, self.bottomMargin, self.width, self.height]) 
+        # self.ax.set_position([self.leftMargin, self.bottomMargin, self.width, self.height]) 
         if self.title is not None:
             self.ax.set_title(self.title)
         if self.xticks is not None:
@@ -172,13 +172,13 @@ class plot_shared_x_axis(plot):
             sharex=True,
             height_ratios=height_ratios
         )
-        self.fig.subplots_adjust(
-            left=self.leftMargin,
-            bottom=self.bottomMargin,
-            right=self.leftMargin + self.width,
-            top=self.bottomMargin + self.height,
-            hspace=0
-        )
+        # self.fig.subplots_adjust(
+        #     left=self.leftMargin,
+        #     bottom=self.bottomMargin,
+        #     right=self.leftMargin + self.width,
+        #     top=self.bottomMargin + self.height,
+        #     hspace=0
+        # )
         formatter = ScalarFormatter(useMathText=True)
         formatter.set_scientific(True)
         formatter.set_powerlimits((0,0))
@@ -234,3 +234,14 @@ class plot_shared_x_axis(plot):
 
     def plot_xy_bottom_right(self, x_array, y_array, **kwargs):
         self.ax_bottom_right.plot(x_array, y_array, **kwargs)
+    def legend_top(self, **kwargs):
+        handles_top, labels_top = self.ax_top.get_legend_handles_labels()
+        handles_bottom, labels_bottom = self.ax_bottom.get_legend_handles_labels()
+        handles_bottom_right, labels_bottom_right = self.ax_bottom_right.get_legend_handles_labels()
+
+        handles = handles_top + handles_bottom + handles_bottom_right
+        labels = labels_top + labels_bottom + labels_bottom_right
+
+        unique = dict(zip(labels, handles))
+
+        self.ax_top.legend(unique.values(), unique.keys(), **kwargs)
