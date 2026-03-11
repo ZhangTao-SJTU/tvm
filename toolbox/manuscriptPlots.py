@@ -231,9 +231,14 @@ class plot_shared_x_axis(plot):
         self.ax_top.plot(x_array,y_array, **kwargs)
     def plot_xy_bottom(self,x_array,y_array, **kwargs):
         self.ax_bottom.plot(x_array,y_array, **kwargs)
-
     def plot_xy_bottom_right(self, x_array, y_array, **kwargs):
         self.ax_bottom_right.plot(x_array, y_array, **kwargs)
+    def plot_scatter_top(self,x_array,y_array, **kwargs):
+        self.ax_top.scatter(x_array,y_array, **kwargs)
+    def plot_scatter_bottom(self,x_array,y_array, **kwargs):
+        self.ax_bottom.scatter(x_array,y_array, **kwargs)
+    def plot_scatter_bottom_right(self, x_array, y_array, **kwargs):
+        self.ax_bottom_right.scatter(x_array, y_array, **kwargs)
     def legend_top(self, **kwargs):
         handles_top, labels_top = self.ax_top.get_legend_handles_labels()
         handles_bottom, labels_bottom = self.ax_bottom.get_legend_handles_labels()

@@ -7,38 +7,31 @@ from toolbox.stress import calculate_max_shear_stress
 import os
 
 output_folder = "Panels/Panel_4/"
+color_dict = {"Error": "#D72638", r"$SD(s_0)$": "#F49D37", r"$Q_2$": "#3F88C5"}
+linestyle_dict = {"Error": "-", r"$SD(s_0)$": ":", r"$Q_2$": "--"}
+marker_dict = {"Error": "D", r"$SD(s_0)$": "o", r"$Q_2$": "^"}
+alpha = 0.7
+markersize = 200
 def single_run_stacked_plot(label_to_data,**kwargs):
     plotter = stacked_plot(**kwargs)
     for label, data in label_to_data.items():
         if data["loc"] == "top":
-            plotter.plot_xy_top(data["x"], data["y"], color = data.get("color", None), label=label)
+            plotter.plot_xy_top(data["x"], data["y"], color = color_dict[label], label=label,alpha = alpha)
+            plotter.ax_top.scatter(data["x"], data["y"], color = color_dict[label], label=label, marker = marker_dict[label], s=markersize,)
+            plotter.ax_top.scatter(data["x"], data["y"], color = color_dict[label], marker = marker_dict[label], s=markersize,facecolors = "none",edgecolors = "black")
         elif data["loc"] == "bottom":
-            plotter.plot_xy_bottom(data["x"], data["y"], color = data.get("color", None), label=label)
+            plotter.plot_xy_bottom(data["x"], data["y"], color = color_dict[label], label=label, alpha=alpha)
+            plotter.ax_bottom.scatter(data["x"], data["y"], color = color_dict[label], label=label, marker = marker_dict[label], s=markersize, )
+            plotter.ax_bottom.scatter(data["x"], data["y"],  color = color_dict[label], marker = marker_dict[label],s=markersize,facecolors = "none",edgecolors = "black")
+
         elif data["loc"] == "bottom right":
-            plotter.plot_xy_bottom_right(data["x"], data["y"], color = data.get("color", None), label=label)
-        # plotter.plot_xy_bottom(iters, q_values, marker="o", color="blue")
-        # plotter.ax_bottom.hlines(y=1, xmin = plotter.xlim[0], xmax = plotter.xlim[1], color="black", linestyle="--",alpha = 0.5)
-        # plotter.transparent = False
-        # plotter.save_fig(savefile)
+            plotter.plot_xy_bottom_right(data["x"], data["y"], color = color_dict[label], label=label, alpha=alpha)
+            plotter.ax_bottom_right.scatter(data["x"], data["y"], color = color_dict[label], label=label,marker = marker_dict[label], s=markersize,)
+            plotter.ax_bottom_right.scatter(data["x"], data["y"], color = color_dict[label], marker = marker_dict[label], s=markersize,facecolors = "none",edgecolors = "black")
+
     return plotter
 
-def stacked_error_Q2_single_pattern():
-    for l in [4,5,6]:
-        title = r"$n_{total}=$"+"{}".format(l**3)
-        for n in [1,2,3,4,5,6]:
-            output_subfolder = f"{output_folder}l_{l}_n_{n}/"
-            os.makedirs(output_subfolder,exist_ok=True)
-            dirlist = find_complete_runs(["data/new_kv_10_l_{}_n_{}/{:03d}/".format(l,n,i) for i in range(100)])
-            for dir in dirlist:
-                label_to_data = {}
-                costs = np.genfromtxt(dir+"costs.txt")
-                iters = np.arange(1,len(costs)+1)
-                q_values = np.genfromtxt(dir+"q_values.txt")
-                savefile = output_subfolder+"{:03d}_error_overlap.png".format(int(os.path.basename(os.path.dirname(dir))))
-                label_to_data["Error"] = {"x": iters, "y": costs, "loc": "top"}
-                label_to_data["Distance"] = {"x": iters, "y": q_values, "loc": "bottom"}
-                plotter = single_run_stacked_plot(label_to_data, title=title)
-                plotter.save_fig(savefile)
+
 
 def stacked_multiple_pattern_plots():
     l = 4
@@ -77,46 +70,17 @@ def stacked_multiple_pattern_plots():
                 # 1. error and q values from info.csv
                 savefile = output_subfolder+"{:03d}_error_overlap.png".format(int(os.path.basename(os.path.dirname(dir))))
                 label_to_data = {}
-                label_to_data["Error"] = {"x": iters, "y": costs, "loc": "top", "color": "blue"}
-                label_to_data["Overlap"] = {"x": iters, "y": q_values, "loc": "bottom", "color": "blue"}
-                label_to_data["Distance"] = {"x": iters, "y": s0_overlap, "loc": "bottom right", "color": "red"}
-                plotter = single_run_stacked_plot(label_to_data, title=title, xlim = [1,20000], ylim_top = [1e-8,1e1], ylim_bottom = [0,1.1], ylim_bottom_right = [0,0.4], yticks_bottom = [0, 0.5, 1])
-                plotter.ax_bottom.hlines(y=1, xmin = plotter.xlim[0], xmax = plotter.xlim[1], color="black", linestyle="--",alpha = 0.5)
+                label_to_data["Error"] = {"x": iters, "y": costs, "loc": "top"}
+                label_to_data[r"$Q_2$"] = {"x": iters, "y": q_values, "loc": "bottom"}
+                label_to_data[r"$SD(s_0)$"] = {"x": iters, "y": s0_overlap, "loc": "bottom right"}
+                plotter = single_run_stacked_plot(label_to_data, title=title, xlim = [1,20000], ylim_top = [1e-8,1e1], ylim_bottom = [0,1.1], ylim_bottom_right = [0,0.6],
+                                                   yticks_bottom = [0, 0.5, 1])
+                # plotter.ax_bottom.hlines(y=1, xmin = plotter.xlim[0], xmax = plotter.xlim[1], color="black", linestyle=":",alpha = 0.2)
+
                 plotter.legend_top()
+                plotter.transparent=False
                 plotter.save_fig(savefile)
                 
-                # # 2. error and s0 from info.csv
-                # savefile = output_subfolder+"{:03d}_error_s0.png".format(int(os.path.basename(os.path.dirname(dir))))
-                # label_to_data = {}
-                # label_to_data["Error"] = {"x": iters, "y": costs, "loc": "top"}
-                # label_to_data["Distance"] = {"x": iters, "y": s0_overlap, "loc": "bottom", "color": "red"}
-                # plotter = single_run_stacked_plot(label_to_data, 
-                #                                   title=title, 
-                #                                   xlim = [10,20000], 
-                #                                   ylim_top = [1e-8,1e1], 
-                #                                   ylim_bottom = [0,1], 
-                #                                   yticks_bottom = [0.2*i for i in range(5)],
-                #                                   ylabel_bottom = r"$SD(s_0)$")
-                # plotter.save_fig(savefile)
-
-                # # 3. Overlap and s0 from info.csv
-                # savefile = output_subfolder+"{:03d}_overlap_s0.png".format(int(os.path.basename(os.path.dirname(dir))))
-                # label_to_data = {}
-                # label_to_data["Overlap"] = {"x": iters, "y": q_values, "loc": "top"}
-                # label_to_data["Distance"] = {"x": iters, "y": s0_overlap, "loc": "bottom", "color": "red"}
-                # plotter = single_run_stacked_plot(label_to_data, 
-                #                                   title=title, 
-                #                                   xlim = [10,20000], 
-                #                                   ylim_top = [0.5,1.1], 
-                #                                   ylim_bottom = [0,1],
-                #                                 yticks_top = [0.6,0.8,1], 
-                #                                 yticks_bottom = [0.2*i for i in range(1,5)],
-                #                                 ylog_top = False, 
-                #                                 ylabel_top = r"$Q_2$",
-                #                                 ylabel_bottom = r"$SD(s_0)$")
-                # plotter.ax_top.hlines(y=1, xmin = plotter.xlim[0], xmax = plotter.xlim[1], color="black", linestyle="--",alpha = 0.5)
-                # plotter.save_fig(savefile)
-
 # this function writes cellErrors.csv in dir.
 # dir must have info.csv and files/
 def write_cell_errors(dir):
@@ -141,9 +105,6 @@ def write_cell_errors(dir):
 
 def main():
     os.makedirs(output_folder,exist_ok=True)
-    # write_cell_errors("data/004/")
-
-    # stacked_error_Q2_single_pattern()
     stacked_multiple_pattern_plots()
 
 if __name__ == "__main__":
