@@ -1,5 +1,4 @@
-from turtle import title
-
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from toolbox import manuscriptPlots
 from toolbox.stress import calculate_max_shear_stress
 import math
@@ -239,6 +238,56 @@ def scatter_plot(label_to_data,
 
     return plotter
 
+def create_inset_SD_s0_plot(plotter_main, ax_src, bbox_to_anchor = (0.45, 0.15, 1, 1),filename="Panels/Panel_2/SD_s0_inset.png"):
+    ax_main = plotter_main.ax
+    axins = inset_axes(
+        ax_main,
+        width="45%",
+        height="45%",
+        bbox_to_anchor=bbox_to_anchor,
+        bbox_transform=ax_main.transAxes,
+        loc="lower left",
+    )
+
+    # ---- copy lines (including vlines) ----
+    for line in ax_src.lines:
+        axins.plot(
+            line.get_xdata(),
+            line.get_ydata(),
+            linestyle=line.get_linestyle(),
+            linewidth=line.get_linewidth(),
+            color=line.get_color(),
+            marker=line.get_marker(),
+            alpha=line.get_alpha(),
+        )
+
+    # ---- copy histogram bars ----
+    for patch in ax_src.patches:
+        axins.bar(
+            patch.get_x() + patch.get_width() / 2,
+            patch.get_height(),
+            width=patch.get_width(),
+            align="center",
+            color=patch.get_facecolor(),
+            edgecolor=patch.get_edgecolor(),
+            linewidth=patch.get_linewidth(),
+            alpha=patch.get_alpha(),
+        )
+
+    # ---- copy limits ----
+    axins.set_xlim(ax_src.get_xlim())
+    axins.set_ylim(ax_src.get_ylim())
+
+    # ---- copy ticks ----
+    axins.set_xticks(ax_src.get_xticks())
+    axins.set_yticks(ax_src.get_yticks())
+
+    # ---- copy labels ----
+    axins.set_xlabel(ax_src.get_xlabel())
+    axins.set_ylabel(ax_src.get_ylabel())
+    axins.vlines(x = 5, ymin = 0, ymax = 3.2, linestyle= "dashed",color = "black", label = r"$s_0^{(init)}$",linewidth =10)
+    plotter_main.save_fig(filename)
+
 def stacked_plot(**kwargs):
     plotter = manuscriptPlots.plot_shared_x_axis()
     plotter.set_xlim(kwargs.get("xlim", [10,10000]))
@@ -257,5 +306,7 @@ def stacked_plot(**kwargs):
     plotter.set_ylabel_bottom_right(kwargs.get("ylabel_bottom_right", r"$SD(s_0)$"))
     plotter.set_title(kwargs.get("title", None))
     plotter.initialize_sharedx_figure()
+    plotter.fig.subplots_adjust(right=0.85)
+
     return plotter
 
