@@ -24,7 +24,27 @@ def download_single_patterns(l,n):
         cluster_folder = "mameen@smatter-login.syr.edu:/home/mameen/kv_10_l_{}_n_{}/{:03d}/".format(l,n,i)
         for file in ["q_values.txt","costs.txt","minimized.txt","cellParameters.input", "files/0000000.stresses.csv"]:
             os.system("scp {} /Users/shabeebameen/Projects/tvm-fire/{}".format(cluster_folder+file,subfolder))
-            
+def download_single_patterns_old(n):
+    local_folder = f"data/{n}_cells_mean_l_6/"
+    os.makedirs(local_folder,exist_ok=True)
+    for i in range(100):
+        subfolder = local_folder + "{:03d}/".format(i)
+        os.makedirs(subfolder,exist_ok=True)
+        cluster_folder = f"mameen@smatter-login.syr.edu:/home/mameen/{n}_cells_mean_l_6/{i:03d}/"
+        # for file in ["q_values.txt","costs.txt","errors.txt","minimized.txt","cellParameters.input", "0000.stresses.csv","initial_stress.csv"]:
+        for file in ["errors.txt"]:
+            os.system(f"scp {cluster_folder+file} /Users/shabeebameen/Projects/tvm-fire/{subfolder}")
+
+def download_single_patterns_old_inc_dec(inc_or_dec):
+    local_folder = f"data/1_cell_{inc_or_dec}_2_sigma/"
+    os.makedirs(local_folder,exist_ok=True)
+    for i in range(100):
+        subfolder = local_folder + "{:03d}/".format(i)
+        os.makedirs(subfolder,exist_ok=True)
+        cluster_folder = f"mameen@smatter-login.syr.edu:/home/mameen/1_cell_{inc_or_dec}_2_sigma/{i:03d}/"
+        for file in ["q_values.txt","costs.txt","errors.txt","minimized.txt","cellParameters.input", "0000.stresses.csv","initial_stress.csv"]:
+            os.system(f"scp {cluster_folder+file} /Users/shabeebameen/Projects/tvm-fire/{subfolder}")
+
 def download_single_patterns_inc_dec(l,n=1, inc_or_dec="increase"):
     local_folder = "data/kv_10_l_{}_n_{}_{}/".format(l,n,inc_or_dec)
     os.makedirs(local_folder,exist_ok=True)
@@ -104,11 +124,16 @@ if __name__ == "__main__":
     # print(subpattern)
     # download_multiple_patterns_new(subpattern)
 
-    l = sys.argv[1]
-    inc_or_dec = sys.argv[2]
-    download_single_patterns_inc_dec(l,inc_or_dec=inc_or_dec)
+    # l = sys.argv[1]
+    # inc_or_dec = sys.argv[2]
+    # download_single_patterns_inc_dec(l,inc_or_dec=inc_or_dec)
 
     # l = sys.argv[1]
     # n = sys.argv[2]
     # download_single_patterns(l,n)
     # download_single_patterns_spheroid(l,n)
+
+    #download old data
+
+    n = sys.argv[1]
+    download_single_patterns_old(n)

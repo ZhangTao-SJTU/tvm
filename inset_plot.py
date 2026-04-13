@@ -28,10 +28,10 @@ def create_inset_plot(main_plot_file,inset_plot_file,inset_position,filename):
 # inset_pos =[0.16, 0.454, 0.45, 0.45]
 # create_inset_plot(main_plot_file,inset_plot_file,inset_pos,filename)
 if __name__ == "__main__":
-    for l in [4,5,6]:
-        main_plot_file = "Panel_2/SD_s0_scatter_l_{}.png".format(l)
-        inset_plot_file = "Panel_2/s0_histogram_periodic_l_{}.png".format(l)
-        filename ="Panel_2/SD_s0_with_inset_l_{}.png".format(l)
+    for l in [4]:
+        main_plot_file = "Panels/Panel_2/SD_s0_scatter_l_{}.png".format(l)
+        inset_plot_file = "Panels/Panel_2/s0_histogram_periodic_l_{}.png".format(l)
+        filename ="Panels/Panel_2/SD_s0_with_inset_l_{}.png".format(l)
         width = 0.5
         inset_pos =[0.4, 0.15,width,width]
         create_inset_plot(main_plot_file,inset_plot_file,inset_pos,filename)

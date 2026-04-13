@@ -3,7 +3,7 @@ figure.labelsize:       48
 # Follow documentation here for subplot: https://matplotlib.org/stable/api/_as_gen/matplotlib.figure.Figure.subplots_adjust.html
 figure.subplot.left:    0.2
 figure.subplot.bottom:  0.15
-figure.subplot.right:   0.98  
+figure.subplot.right:   0.95  
 figure.subplot.top:     0.92
 figure.subplot.hspace:  0   
 axes.linewidth:         5       # spine line width

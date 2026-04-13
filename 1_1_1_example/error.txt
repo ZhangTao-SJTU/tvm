@@ -1,0 +1,17 @@
+INFO:    Warning: Check time reached; running e2fsck is recommended.
+WARNING: group: unknown groupid 43641
+cp: cannot stat '/home/mameen/new_kv_10_l_4_p_1_1_1/004/0004524.bulk.txt': No such file or directory
+cp: cannot stat '/home/mameen/new_kv_10_l_4_p_1_1_1/004/0004524.cellParameters.input': No such file or directory
+cp: cannot stat '/home/mameen/new_kv_10_l_4_p_1_1_1/004/0004524.stresses.csv': No such file or directory
+cp: cannot stat '/home/mameen/new_kv_10_l_4_p_1_1_1/004/0004555.bulk.txt': No such file or directory
+cp: cannot stat '/home/mameen/new_kv_10_l_4_p_1_1_1/004/0004555.cellParameters.input': No such file or directory
+cp: cannot stat '/home/mameen/new_kv_10_l_4_p_1_1_1/004/0004555.stresses.csv': No such file or directory
+cp: cannot stat '/home/mameen/new_kv_10_l_4_p_1_1_1/004/0004577.bulk.txt': No such file or directory
+cp: cannot stat '/home/mameen/new_kv_10_l_4_p_1_1_1/004/0004577.cellParameters.input': No such file or directory
+cp: cannot stat '/home/mameen/new_kv_10_l_4_p_1_1_1/004/0004577.stresses.csv': No such file or directory
+cp: cannot stat '/home/mameen/new_kv_10_l_4_p_1_1_1/004/0004647.bulk.txt': No such file or directory
+cp: cannot stat '/home/mameen/new_kv_10_l_4_p_1_1_1/004/0004647.cellParameters.input': No such file or directory
+cp: cannot stat '/home/mameen/new_kv_10_l_4_p_1_1_1/004/0004647.stresses.csv': No such file or directory
+cp: cannot stat '/home/mameen/new_kv_10_l_4_p_1_1_1/004/0004662.bulk.txt': No such file or directory
+cp: cannot stat '/home/mameen/new_kv_10_l_4_p_1_1_1/004/0004662.cellParameters.input': No such file or directory
+cp: cannot stat '/home/mameen/new_kv_10_l_4_p_1_1_1/004/0004662.stresses.csv': No such file or directory

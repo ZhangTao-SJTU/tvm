@@ -1,0 +1,11 @@
+executable = /home/mameen/examples/singularity_wrapper.sh
+arguments  = /home/mameen/examples/ubuntu18_povray_paula.img /home/mameen/new_kv_10_l_4_p_1_1_1/004/run_job.sh
+transfer_input_files = /home/mameen/scripts/multiple_patterns_new.py, /home/mameen/toolbox, /home/mameen/new_kv_10_l_4_p_1_1_1/004/
+should_transfer_files = YES
+output     = output.txt
+error      = error.txt
+log        = log.txt
+getenv     = True
+request_cpus = 1
+request_memory = 250 MB
+queue 

@@ -19,7 +19,7 @@ lwmap = {1:15, 2:10, 3:5, 4:5, 5:5, 6:5}
 lw_sp_map = {40:15,20:10,10:5, 5:20}
 n_cells_color_map = {1:"blue",2:"orange",3:"purple", 4:"red" ,5:"yellow",6:"green"}
 l_to_marker = {4:'o', 5:"s", 6:"^"}
-l_to_alpha = {4:1, 5: 0.7, 6:0.5}
+l_to_alpha = {4:0.8, 5: 0.7, 6:0.5}
 l_to_color = {4:"black", 5: "purple", 6:"green"}
 n_runs = 100
 
@@ -50,17 +50,18 @@ def write_final_s0(dir_list,savefile):
         s0_vals += df[2].to_list()
     np.savetxt(savefile,s0_vals)
 
-# def write_stresses(dirlist,savefile):
-#     stress_vals = {i:None for i in range(len(dirlist))}
-#     for i,dir in enumerate(dirlist):
-#         if not os.path.isfile(dir+"minimized.txt"):
-#             continue
-#         print(dir)
-#         sample = PeriodicTissue.from_config(dir,"minimized.txt")
-#         tr = Training.from_sample(sample)
-#         tr.load_cell_parameters()
-#         stress_vals[i] = [calculate_max_shear_stress(tr._config,cellID) for cellID in tr._config.cells_]
-#     np.savetxt(savefile,list(stress_vals.values()), fmt="%.7f")
+def write_stresses(dirlist,savefile):
+    stress_vals = []
+    for dir in dirlist:
+        if not os.path.isfile(dir+"minimized.txt"):
+            continue
+        print(dir)
+        sample = PeriodicTissue.from_config(dir,"minimized.txt")
+        tr = Training.from_sample(sample)
+        tr.load_cell_parameters()
+        for cellID in tr._config.cells_:
+            stress_vals.append(calculate_max_shear_stress(tr._config,cellID))
+    np.savetxt(savefile,stress_vals, fmt="%.7f")
 def process_single(i, dir):
         if not os.path.isfile(dir + "minimized.txt"):
             return i, None
@@ -70,14 +71,14 @@ def process_single(i, dir):
         stresses = [calculate_max_shear_stress(tr._config, cellID) for cellID in tr._config.cells_]
         return i, stresses
 
-def write_stresses(dirlist, savefile, max_workers=8):
-    stress_vals = {i: None for i in range(len(dirlist))}
-    with ProcessPoolExecutor(max_workers=max_workers) as executor:
-        futures = {executor.submit(process_single, i, d): i for i, d in enumerate(dirlist)}
-        for future in as_completed(futures):
-            i, result = future.result()
-            stress_vals[i] = result
-    np.savetxt(savefile, [val for val in stress_vals.values() if val is not None], fmt="%.7f")
+# def write_stresses(dirlist, savefile, max_workers=8):
+#     stress_vals = {i: None for i in range(len(dirlist))}
+#     with ProcessPoolExecutor(max_workers=max_workers) as executor:
+#         futures = {executor.submit(process_single, i, d): i for i, d in enumerate(dirlist)}
+#         for future in as_completed(futures):
+#             i, result = future.result()
+#             stress_vals[i] = result
+#     np.savetxt(savefile, [val for val in stress_vals.values() if val is not None], fmt="%.7f")
 
 def find_complete_runs(dirlist):
     complete_dirs =[]
@@ -164,7 +165,10 @@ def histogram(label_to_data,
         plotter.set_title(title)
     plotter.initialize_figure()
     for label, data in label_to_data.items():
-        array = np.genfromtxt(data["dir"]+input_filename)
+        if "dir" in data:
+            array = np.genfromtxt(data["dir"]+input_filename)
+        else:
+            array = data["data"]
     # plotter.ax.vlines(x = vline_x, ymin = vline_min, ymax = vline_max, linestyle= "dashed",color = plotter.neutralColor, label = r"$s_0^{(init)}$")
         plotter.histogram_from_array(array, fit_type= 'kde',bins = data.get("bins",30), label = label,alpha = data.get("alpha",0.3),color = data.get("color","black"),edgecolor = data.get("color","black"),linewidth = data.get("linewidth",5))
     return plotter

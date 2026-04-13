@@ -15,8 +15,8 @@ class plot:
         # self.bottomMargin = 0.13
         # self.width = 0.9-self.leftMargin
         # self.height = 0.87-self.bottomMargin
-        self.xlabel = 'X-axis'
-        self.ylabel = 'Y-axis'
+        self.xlabel = None
+        self.ylabel = None
         self.xlim = None
         self.ylim = None
         self.xticks = None
@@ -96,7 +96,7 @@ class plot:
             ax = self.ax,
             kind = "hist",
             density = True,
-            xlabel=self.xlabel,
+            # xlabel=self.xlabel,
             **kwargs)
         if fit_type is None:
             return
