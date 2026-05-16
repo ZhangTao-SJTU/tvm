@@ -10,7 +10,7 @@ def error_to_iters_single_pattern():
             savefile = "Panels/Panel_2/error_to_iters_periodic_l_{}.png".format(l)
             # title = r"$n_{total} = $"+"{}".format(l**3)
             dirlist = find_complete_runs(["data/kv_10_l_{}_n_{}/{:03d}/".format(l,n,i) for i in range(100)])
-            label_to_data[r"$n_T=$"+"{}".format(n)]={"dirlist":dirlist, "color":n_cells_color_map[n], "alpha":0.6, "s":4000}
+            label_to_data[r"$N_T=$"+"{}".format(n)]={"dirlist":dirlist, "color":n_cells_color_map[n], "alpha":0.6, "s":4000}
           
         single_tracks_to_iters(label_to_data=label_to_data,title=title,savefile=savefile,
                                xlim=[1,5000],yticks=[5*i for i in range(1,5000)])
@@ -23,7 +23,7 @@ def s0_histogram_periodic_combined():
 
         for n in [4]:
             dir = "data/kv_10_l_{}_n_{}/".format(l,n)
-            label_to_data[r"$n_T=$"+"{}".format(n)] = {"dir":dir, "color":n_cells_color_map[n], "bins":30}
+            label_to_data[r"$N_T=$"+"{}".format(n)] = {"dir":dir, "color":n_cells_color_map[n], "bins":30}
         # title = r"$n_{total} = $"+"{}".format(l**3)
         hist = histogram(   label_to_data=label_to_data,
                             input_filename=input_filename,
@@ -42,7 +42,7 @@ def s0_histogram_periodic_for_inset():
     label_to_data = {}
 
     dir = "data/kv_10_l_{}_n_{}/".format(l,n)
-    label_to_data[r"$n_T=$"+"{}".format(n)] = {"dir":dir, "color":n_cells_color_map[n], "bins":30}
+    label_to_data[r"$N_T=$"+"{}".format(n)] = {"dir":dir, "color":n_cells_color_map[n], "bins":30}
         
     hist = histogram(   label_to_data=label_to_data,
                         input_filename=input_filename,
@@ -65,7 +65,7 @@ def final_iteration_to_final_overlap_periodic():
             dirlist = find_complete_runs(["data/kv_10_l_{}_n_{}/{:03d}/".format(l,n,i) for i in range(100)])
             x_array = [len(np.loadtxt(dir+"costs.txt"))for dir in dirlist]
             y_array = [np.loadtxt(dir+"q_values.txt")[-1] for dir in dirlist]
-            label_to_dir[r"$n_T=$"+"{}".format(n)]= {"x_array":x_array,"y_array":y_array,"marker":"o","color":n_cells_color_map[n], "s":4000, "alpha":0.6}
+            label_to_dir[r"$N_T=$"+"{}".format(n)]= {"x_array":x_array,"y_array":y_array,"marker":"o","color":n_cells_color_map[n], "s":4000, "alpha":0.6}
         plotter = scatter_plot(label_to_dir,
                                xlim = [10,5000],
                                ylim=[0.55,1.05],
@@ -89,7 +89,7 @@ def SD_s0_scatter_periodic():
                     #  title = r"$n_{total}=$"+"{}".format(l**3),
                      xticks= x_array,
                      xlog=False,
-                     xlabel=r"$n_T$",
+                     xlabel=r"$N_T$",
                      ylabel=r"$SD(s_0)$")
         plotter.save_fig(savefile)
 
@@ -106,7 +106,7 @@ def SD_s0_scatter_periodic_for_inset():
                     # title = r"$n_{total}=$"+"{}".format(l**3),
                     xticks= x_array,
                     xlog=False,
-                    xlabel=r"$n_T$",
+                    xlabel=r"$N_T$",
                     ylabel=r"$SD(s_0)$",
                 
         )
@@ -117,7 +117,7 @@ def SD_s0_scatter_periodic_all_sizes():
     for l in [4,5,6]:  
         x_array = [1,2,3,4,5,6]
         y_array = [np.std(np.loadtxt("data/kv_10_l_{}_n_{}/final_s0.txt".format(l,n))) for n in x_array]
-        label_to_dir[r"$n_{total} = $"+"{}".format(l**3)] = {"x_array":x_array,"y_array":y_array,"marker":l_to_marker[l],"color":"black","alpha": 0.6, "color":l_to_color[l], "s":4000}
+        label_to_dir[r"$N = $"+"{}".format(l**3)] = {"x_array":x_array,"y_array":y_array,"marker":l_to_marker[l],"color":"black","alpha": 0.8, "color":l_to_color[l], "s":4000}
     plotter = scatter_plot(label_to_dir,
                     xlim =[0.5,6.5],
                     ylim=[0,0.5],
@@ -125,7 +125,7 @@ def SD_s0_scatter_periodic_all_sizes():
                     xticks= x_array,
                     yticks= [0,0.2,0.4],
                     xlog=False,
-                    xlabel=r"$n_T$",
+                    xlabel=r"$N_T$",
                     ylabel=r"$SD(s_0)$")
     plotter.ax.legend()
     plotter.save_fig(savefile)

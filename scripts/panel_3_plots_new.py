@@ -49,7 +49,7 @@ def s0_histogram_periodic_combined():
         for n in [2,3,4]:
             savefile = f"{output_folder}s0_histogram_periodic_l_{l}_n_{n}.png"
             label_to_data = {}
-            label_to_data[r"$n_T=$"+"{}".format(n)]={"dir":"data/new_kv_10_l_{}_n_{}/".format(l,n), "color":n_cells_color_map[n], "bins":30, "alpha":0.1}
+            label_to_data[r"$N_T=$"+"{}".format(n)]={"dir":"data/new_kv_10_l_{}_n_{}/".format(l,n), "color":n_cells_color_map[n], "bins":30, "alpha":0.1}
             for pattern in n_cell_to_patterns[n]:
                 dir = construct_multiple_pattern_foldername("data/new_kv_10_l_{}_p".format(l),pattern)
                 label_to_data[label_writer(pattern)] = {"dir":dir, "color":n_cells_color_map[n], "bins":30}
@@ -71,7 +71,7 @@ def error_to_iters_single_pattern():
             savefile = f"{output_folder}error_to_iters_periodic_l_{l}_n_{n}.png"
             # title = r"$n_{total} = $"+"{}".format(l**3)
             dirlist = find_complete_runs(["data/new_kv_10_l_{}_n_{}/{:03d}/".format(l,n,i) for i in range(100)])
-            label_to_data[r"$n_T=$"+"{}".format(n)]={"dirlist":dirlist, "color":n_cells_color_map[n]}
+            label_to_data[r"$N_T=$"+"{}".format(n)]={"dirlist":dirlist, "color":n_cells_color_map[n]}
         single_tracks_to_iters(label_to_data=label_to_data,title=title,savefile=savefile,)
 
 def final_iteration_to_final_overlap_periodic():
@@ -83,13 +83,13 @@ def final_iteration_to_final_overlap_periodic():
         dirlist = find_complete_runs(["data/kv_10_l_{}_n_{}/{:03d}/".format(l,n,i) for i in range(100)])
         x_array = [len(np.loadtxt(dir+"costs.txt"))for dir in dirlist]
         y_array = [np.loadtxt(dir+"q_values.txt")[-1] for dir in dirlist]
-        label_to_dir[r"$n_T=$"+"{}".format(n)]= {"x_array":x_array,"y_array":y_array,"marker":"o","color":n_cells_color_map[n],"s":3000,"alpha":0.5}
+        label_to_dir[r"$N_T=$"+"{}".format(n)]= {"x_array":x_array,"y_array":y_array,"marker":"o","color":n_cells_color_map[n],"s":4000,"alpha":0.4}
         for i,pattern in enumerate(n_cell_to_patterns[n]):
             print(n,pattern)
             dirlist = find_complete_runs_multiple_patterns([construct_multiple_pattern_foldername("data/new_kv_10_l_{}_p".format(l),pattern)+"{:03d}/".format(j) for j in range(100)])
             x_array = [len(np.loadtxt(dir+"costs.txt"))for dir in dirlist]
             y_array = [np.loadtxt(dir+"q_values.txt")[-1] for dir in dirlist]
-            label_to_dir[label_writer(pattern)] = {"x_array":x_array,"y_array":y_array,"marker":markers[i],"color":n_cells_color_map[n],"alpha":0.7}
+            label_to_dir[label_writer(pattern)] = {"x_array":x_array,"y_array":y_array,"marker":markers[i],"color":n_cells_color_map[n],"s":4000,"alpha":0.4}
 
         
         plotter = scatter_plot(label_to_dir,
@@ -111,10 +111,10 @@ def SD_s0_scatter_all_patterns():
     for n in n_cells:
         #single pattern
         y_array = [np.std(np.loadtxt("data/kv_10_l_{}_n_{}/final_s0.txt".format(l,n)))]
-        label_to_dir[r"$n_T=$"+"{}".format(n)]={"x_array":[n],"y_array":y_array,"marker":"o","color":n_cells_color_map[n], "s":4000}
+        label_to_dir[r"$N_T=$"+"{}".format(n)]={"x_array":[n],"y_array":y_array,"marker":"o","color":n_cells_color_map[n], "s":4000,"alpha":0.8}
         for i, pattern in enumerate(n_cell_to_patterns[n]):
             y_array = [np.std(np.loadtxt(construct_multiple_pattern_foldername(header = header,pattern = pattern)+"final_s0.txt"))]
-            label_to_dir[label_writer(pattern)]={"x_array":[n],"y_array":y_array,"marker":markers[i],"color":n_cells_color_map[n], "s":3000}
+            label_to_dir[label_writer(pattern)]={"x_array":[n],"y_array":y_array,"marker":markers[i],"color":n_cells_color_map[n], "s":4000,"alpha":0.8}
     plotter = scatter_plot(label_to_dir,
                      xlim =[1.5,4.5],
                      ylim=[0.2,0.42],
@@ -122,7 +122,7 @@ def SD_s0_scatter_all_patterns():
                      title = title,
                      xticks= n_cells,
                      xlog=False,
-                     xlabel=r"$n_T$",
+                     xlabel=r"$N_T$",
                      ylabel=r"$SD(s_0)$")
     # plotter.ax.legend()
     plotter.save_fig(savefile)
@@ -132,7 +132,7 @@ def SD_s0_scatter_all_patterns():
 
 def main():
     os.makedirs(output_folder,exist_ok=True)
-    write_final_s0_multiple_patterns()
+    # write_final_s0_multiple_patterns()
     final_iteration_to_final_overlap_periodic()
     SD_s0_scatter_all_patterns()
 if __name__ == "__main__":

@@ -7,6 +7,13 @@ from toolbox.stress import calculate_max_shear_stress
 import os
 output_folder = "Panels/Panel_4/"
 color_dict = {"Error": "#D72638", r"$SD(s_0)$": "#F49D37", r"$Q_2$": "#3F88C5"}
+color_dict = {"Error": "red", r"$SD(s_0)$": "orange", r"$Q_2$": "blue"}
+
+colors = ["#5e029c", "#faa23e","#0e4008"]
+colors = ['purple','green',"orange"]
+
+# color_dict = {"Error": "#360657", r"$SD(s_0)$": "#F49D37", r"$Q_2$": "#23591c"}
+# 
 linestyle_dict = {"Error": "-", r"$SD(s_0)$": ":", r"$Q_2$": "--"}
 marker_dict = {"Error": "D", r"$SD(s_0)$": "o", r"$Q_2$": "^"}
 alpha = 0.4
@@ -17,16 +24,16 @@ def single_run_stacked_plot(label_to_data,**kwargs):
         if data["loc"] == "top":
             plotter.plot_xy_top(data["x"], data["y"], color = color_dict[label], label=label,alpha = alpha)
             plotter.ax_top.scatter(data["x"], data["y"], color = color_dict[label], label=label, marker = marker_dict[label], s=markersize,alpha = alpha)
-            plotter.ax_top.scatter(data["x"], data["y"], color = color_dict[label], marker = marker_dict[label], s=markersize,facecolors = "none",edgecolors = "black")
+            plotter.ax_top.scatter(data["x"], data["y"], color = color_dict[label], marker = marker_dict[label], s=markersize,facecolors = "none",edgecolors = "black",lw = 3,alpha = 1)
         elif data["loc"] == "bottom":
             plotter.plot_xy_bottom(data["x"], data["y"], color = color_dict[label], label=label, alpha=alpha)
             plotter.ax_bottom.scatter(data["x"], data["y"], color = color_dict[label], label=label, marker = marker_dict[label], s=markersize, alpha=alpha)
-            plotter.ax_bottom.scatter(data["x"], data["y"],  color = color_dict[label], marker = marker_dict[label],s=markersize,facecolors = "none",edgecolors = "black")
+            plotter.ax_bottom.scatter(data["x"], data["y"],  color = color_dict[label], marker = marker_dict[label],s=markersize,facecolors = "none",edgecolors = "black",lw = 3,alpha = 1)
 
         elif data["loc"] == "bottom right":
             plotter.plot_xy_bottom_right(data["x"], data["y"], color = color_dict[label], label=label, alpha=alpha)
             plotter.ax_bottom_right.scatter(data["x"], data["y"], color = color_dict[label], label=label,marker = marker_dict[label], s=markersize,alpha = alpha)
-            plotter.ax_bottom_right.scatter(data["x"], data["y"], color = color_dict[label], marker = marker_dict[label], s=markersize,facecolors = "none",edgecolors = "black")
+            plotter.ax_bottom_right.scatter(data["x"], data["y"], color = color_dict[label], marker = marker_dict[label], s=markersize,facecolors = "none",edgecolors = "black",lw = 3,alpha = 1)
 
     return plotter
 
@@ -103,7 +110,9 @@ def write_cell_errors(dir):
     df = pd.DataFrame(iter_to_cell_errors_list)
     df.to_csv(dir+"cellErrors.csv", index=False)
 def epoch_cell_errors(dir = "data/004/", xlim = [34,273], offset = 20,savefile = "Panels/Panel_4/initial_epochs.png", title = None):
-    colors = [ "#473144",  "#DF9B6D","#af1b3f",]
+    # colors = ["#360657", "#faa23e","#2e9421","#23591c"]
+    # colors = ["#360657", "#faa23e","#1d5e15"]
+
     markers = ["o", "s", "D"]
     
     plotter = manuscriptPlots.plot()
@@ -117,7 +126,7 @@ def epoch_cell_errors(dir = "data/004/", xlim = [34,273], offset = 20,savefile =
     # plotter.set_yticks(yticks)
 
 
-    plotter.set_xlabel("Iteration")
+    plotter.set_xlabel("Iterations")
     plotter.set_ylabel(r"$|1-\sigma_{T}/\sigma|$")
     if title is not None:
         plotter.set_title(title)
@@ -132,7 +141,7 @@ def epoch_cell_errors(dir = "data/004/", xlim = [34,273], offset = 20,savefile =
     for i in range(3):
         plotter.plot_xy(info["Iter"], errors[str(i)],label = "_none",alpha = 0.6, color=colors[i],linestyle=":", linewidth=10)
         plotter.plot_scatter(info["Iter"], errors[str(i)], label=f"Cell {i+1}",alpha = 0.8, color=colors[i], s=3000, marker=markers[i])
-        plotter.plot_scatter(info["Iter"], errors[str(i)], label=f"_Cell {i+1}",alpha = 0.8, color=colors[i], s=3000, marker=markers[i], facecolors = "none", edgecolors = "black", linewidth=2)
+        plotter.plot_scatter(info["Iter"], errors[str(i)], label=f"_Cell {i+1}",alpha = 1, color=colors[i], s=3000, marker=markers[i], facecolors = "none", edgecolors = "black", linewidth=5)
 
             # plotter.plot_xy(info["Iter"], errors["1"], color="red",alpha=0.4, label="Cell 1")
     # plotter.save_fig("test.png")
@@ -143,8 +152,8 @@ def epoch_cell_errors(dir = "data/004/", xlim = [34,273], offset = 20,savefile =
 def main():
     os.makedirs(output_folder,exist_ok=True)
     stacked_multiple_pattern_plots()
-    # epoch_cell_errors(xlim = [34,273])
-    # epoch_cell_errors(xlim = [4668,4692], offset = 4, savefile = "Panels/Panel_4/final_epochs.png")
+    epoch_cell_errors(xlim = [34,273])
+    epoch_cell_errors(xlim = [4668,4692], offset = 4, savefile = "Panels/Panel_4/final_epochs.png")
 
 if __name__ == "__main__":
     main()

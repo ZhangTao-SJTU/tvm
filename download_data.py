@@ -22,7 +22,8 @@ def download_single_patterns(l,n):
         subfolder = local_folder + "{:03d}/".format(i)
         os.makedirs(subfolder,exist_ok=True)
         cluster_folder = "mameen@smatter-login.syr.edu:/home/mameen/kv_10_l_{}_n_{}/{:03d}/".format(l,n,i)
-        for file in ["q_values.txt","costs.txt","minimized.txt","cellParameters.input", "files/0000000.stresses.csv"]:
+        # for file in ["q_values.txt","costs.txt","minimized.txt","cellParameters.input", "files/0000000.stresses.csv"]:
+        for file in ["SD_s0.csv"]:
             os.system("scp {} /Users/shabeebameen/Projects/tvm-fire/{}".format(cluster_folder+file,subfolder))
 def download_single_patterns_old(n):
     local_folder = f"data/{n}_cells_mean_l_6/"
@@ -68,7 +69,9 @@ def download_single_patterns_spheroid(l,n):
         subfolder = local_folder + "{:03d}/".format(i)
         os.makedirs(subfolder,exist_ok=True)
         cluster_folder = "mameen@smatter-login.syr.edu:/home/mameen/kv_10_l_{}_n_sp_{:03d}/{:03d}/".format(l,n,i)
-        for file in ["q_values.txt","costs.txt","minimized.txt","cellParameters.input", "files/0000000.stresses.csv"]:
+        # for file in ["q_values.txt","costs.txt","minimized.txt","cellParameters.input", "files/0000000.stresses.csv"]:
+        for file in ["SD_s0.csv"]:
+
             # if os.path.isfile("/Users/shabeebameen/Projects/tvm-fire/{}".format(subfolder+file)):
             #     print("{} already exists".format(subfolder+file))
             #     continue
@@ -128,12 +131,12 @@ if __name__ == "__main__":
     # inc_or_dec = sys.argv[2]
     # download_single_patterns_inc_dec(l,inc_or_dec=inc_or_dec)
 
-    # l = sys.argv[1]
-    # n = sys.argv[2]
-    # download_single_patterns(l,n)
+    l = sys.argv[1]
+    n = sys.argv[2]
+    download_single_patterns(l,n)
     # download_single_patterns_spheroid(l,n)
 
     #download old data
 
-    n = sys.argv[1]
-    download_single_patterns_old(n)
+    # n = sys.argv[1]
+    # download_single_patterns_old(n)

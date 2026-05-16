@@ -235,9 +235,9 @@ def scatter_plot(label_to_data,
             edgecolors = "black",
             # edgecolors = data.get("color","black"),
             s=data.get("s",2000),
-            lw = 1,
+            lw = 5,
             label = "_none",
-            alpha = 0.5,
+            alpha = 1,
         )
 
     return plotter

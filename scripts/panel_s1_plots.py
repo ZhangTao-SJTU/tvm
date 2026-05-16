@@ -44,9 +44,9 @@ def write_stresses_periodic():
 def error_to_iters_single_pattern():
         for n in [2,4]:
             dirlist = find_complete_runs_old([f"data/{n}_cells_mean_l_6/{i:03d}/" for i in range(100)])
-            print(dirlist)
+            print("Yield: {}".format(len(dirlist)), dirlist[0])
             savefile = "Panels/Panel_S1/error_to_iters_periodic_n_{}.png".format(n)
-            label_to_data = {"_"+r"$n_T=$"+"{}".format(n):{"dirlist":dirlist, "color":"black",}}
+            label_to_data = {"_"+r"$N_T=$"+"{}".format(n):{"dirlist":dirlist, "color":"black",}}
             # title = r"$n_{total} = $"+"{}".format(l**3)
             single_tracks_to_iters(label_to_data=label_to_data,title=title,savefile=savefile)
 
@@ -54,9 +54,9 @@ def error_to_iters_single_pattern_inc_dec():
     # title = r"$n_{total} = $"+"{}".format(l**3)
     dirlist = find_complete_runs_old([f"data/1_cell_increase_2_sigma/{i:03d}/" for i in range(100)])
     savefile = "Panels/Panel_S1/error_to_iters_periodic_inc_dec.png"
-    label_to_data = {r"$\sigma^T=\bar{\sigma}_{(0)}+2 \sigma^{(SD)}$":{"dirlist":dirlist, "color":"red","alpha":0.5}}
+    label_to_data = {r"$\sigma_T=\bar{\sigma}_{(0)}+2 \sigma_{(SD)}$":{"dirlist":dirlist, "color":"red","alpha":0.5}}
     dirlist = find_complete_runs_old([f"data/1_cell_decrease_2_sigma/{i:03d}/" for i in range(100)])
-    label_to_data[r"$\sigma^T=\bar{\sigma}_{(0)}- 2 \sigma^{(SD)}$"]={"dirlist":dirlist, "color":"blue","alpha":0.5}
+    label_to_data[r"$\sigma_T=\bar{\sigma}_{(0)}- 2 \sigma_{(SD)}$"]={"dirlist":dirlist, "color":"blue","alpha":0.5}
     single_tracks_to_iters(label_to_data=label_to_data,title=title,savefile=savefile,xlim=[1,10000])
 
 
@@ -65,7 +65,7 @@ def overlap_to_iters_single_pattern():
         dirlist = find_complete_runs_old([f"data/{n}_cells_mean_l_6/{i:03d}/" for i in range(100)])
         savefile = "Panels/Panel_S1/overlap_to_iters_periodic_n_{}.png".format(n)
         # title = r"$n_{total} = $"+"{}".format(l**3)
-        label_to_data = {"_"+r"$n_T=$"+"{}".format(n):{"dirlist":dirlist, "color":"black",}}
+        label_to_data = {"_"+r"$N_T=$"+"{}".format(n):{"dirlist":dirlist, "color":"black",}}
         single_tracks_to_iters(label_to_data=label_to_data,title=title,savefile=savefile,
                                 input_filename="q_values.txt",
                                 ylabel = r"$Q_2$",
@@ -79,9 +79,9 @@ def overlap_to_iters_single_pattern_inc_dec():
         n = 1
         savefile = "Panels/Panel_S1/overlap_to_iters_periodic_inc_dec.png"
         dirlist = find_complete_runs([f"data/1_cell_increase_2_sigma/{i:03d}/" for i in range(100)])
-        label_to_data = {r"$\sigma^T=\bar{\sigma}_{(0)}+2 \sigma^{(SD)}$":{"dirlist":dirlist, "color":"red", "alpha":0.5}}
+        label_to_data = {r"$\sigma_T=\bar{\sigma}_{(0)}+2 \sigma_{(SD)}$":{"dirlist":dirlist, "color":"red", "alpha":0.5}}
         dirlist = find_complete_runs([f"data/1_cell_decrease_2_sigma/{i:03d}/" for i in range(100)])
-        label_to_data[r"$\sigma^T=\bar{\sigma}_{(0)} - 2 \sigma^{(SD)}$"]={"dirlist":dirlist, "color":"blue","alpha":0.5}
+        label_to_data[r"$\sigma_T=\bar{\sigma}_{(0)} - 2 \sigma_{(SD)}$"]={"dirlist":dirlist, "color":"blue","alpha":0.5}
         single_tracks_to_iters(label_to_data=label_to_data,title=title,savefile=savefile,
                                     input_filename="q_values.txt",
                                     ylabel = r"$Q_2$",
@@ -111,8 +111,8 @@ def s0_histogram_periodic_inc_dec():
     input_filename = "final_s0.txt"
     label_to_data = {}
     savefile = "Panels/Panel_S1/s0_histogram_periodic_inc_dec.png"
-    label_to_data["Trained: "+r"$\sigma^T=\bar{\sigma}_{(0)}+2 \sigma^{(SD)}$"]={"dir":"data/1_cell_increase_2_sigma/", "color":"red", "bins":100,"linewidth":5}
-    label_to_data["Trained: "+r"$\sigma^T=\bar{\sigma}_{(0)}-2 \sigma^{(SD)}$"]={"dir":"data/1_cell_decrease_2_sigma/", "color":"blue", "bins":50,"linewidth":5}
+    label_to_data["Trained: "+r"$\sigma_T=\bar{\sigma}_{(0)}+2 \sigma_{(SD)}$"]={"dir":"data/1_cell_increase_2_sigma/", "color":"red", "bins":100,"linewidth":5}
+    label_to_data["Trained: "+r"$\sigma_T=\bar{\sigma}_{(0)}-2 \sigma_{(SD)}$"]={"dir":"data/1_cell_decrease_2_sigma/", "color":"blue", "bins":50,"linewidth":5}
     # title = r"$n_{total} = $"+"{}".format(l**3)
     hist = histogram(   label_to_data=label_to_data,
                         input_filename=input_filename,
@@ -155,10 +155,10 @@ def stress_histogram_periodic_inc_dec():
         # label_to_data = {r"$\sigma_T = \bar{\sigma}_{(0)}>$":{"dir":dir, "color":"red", "bins":20}}
         label_to_data[r"$\sigma_{(0)}$"]={"data":np.loadtxt("init/init_homogeneous_6/stresses.txt".format(l,n)), "color":"black", "bins":20,"linewidth":5,"alpha":0.5}
 
-        label_to_data["_"+r"$\sigma^T=\bar{\sigma}_{(0)}+2 \sigma^{(SD)}$"]={"dir":"data/1_cell_increase_2_sigma/".format(l,n), "color":"red", "bins":50,"linewidth":5}
-        label_to_data["_"+r"$\sigma^T=\bar{\sigma}_{(0)}-2 \sigma^{(SD)}$"]={"dir":"data/1_cell_decrease_2_sigma/".format(l,n), "color":"blue", "bins":20,"linewidth":5}
-        # label_to_data[r"$\sigma^T=\bar{\sigma}_{(0)}+2 \sigma^{(SD)}$"]={"dir":"data/kv_10_l_{}_n_{}_increase/".format(l,n), "color":"red", "bins":50,"linewidth":5}
-        # label_to_data[r"$\sigma^T=\bar{\sigma}_{(0)}-2 \sigma^{(SD)}$"]={"dir":"data/kv_10_l_{}_n_{}_decrease/".format(l,n), "color":"blue", "bins":20,"linewidth":5}
+        label_to_data["_"+r"$\sigma_T=\bar{\sigma}_{(0)}+2 \sigma_{(SD)}$"]={"dir":"data/1_cell_increase_2_sigma/".format(l,n), "color":"red", "bins":50,"linewidth":5}
+        label_to_data["_"+r"$\sigma_T=\bar{\sigma}_{(0)}-2 \sigma_{(SD)}$"]={"dir":"data/1_cell_decrease_2_sigma/".format(l,n), "color":"blue", "bins":20,"linewidth":5}
+        # label_to_data[r"$\sigma_T=\bar{\sigma}_{(0)}+2 \sigma_{(SD)}$"]={"dir":"data/kv_10_l_{}_n_{}_increase/".format(l,n), "color":"red", "bins":50,"linewidth":5}
+        # label_to_data[r"$\sigma_T=\bar{\sigma}_{(0)}-2 \sigma_{(SD)}$"]={"dir":"data/kv_10_l_{}_n_{}_decrease/".format(l,n), "color":"blue", "bins":20,"linewidth":5}
         # title = r"$n_{total} = $"+"{}".format(l**3)
         hist = histogram(   label_to_data=label_to_data,
                             input_filename=input_filename,
@@ -170,8 +170,8 @@ def stress_histogram_periodic_inc_dec():
                             yticks=[0,10,20])
 
         init_stresses = np.loadtxt("/Users/shabeebameen/Projects/tvm-fire/init/init_homogeneous_6/stresses.txt")
-        hist.ax.vlines(x = np.mean(init_stresses)+2*np.std(init_stresses), ymin = 0, ymax = 15, linestyle= "dotted",color = "red",linewidth =25, label = r"$\sigma_T = \bar{\sigma}_{(0)} + 2 \sigma^{(SD)}$")
-        hist.ax.vlines(x = np.mean(init_stresses)-2*np.std(init_stresses), ymin = 0, ymax = 15, linestyle= "dotted",color = "blue",linewidth =25, label = r"$\sigma_T = \bar{\sigma}_{(0)} - 2 \sigma^{(SD)}$")
+        hist.ax.vlines(x = np.mean(init_stresses)+2*np.std(init_stresses), ymin = 0, ymax = 15, linestyle= "dotted",color = "red",linewidth =25, label = r"$\sigma_T = \bar{\sigma}_{(0)} + 2 \sigma_{(SD)}$")
+        hist.ax.vlines(x = np.mean(init_stresses)-2*np.std(init_stresses), ymin = 0, ymax = 15, linestyle= "dotted",color = "blue",linewidth =25, label = r"$\sigma_T = \bar{\sigma}_{(0)} - 2 \sigma_{(SD)}$")
         # hist.ax.vlines(x = np.mean(init_stresses)+2*np.std(init_stresses), ymin = 0, ymax = 5, linestyle= "dotted",color = "red",linewidth =25)
         # hist.ax.vlines(x = np.mean(init_stresses)-2*np.std(init_stresses), ymin = 0, ymax = 5, linestyle= "dotted",color = "blue",linewidth =25)
         hist.ax.legend()
