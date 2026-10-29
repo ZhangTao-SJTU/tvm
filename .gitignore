@@ -1,5 +1,5 @@
-build-windows
-cmake-build-debug
-.idea
-.gitignore
-.DS_Store
+/target/
+/.validation/
+/runs/
+__pycache__/
+*.pyc

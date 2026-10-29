@@ -5,7 +5,9 @@ author: Tao Zhang @ Shanghai Jiao Tong University, zhangtao.scholar@sjtu.edu.cn,
 coauthor: Jennifer Schwarz @ Syracuse University, jschwarz@physics.syr.edu
 '''
 
-import pyvoro
+import argparse
+import json
+from pathlib import Path
 import numpy as np
 
 class Vertex:
@@ -45,8 +47,21 @@ class Cell:
         self.polygons_.append(polygon)
 
 def main():
-    Lx, Ly, Lz = (8, 8, 8)
-    points = generatePoints(Lx, Ly, Lz)
+    parser = argparse.ArgumentParser(description="Generate a reproducible periodic TVM topology.")
+    parser.add_argument('--seed', type=int, default=5489)
+    parser.add_argument('--box', type=float, nargs=3, default=(8., 8., 8.))
+    parser.add_argument('--cells', type=int, default=None)
+    parser.add_argument('--output', type=Path, default=Path('sample.topo'))
+    args = parser.parse_args()
+    if args.seed < 0 or any(not np.isfinite(x) or x <= 0 for x in args.box):
+        parser.error('seed must be nonnegative and all box lengths must be finite and positive')
+    count = args.cells if args.cells is not None else int(np.prod(args.box))
+    if count < 8:
+        parser.error('use at least 8 cells; very small periodic boxes may have unsupported self-neighbors')
+    import pyvoro
+    Lx, Ly, Lz = args.box
+    points = generatePoints(Lx, Ly, Lz, args.seed, count)
+    print('seed:', args.seed)
     # points = [[1.0, 2.0, 3.0], [4.0, 5.5, 6.0]]
     voroDict = pyvoro.compute_voronoi(
         points,  # point positions
@@ -76,7 +91,12 @@ def main():
     checkVertexCells(vertices, edges, polygons, cells)
 
     # dumpVTK(vertices, edges, polygons, cells, points, (Lx, Ly, Lz))
-    dumpTopo(vertices, edges, polygons, cells, points, (Lx, Ly, Lz))
+    dumpTopo(vertices, edges, polygons, cells, points, (Lx, Ly, Lz), args.output)
+    args.output.with_suffix(args.output.suffix + '.json').write_text(json.dumps({
+        'seed': args.seed, 'box': list(args.box), 'cells': count,
+        'generator': 'pyvoro', 'numpy_version': np.__version__,
+        'coordinate_precision': 17
+    }, indent=2) + '\n', encoding='utf-8')
 
 def topologyVoro(voroDict, Lxyz):
     Lx, Ly, Lz = Lxyz
@@ -148,20 +168,11 @@ def topologyVoro(voroDict, Lxyz):
 
     return vertices, edges, polygons, cells
 
-def generatePoints(Lx, Ly, Lz):
-    from datetime import datetime
-    np.random.seed(int(datetime.utcnow().timestamp()))
-    # np.random.seed(2161133)
-    Nvertices = int(Lx*Ly*Lz)
-    points = []
-    for i in range(Nvertices):
-        point = []
-        point.append(np.random.uniform(0, Lx))
-        point.append(np.random.uniform(0, Ly))
-        point.append(np.random.uniform(0, Lz))
-        points.append(point)
+def generatePoints(Lx, Ly, Lz, seed=5489, count=None):
+    rng = np.random.default_rng(seed)
+    count = int(Lx*Ly*Lz) if count is None else count
+    return (rng.random((count, 3))*np.array([Lx, Ly, Lz])).tolist()
 
-    return points
 
 def checkVertexCells(vertices, edges, polygons, cells):
     for key in cells:
@@ -232,9 +243,9 @@ def checkVertexCells(vertices, edges, polygons, cells):
 #             z = point[2]
 #             file.write("{:12.5e} {:12.5e} {:12.5e}\n".format(x, y, z))
 
-def dumpTopo(vertices, edges, polygons, cells, points, Lxyz):
+def dumpTopo(vertices, edges, polygons, cells, points, Lxyz, output="sample.topo"):
     Lx, Ly, Lz = Lxyz
-    with open("sample.topo", "w") as file:
+    with open(output, "w") as file:
         file.write("vertices {:d}\n".format(len(vertices)))
         # vertices = dict(sorted(vertices.items(), key=lambda item: item[1].id_))
         # count = 0
@@ -244,7 +255,7 @@ def dumpTopo(vertices, edges, polygons, cells, points, Lxyz):
             x = vertex.position_[0]
             y = vertex.position_[1]
             z = vertex.position_[2]
-            file.write("{:6d} {:12.5e} {:12.5e} {:12.5e}\n".format(id, x, y, z))
+            file.write("{:d} {:.17g} {:.17g} {:.17g}\n".format(id, x, y, z))
             # if count != id:
             #     print("vertices dict disordered {:d} {:d}\n".format(count, id))
             #     exit(1)

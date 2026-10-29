@@ -1,0 +1,22 @@
+name: Rust validation
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  test:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo test --release --locked
+      - run: cargo build --release --locked
+      - name: Upload executable
+        uses: actions/upload-artifact@v4
+        with:
+          name: tvm-${{ matrix.os }}
+          path: |
+            target/release/tvm
+            target/release/tvm.exe

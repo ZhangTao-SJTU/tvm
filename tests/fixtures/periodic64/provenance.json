@@ -1,0 +1,20 @@
+{
+  "generator": "SciPy Voronoi, jittered 4x4x4 sites replicated across 27 periodic boxes",
+  "seed": 20261028,
+  "box": [
+    4,
+    4,
+    4
+  ],
+  "vertices": 445,
+  "edges": 890,
+  "faces": 509,
+  "cells": 64,
+  "fixture_sha256": "421d2259fc63e3f24561917111c38d06386df336d3a5f87b2f1930c70f671c9a",
+  "coordinate_precision": "17 significant digits",
+  "generation_dependencies": {
+    "numpy": "1.26.4",
+    "scipy": "1.13.1"
+  },
+  "note": "Periodic 64-cell geometry. Cell records contain only face IDs. The bundled fixture requires no Python dependencies to run or test."
+}

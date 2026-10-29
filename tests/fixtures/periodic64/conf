@@ -1,0 +1,11 @@
+time 0 0.1 0.001
+dtr 0.01
+dump vtk 0.1
+log 0.01
+s0 5.6
+Lth 0.02
+T 0
+kv 10
+box 4 4 4 p p p
+seed 20261028
+validate_topology on
