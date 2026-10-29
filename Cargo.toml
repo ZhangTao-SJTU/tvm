@@ -1,6 +1,6 @@
 [package]
 name = "vm3d"
-version = "0.1.0"
+version = "1.0.0"
 edition = "2021"
 description = "Three-dimensional vertex model for periodic cellular tissues"
 repository = "https://github.com/ZhangTao-SJTU/tvm"

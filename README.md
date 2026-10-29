@@ -9,6 +9,8 @@ The simulation engine is written in safe Rust and uses only the Rust standard li
 
 ## Quick start
 
+Download the Linux or Windows executable package from [tvm-1.0](https://github.com/ZhangTao-SJTU/tvm/releases/tag/tvm-1.0), or build from source using the steps below. Executable packages include a ready-to-run example and platform-specific instructions.
+
 Install a stable Rust toolchain with Cargo and a linker for your platform. On Windows, the MSVC toolchain uses the Visual Studio C++ build tools; the GNU toolchain uses a compatible MinGW linker.
 
 ```sh
